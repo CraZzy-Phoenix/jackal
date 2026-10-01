@@ -3,6 +3,10 @@ const SESSION_SECONDS = SESSION_DAYS * 24 * 60 * 60;
 
 const PBKDF2_ITERATIONS = 100000;
 
+/* =========================================================
+   JSON RESPONSE
+   ========================================================= */
+
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -97,9 +101,14 @@ async function hashPassword(password, saltBytes) {
 }
 
 async function createPasswordHash(password) {
-  const salt = crypto.getRandomValues(new Uint8Array(32));
+  const salt = crypto.getRandomValues(
+    new Uint8Array(32)
+  );
 
-  const hash = await hashPassword(password, salt);
+  const hash = await hashPassword(
+    password,
+    salt
+  );
 
   return {
     hash: bytesToBase64(hash),
@@ -121,16 +130,26 @@ function constantTimeEqual(a, b) {
   return result === 0;
 }
 
-async function verifyPassword(password, storedHash, storedSalt) {
+async function verifyPassword(
+  password,
+  storedHash,
+  storedSalt
+) {
   try {
-    const salt = base64ToBytes(storedSalt);
-
-    const calculatedHash = await hashPassword(
-      password,
-      salt
+    const salt = base64ToBytes(
+      storedSalt
     );
 
-    const expectedHash = base64ToBytes(storedHash);
+    const calculatedHash =
+      await hashPassword(
+        password,
+        salt
+      );
+
+    const expectedHash =
+      base64ToBytes(
+        storedHash
+      );
 
     return constantTimeEqual(
       calculatedHash,
@@ -145,7 +164,10 @@ async function verifyPassword(password, storedHash, storedSalt) {
    USER
    ========================================================= */
 
-async function getUserByUsername(env, username) {
+async function getUserByUsername(
+  env,
+  username
+) {
   return await env.DB.prepare(`
     SELECT
       id,
@@ -164,7 +186,10 @@ async function getUserByUsername(env, username) {
     .first();
 }
 
-async function getUserById(env, userId) {
+async function getUserById(
+  env,
+  userId
+) {
   return await env.DB.prepare(`
     SELECT
       id,
@@ -185,7 +210,10 @@ async function getUserById(env, userId) {
    PERMISSIONS
    ========================================================= */
 
-async function getUserPermissions(env, userId) {
+async function getUserPermissions(
+  env,
+  userId
+) {
   const result = await env.DB.prepare(`
     SELECT
       resource,
@@ -202,15 +230,25 @@ async function getUserPermissions(env, userId) {
   return result.results || [];
 }
 
-function permissionObject(permissions) {
+function permissionObject(
+  permissions
+) {
   const result = {};
 
   for (const permission of permissions) {
     result[permission.resource] = {
-      view: Boolean(permission.can_view),
-      create: Boolean(permission.can_create),
-      edit: Boolean(permission.can_edit),
-      delete: Boolean(permission.can_delete)
+      view: Boolean(
+        permission.can_view
+      ),
+      create: Boolean(
+        permission.can_create
+      ),
+      edit: Boolean(
+        permission.can_edit
+      ),
+      delete: Boolean(
+        permission.can_delete
+      )
     };
   }
 
@@ -221,11 +259,20 @@ function permissionObject(permissions) {
    SESSION
    ========================================================= */
 
-async function createSession(env, user) {
-  const sessionId = crypto.randomUUID();
+async function createSession(
+  env,
+  user
+) {
+  const sessionId =
+    crypto.randomUUID();
 
-  const now = Math.floor(Date.now() / 1000);
-  const expiresAt = now + SESSION_SECONDS;
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const expiresAt =
+    now + SESSION_SECONDS;
 
   await env.DB.prepare(`
     INSERT INTO admin_sessions
@@ -243,39 +290,51 @@ async function createSession(env, user) {
   return sessionId;
 }
 
-async function getSession(request, env) {
-  const sessionId = getCookie(
-    request,
-    "jackal_admin_session"
-  );
+async function getSession(
+  request,
+  env
+) {
+  const sessionId =
+    getCookie(
+      request,
+      "jackal_admin_session"
+    );
 
   if (!sessionId) {
     return null;
   }
 
-  const now = Math.floor(Date.now() / 1000);
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
 
-  const session = await env.DB.prepare(`
-    SELECT
-      id,
-      username,
-      expires_at
-    FROM admin_sessions
-    WHERE id = ?
-      AND expires_at > ?
-    LIMIT 1
-  `)
-    .bind(sessionId, now)
-    .first();
+  const session =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        username,
+        expires_at
+      FROM admin_sessions
+      WHERE id = ?
+        AND expires_at > ?
+      LIMIT 1
+    `)
+      .bind(
+        sessionId,
+        now
+      )
+      .first();
 
   if (!session) {
     return null;
   }
 
-  const user = await getUserByUsername(
-    env,
-    session.username
-  );
+  const user =
+    await getUserByUsername(
+      env,
+      session.username
+    );
 
   if (!user || !user.active) {
     return null;
@@ -287,11 +346,15 @@ async function getSession(request, env) {
   };
 }
 
-async function requireSession(request, env) {
-  const result = await getSession(
-    request,
-    env
-  );
+async function requireSession(
+  request,
+  env
+) {
+  const result =
+    await getSession(
+      request,
+      env
+    );
 
   if (!result) {
     return json(
@@ -316,29 +379,45 @@ async function hasPermission(
   resource,
   action
 ) {
-  if (Number(user.is_superadmin) === 1) {
+  /*
+   * Superadmin darf alles.
+   */
+
+  if (
+    Number(user.is_superadmin) === 1
+  ) {
     return true;
   }
 
-  const permission = await env.DB.prepare(`
-    SELECT
-      can_view,
-      can_create,
-      can_edit,
-      can_delete
-    FROM admin_permissions
-    WHERE user_id = ?
-      AND resource = ?
-    LIMIT 1
-  `)
-    .bind(user.id, resource)
-    .first();
+  const permission =
+    await env.DB.prepare(`
+      SELECT
+        can_view,
+        can_create,
+        can_edit,
+        can_delete
+      FROM admin_permissions
+      WHERE user_id = ?
+        AND resource = ?
+      LIMIT 1
+    `)
+      .bind(
+        user.id,
+        resource
+      )
+      .first();
 
   if (!permission) {
     return false;
   }
 
-  return Number(permission[`can_${action}`]) === 1;
+  return (
+    Number(
+      permission[
+        `can_${action}`
+      ]
+    ) === 1
+  );
 }
 
 async function requirePermission(
@@ -347,27 +426,30 @@ async function requirePermission(
   resource,
   action
 ) {
-  const auth = await requireSession(
-    request,
-    env
-  );
+  const auth =
+    await requireSession(
+      request,
+      env
+    );
 
   if (auth instanceof Response) {
     return auth;
   }
 
-  const allowed = await hasPermission(
-    env,
-    auth.user,
-    resource,
-    action
-  );
+  const allowed =
+    await hasPermission(
+      env,
+      auth.user,
+      resource,
+      action
+    );
 
   if (!allowed) {
     return json(
       {
         ok: false,
-        error: "Keine Berechtigung.",
+        error:
+          "Keine Berechtigung.",
         resource,
         action
       },
@@ -379,31 +461,145 @@ async function requirePermission(
 }
 
 /* =========================================================
+   BOOTSTRAP
+   ========================================================= */
+
+/*
+ * Dieser Endpunkt erstellt den allerersten
+ * Superadmin aus den Cloudflare Secrets:
+ *
+ * ADMIN_USERNAME
+ * ADMIN_PASSWORD
+ *
+ * Er funktioniert NUR solange admin_users leer ist.
+ *
+ * Sobald der erste Benutzer existiert,
+ * ist dieser Endpunkt automatisch gesperrt.
+ */
+
+async function handleBootstrap(
+  request,
+  env
+) {
+  const userCount =
+    await env.DB.prepare(`
+      SELECT COUNT(*) AS count
+      FROM admin_users
+    `)
+      .first();
+
+  if (
+    Number(userCount?.count || 0) > 0
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Bootstrap wurde bereits durchgeführt."
+      },
+      403
+    );
+  }
+
+  const username =
+    String(
+      env.ADMIN_USERNAME || ""
+    ).trim();
+
+  const password =
+    String(
+      env.ADMIN_PASSWORD || ""
+    );
+
+  if (!username || !password) {
+    return json(
+      {
+        ok: false,
+        error:
+          "ADMIN_USERNAME oder ADMIN_PASSWORD fehlt."
+      },
+      500
+    );
+  }
+
+  const passwordData =
+    await createPasswordHash(
+      password
+    );
+
+  const userId =
+    crypto.randomUUID();
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  await env.DB.prepare(`
+    INSERT INTO admin_users (
+      id,
+      username,
+      password_hash,
+      password_salt,
+      active,
+      is_superadmin,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, 1, 1, ?, ?)
+  `)
+    .bind(
+      userId,
+      username,
+      passwordData.hash,
+      passwordData.salt,
+      now,
+      now
+    )
+    .run();
+
+  return json({
+    ok: true,
+    message:
+      "Superadmin erfolgreich angelegt.",
+    username,
+    isSuperadmin: true
+  });
+}
+
+/* =========================================================
    LOGIN
    ========================================================= */
 
-async function handleLogin(request, env) {
+async function handleLogin(
+  request,
+  env
+) {
   let body;
 
   try {
-    body = await request.json();
+    body =
+      await request.json();
   } catch {
     return json(
       {
         ok: false,
-        error: "Ungültige Anfrage."
+        error:
+          "Ungültige Anfrage."
       },
       400
     );
   }
 
-  const username = String(
-    body?.username || ""
-  ).trim();
+  const username =
+    String(
+      body?.username || ""
+    ).trim();
 
-  const password = String(
-    body?.password || ""
-  );
+  const password =
+    String(
+      body?.password || ""
+    );
 
   if (!username || !password) {
     return json(
@@ -416,39 +612,38 @@ async function handleLogin(request, env) {
     );
   }
 
-  /*
-   * Zuerst versuchen wir den Benutzer
-   * aus admin_users zu laden.
-   */
-
-  const user = await getUserByUsername(
-    env,
-    username
-  );
+  const user =
+    await getUserByUsername(
+      env,
+      username
+    );
 
   /*
-   * -------------------------------------------------------
-   * BOOTSTRAP
-   * -------------------------------------------------------
+   * Solange noch kein Benutzer existiert,
+   * funktioniert der alte Secret-Login weiterhin.
    *
-   * Solange noch KEIN Benutzer in admin_users existiert,
-   * funktioniert der bisherige Cloudflare-Secret-Login.
-   *
-   * Dadurch verlieren wir beim Umbau nicht den Zugang.
+   * Nach dem Bootstrap wird dieser Teil
+   * nicht mehr verwendet.
    */
 
-  const userCount = await env.DB.prepare(`
-    SELECT COUNT(*) AS count
-    FROM admin_users
-  `).first();
+  const userCount =
+    await env.DB.prepare(`
+      SELECT COUNT(*) AS count
+      FROM admin_users
+    `)
+      .first();
 
   const hasUsers =
-    Number(userCount?.count || 0) > 0;
+    Number(
+      userCount?.count || 0
+    ) > 0;
 
   if (!user && !hasUsers) {
     if (
-      username !== env.ADMIN_USERNAME ||
-      password !== env.ADMIN_PASSWORD
+      username !==
+        env.ADMIN_USERNAME ||
+      password !==
+        env.ADMIN_PASSWORD
     ) {
       return json(
         {
@@ -460,33 +655,13 @@ async function handleLogin(request, env) {
       );
     }
 
-    /*
-     * Temporärer Bootstrap-User.
-     *
-     * Dieser wird hier noch NICHT automatisch
-     * in die Datenbank geschrieben.
-     */
+    const sessionId =
+      crypto.randomUUID();
 
-    const bootstrapUser = {
-      id: "bootstrap",
-      username,
-      active: 1,
-      is_superadmin: 1
-    };
-
-    /*
-     * Für den ersten Login brauchen wir
-     * allerdings eine echte DB-Session.
-     *
-     * Deshalb wird hier zunächst nur eine
-     * temporäre Session mit dem Username erzeugt.
-     */
-
-    const sessionId = crypto.randomUUID();
-
-    const now = Math.floor(
-      Date.now() / 1000
-    );
+    const now =
+      Math.floor(
+        Date.now() / 1000
+      );
 
     const expiresAt =
       now + SESSION_SECONDS;
@@ -514,14 +689,15 @@ async function handleLogin(request, env) {
       200,
       {
         "Set-Cookie":
-          sessionCookie(sessionId)
+          sessionCookie(
+            sessionId
+          )
       }
     );
   }
 
   /*
-   * Ab jetzt muss der Benutzer aus
-   * admin_users kommen.
+   * Normaler Login über admin_users.
    */
 
   if (!user || !user.active) {
@@ -564,12 +740,16 @@ async function handleLogin(request, env) {
       ok: true,
       username: user.username,
       isSuperadmin:
-        Number(user.is_superadmin) === 1
+        Number(
+          user.is_superadmin
+        ) === 1
     },
     200,
     {
       "Set-Cookie":
-        sessionCookie(sessionId)
+        sessionCookie(
+          sessionId
+        )
     }
   );
 }
@@ -610,7 +790,7 @@ async function handleLogout(
 }
 
 /* =========================================================
-   ME
+   CURRENT USER
    ========================================================= */
 
 async function handleMe(
@@ -643,10 +823,16 @@ async function handleMe(
 
     user: {
       id: auth.user.id,
-      username: auth.user.username,
-      active: Boolean(auth.user.active),
+      username:
+        auth.user.username,
+      active:
+        Boolean(
+          auth.user.active
+        ),
       isSuperadmin:
-        Number(auth.user.is_superadmin) === 1
+        Number(
+          auth.user.is_superadmin
+        ) === 1
     },
 
     permissions:
@@ -660,8 +846,17 @@ async function handleMe(
 }
 
 /* =========================================================
-   TEST PERMISSION
+   PERMISSION TEST
    ========================================================= */
+
+/*
+ * Dieser Endpunkt ist zunächst nur zum Testen
+ * unseres Berechtigungssystems gedacht.
+ *
+ * Beispiel:
+ *
+ * /api/test-permission?resource=drivers&action=edit
+ */
 
 async function handlePermissionTest(
   request,
@@ -686,6 +881,28 @@ async function handlePermissionTest(
         ok: false,
         error:
           "resource und action fehlen."
+      },
+      400
+    );
+  }
+
+  const validActions = [
+    "view",
+    "create",
+    "edit",
+    "delete"
+  ];
+
+  if (
+    !validActions.includes(
+      action
+    )
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige action."
       },
       400
     );
@@ -728,10 +945,28 @@ export default {
 
     try {
 
-      /* LOGIN */
+      /* ---------------------------------------------
+         BOOTSTRAP
+         --------------------------------------------- */
 
       if (
-        url.pathname === "/api/login" &&
+        url.pathname ===
+          "/api/bootstrap" &&
+        request.method === "POST"
+      ) {
+        return await handleBootstrap(
+          request,
+          env
+        );
+      }
+
+      /* ---------------------------------------------
+         LOGIN
+         --------------------------------------------- */
+
+      if (
+        url.pathname ===
+          "/api/login" &&
         request.method === "POST"
       ) {
         return await handleLogin(
@@ -740,10 +975,13 @@ export default {
         );
       }
 
-      /* LOGOUT */
+      /* ---------------------------------------------
+         LOGOUT
+         --------------------------------------------- */
 
       if (
-        url.pathname === "/api/logout" &&
+        url.pathname ===
+          "/api/logout" &&
         request.method === "POST"
       ) {
         return await handleLogout(
@@ -752,10 +990,13 @@ export default {
         );
       }
 
-      /* CURRENT USER */
+      /* ---------------------------------------------
+         CURRENT USER
+         --------------------------------------------- */
 
       if (
-        url.pathname === "/api/me" &&
+        url.pathname ===
+          "/api/me" &&
         request.method === "GET"
       ) {
         return await handleMe(
@@ -764,13 +1005,9 @@ export default {
         );
       }
 
-      /*
-       * TEMPORÄRER TEST-ENDPUNKT
-       *
-       * Beispiel:
-       *
-       * /api/test-permission?resource=drivers&action=edit
-       */
+      /* ---------------------------------------------
+         PERMISSION TEST
+         --------------------------------------------- */
 
       if (
         url.pathname ===
@@ -783,10 +1020,9 @@ export default {
         );
       }
 
-      /*
-       * Alle normalen Webseiten-Dateien
-       * kommen aus /public.
-       */
+      /* ---------------------------------------------
+         PUBLIC WEBSITE
+         --------------------------------------------- */
 
       return env.ASSETS.fetch(
         request
