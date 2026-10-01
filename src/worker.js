@@ -1,20 +1,10 @@
 const SESSION_DAYS = 7;
 const SESSION_SECONDS = SESSION_DAYS * 24 * 60 * 60;
 
-const RESOURCES = [
-  "races",
-  "drivers",
-  "results",
-  "news",
-  "blacklist",
-  "gallery",
-  "settings",
-  "users"
-];
 
-/* =========================================================
-   HILFSFUNKTIONEN
-========================================================= */
+/*******************************************************
+ * JSON RESPONSE
+ *******************************************************/
 
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -27,19 +17,29 @@ function json(data, status = 200, extraHeaders = {}) {
   });
 }
 
+
+/*******************************************************
+ * COOKIE AUSLESEN
+ *******************************************************/
+
 function getCookie(request, name) {
   const cookie = request.headers.get("Cookie") || "";
 
   const match = cookie.match(
     new RegExp(
       "(?:^|;\\s*)" +
-        name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
-        "=([^;]*)"
+      name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+      "=([^;]*)"
     )
   );
 
   return match ? decodeURIComponent(match[1]) : null;
 }
+
+
+/*******************************************************
+ * SESSION COOKIE
+ *******************************************************/
 
 function sessionCookie(value, maxAge = SESSION_SECONDS) {
   return [
@@ -52,117 +52,41 @@ function sessionCookie(value, maxAge = SESSION_SECONDS) {
   ].join("; ");
 }
 
-function nowSeconds() {
-  return Math.floor(Date.now() / 1000);
-}
 
-function generateId() {
-  return crypto.randomUUID();
-}
-
-/* =========================================================
-   PASSWORT-HASHING
-========================================================= */
-
-function bytesToBase64(bytes) {
-  let binary = "";
-
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-
-  return btoa(binary);
-}
-
-function base64ToBytes(base64) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return bytes;
-}
-
-async function hashPassword(password, saltBytes) {
-  const encoder = new TextEncoder();
-
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"]
-  );
-
-  const bits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt: saltBytes,
-      iterations: 120000,
-      hash: "SHA-256"
-    },
-    keyMaterial,
-    256
-  );
-
-  return new Uint8Array(bits);
-}
-
-async function createPasswordHash(password) {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hash = await hashPassword(password, salt);
-
-  return {
-    hash: bytesToBase64(hash),
-    salt: bytesToBase64(salt)
-  };
-}
-
-async function verifyPassword(password, storedHash, storedSalt) {
-  try {
-    const salt = base64ToBytes(storedSalt);
-    const expectedHash = base64ToBytes(storedHash);
-
-    const actualHash = await hashPassword(password, salt);
-
-    if (actualHash.length !== expectedHash.length) {
-      return false;
-    }
-
-    let difference = 0;
-
-    for (let i = 0; i < actualHash.length; i++) {
-      difference |= actualHash[i] ^ expectedHash[i];
-    }
-
-    return difference === 0;
-  } catch {
-    return false;
-  }
-}
-
-/* =========================================================
-   SESSION
-========================================================= */
+/*******************************************************
+ * SESSION ERSTELLEN
+ *******************************************************/
 
 async function createSession(env, username) {
-  const sessionId = generateId();
+  const sessionId = crypto.randomUUID();
 
-  const now = nowSeconds();
+  const now = Math.floor(Date.now() / 1000);
   const expiresAt = now + SESSION_SECONDS;
 
   await env.DB.prepare(`
-    INSERT INTO admin_sessions
-      (id, username, expires_at, created_at)
+    INSERT INTO admin_sessions (
+      id,
+      username,
+      expires_at,
+      created_at
+    )
     VALUES (?, ?, ?, ?)
   `)
-    .bind(sessionId, username, expiresAt, now)
+    .bind(
+      sessionId,
+      username,
+      expiresAt,
+      now
+    )
     .run();
 
   return sessionId;
 }
+
+
+/*******************************************************
+ * SESSION AUSLESEN
+ *******************************************************/
 
 async function getSession(request, env) {
   const sessionId = getCookie(
@@ -174,7 +98,7 @@ async function getSession(request, env) {
     return null;
   }
 
-  const now = nowSeconds();
+  const now = Math.floor(Date.now() / 1000);
 
   const row = await env.DB.prepare(`
     SELECT
@@ -186,7 +110,10 @@ async function getSession(request, env) {
       AND expires_at > ?
     LIMIT 1
   `)
-    .bind(sessionId, now)
+    .bind(
+      sessionId,
+      now
+    )
     .first();
 
   if (!row) {
@@ -196,17 +123,20 @@ async function getSession(request, env) {
   return row;
 }
 
-/* =========================================================
-   BENUTZER
-========================================================= */
 
-async function getUserByUsername(env, username) {
-  return await env.DB.prepare(`
+/*******************************************************
+ * ADMIN USER AUS SESSION LADEN
+ *******************************************************/
+
+async function getAdminUser(session, env) {
+  if (!session) {
+    return null;
+  }
+
+  const user = await env.DB.prepare(`
     SELECT
       id,
       username,
-      password_hash,
-      password_salt,
       active,
       is_superadmin,
       created_at,
@@ -215,92 +145,240 @@ async function getUserByUsername(env, username) {
     WHERE username = ?
     LIMIT 1
   `)
-    .bind(username)
+    .bind(session.username)
     .first();
+
+  return user || null;
 }
 
-async function getUserById(env, userId) {
-  return await env.DB.prepare(`
+
+/*******************************************************
+ * SESSION ERFORDERN
+ *******************************************************/
+
+async function requireSession(request, env) {
+  const session = await getSession(
+    request,
+    env
+  );
+
+  if (!session) {
+    return json(
+      {
+        ok: false,
+        error: "Nicht angemeldet."
+      },
+      401
+    );
+  }
+
+  const user = await getAdminUser(
+    session,
+    env
+  );
+
+  if (!user || !user.active) {
+    return json(
+      {
+        ok: false,
+        error: "Benutzer ist nicht aktiv."
+      },
+      403
+    );
+  }
+
+  return {
+    session,
+    user
+  };
+}
+
+
+/*******************************************************
+ * BERECHTIGUNG PRÜFEN
+ *
+ * action:
+ * view
+ * create
+ * edit
+ * delete
+ *******************************************************/
+
+async function hasPermission(
+  request,
+  env,
+  resource,
+  action
+) {
+  const session = await getSession(
+    request,
+    env
+  );
+
+  if (!session) {
+    return {
+      allowed: false,
+      response: json(
+        {
+          ok: false,
+          error: "Nicht angemeldet."
+        },
+        401
+      )
+    };
+  }
+
+  const user = await getAdminUser(
+    session,
+    env
+  );
+
+  if (!user) {
+    return {
+      allowed: false,
+      response: json(
+        {
+          ok: false,
+          error: "Benutzer nicht gefunden."
+        },
+        403
+      )
+    };
+  }
+
+  if (!user.active) {
+    return {
+      allowed: false,
+      response: json(
+        {
+          ok: false,
+          error: "Benutzer ist nicht aktiv."
+        },
+        403
+      )
+    };
+  }
+
+
+  /*
+   * SUPERADMIN
+   *
+   * Superadmins dürfen alles.
+   */
+
+  if (Number(user.is_superadmin) === 1) {
+    return {
+      allowed: true,
+      session,
+      user
+    };
+  }
+
+
+  /*
+   * NORMALE BENUTZER
+   *
+   * Rechte aus admin_permissions laden.
+   */
+
+  const permission = await env.DB.prepare(`
     SELECT
-      id,
-      username,
-      password_hash,
-      password_salt,
-      active,
-      is_superadmin,
-      created_at,
-      updated_at
-    FROM admin_users
-    WHERE id = ?
+      can_view,
+      can_create,
+      can_edit,
+      can_delete
+    FROM admin_permissions
+    WHERE user_id = ?
+      AND resource = ?
     LIMIT 1
   `)
-    .bind(userId)
-    .first();
-}
-
-/* =========================================================
-   BOOTSTRAP SUPERADMIN
-========================================================= */
-
-/*
- * Beim ersten Login mit den Cloudflare-Secrets:
- *
- * ADMIN_USERNAME
- * ADMIN_PASSWORD
- *
- * wird automatisch ein Superadmin in admin_users angelegt.
- *
- * Dadurch können wir deinen bisherigen Zugang weiterverwenden.
- */
-
-async function ensureBootstrapAdmin(env) {
-  if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD) {
-    return;
-  }
-
-  const existing = await getUserByUsername(
-    env,
-    env.ADMIN_USERNAME
-  );
-
-  if (existing) {
-    return;
-  }
-
-  const passwordData = await createPasswordHash(
-    env.ADMIN_PASSWORD
-  );
-
-  const now = nowSeconds();
-  const userId = generateId();
-
-  await env.DB.prepare(`
-    INSERT INTO admin_users (
-      id,
-      username,
-      password_hash,
-      password_salt,
-      active,
-      is_superadmin,
-      created_at,
-      updated_at
-    )
-    VALUES (?, ?, ?, ?, 1, 1, ?, ?)
-  `)
     .bind(
-      userId,
-      env.ADMIN_USERNAME,
-      passwordData.hash,
-      passwordData.salt,
-      now,
-      now
+      user.id,
+      resource
     )
-    .run();
+    .first();
+
+
+  /*
+   * Kein Rechte-Eintrag
+   */
+
+  if (!permission) {
+    return {
+      allowed: false,
+      response: json(
+        {
+          ok: false,
+          error: "Keine Berechtigung."
+        },
+        403
+      )
+    };
+  }
+
+
+  /*
+   * Gewünschtes Recht prüfen
+   */
+
+  const permissionKey = `can_${action}`;
+
+  const allowed =
+    Number(permission[permissionKey]) === 1;
+
+
+  if (!allowed) {
+    return {
+      allowed: false,
+      response: json(
+        {
+          ok: false,
+          error:
+            `Keine Berechtigung für ${action} auf ${resource}.`
+        },
+        403
+      )
+    };
+  }
+
+
+  return {
+    allowed: true,
+    session,
+    user,
+    permission
+  };
 }
 
-/* =========================================================
-   LOGIN
-========================================================= */
+
+/*******************************************************
+ * BERECHTIGUNG ERFORDERN
+ *******************************************************/
+
+async function requirePermission(
+  request,
+  env,
+  resource,
+  action
+) {
+  const result = await hasPermission(
+    request,
+    env,
+    resource,
+    action
+  );
+
+  if (!result.allowed) {
+    return result.response;
+  }
+
+  return result;
+}
+
+
+/*******************************************************
+ * LOGIN
+ *******************************************************/
 
 async function handleLogin(request, env) {
   let body;
@@ -317,6 +395,7 @@ async function handleLogin(request, env) {
     );
   }
 
+
   const username = String(
     body?.username || ""
   ).trim();
@@ -325,90 +404,138 @@ async function handleLogin(request, env) {
     body?.password || ""
   );
 
+
   if (!username || !password) {
     return json(
       {
         ok: false,
-        error: "Bitte Benutzername und Passwort eingeben."
+        error:
+          "Bitte Benutzername und Passwort eingeben."
       },
       400
     );
   }
 
-  /*
-   * Falls der erste Login erfolgt:
-   * Cloudflare-Secret-Admin automatisch übernehmen.
-   */
-  await ensureBootstrapAdmin(env);
 
-  const user = await getUserByUsername(
-    env,
-    username
-  );
+  /*
+   * AKTUELLER LOGIN
+   *
+   * Die Zugangsdaten für den ersten
+   * Superadmin kommen aus Cloudflare Secrets:
+   *
+   * ADMIN_USERNAME
+   * ADMIN_PASSWORD
+   */
+
+  if (
+    username !== env.ADMIN_USERNAME ||
+    password !== env.ADMIN_PASSWORD
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Benutzername oder Passwort ist falsch."
+      },
+      401
+    );
+  }
+
+
+  /*
+   * Prüfen, ob der Benutzer
+   * in admin_users existiert.
+   */
+
+  const user = await env.DB.prepare(`
+    SELECT
+      id,
+      username,
+      active,
+      is_superadmin
+    FROM admin_users
+    WHERE username = ?
+    LIMIT 1
+  `)
+    .bind(username)
+    .first();
+
 
   if (!user) {
     return json(
       {
         ok: false,
-        error: "Benutzername oder Passwort ist falsch."
-      },
-      401
-    );
-  }
-
-  if (!user.active) {
-    return json(
-      {
-        ok: false,
-        error: "Dieser Benutzer ist deaktiviert."
+        error:
+          "Benutzer ist nicht in der Benutzerverwaltung angelegt."
       },
       403
     );
   }
 
-  const valid = await verifyPassword(
-    password,
-    user.password_hash,
-    user.password_salt
-  );
 
-  if (!valid) {
+  if (Number(user.active) !== 1) {
     return json(
       {
         ok: false,
-        error: "Benutzername oder Passwort ist falsch."
+        error:
+          "Dieser Benutzer ist deaktiviert."
       },
-      401
+      403
     );
   }
 
+
+  /*
+   * Alte Sessions dieses Benutzers löschen.
+   *
+   * Dadurch bleiben keine alten Sessions
+   * unnötig in der Datenbank liegen.
+   */
+
+  await env.DB.prepare(`
+    DELETE FROM admin_sessions
+    WHERE username = ?
+  `)
+    .bind(username)
+    .run();
+
+
+  /*
+   * Neue Session erstellen
+   */
+
   const sessionId = await createSession(
     env,
-    user.username
+    username
   );
+
 
   return json(
     {
       ok: true,
       username: user.username,
-      isSuperadmin: Boolean(user.is_superadmin)
+      isSuperadmin:
+        Number(user.is_superadmin) === 1
     },
     200,
     {
-      "Set-Cookie": sessionCookie(sessionId)
+      "Set-Cookie":
+        sessionCookie(sessionId)
     }
   );
 }
 
-/* =========================================================
-   LOGOUT
-========================================================= */
+
+/*******************************************************
+ * LOGOUT
+ *******************************************************/
 
 async function handleLogout(request, env) {
   const sessionId = getCookie(
     request,
     "jackal_admin_session"
   );
+
 
   if (sessionId) {
     await env.DB.prepare(`
@@ -419,20 +546,23 @@ async function handleLogout(request, env) {
       .run();
   }
 
+
   return json(
     {
       ok: true
     },
     200,
     {
-      "Set-Cookie": sessionCookie("", 0)
+      "Set-Cookie":
+        sessionCookie("", 0)
     }
   );
 }
 
-/* =========================================================
-   AKTUELLER BENUTZER
-========================================================= */
+
+/*******************************************************
+ * AKTUELLER BENUTZER
+ *******************************************************/
 
 async function handleMe(request, env) {
   const session = await getSession(
@@ -440,6 +570,7 @@ async function handleMe(request, env) {
     env
   );
 
+
   if (!session) {
     return json(
       {
@@ -449,10 +580,12 @@ async function handleMe(request, env) {
     );
   }
 
-  const user = await getUserByUsername(
-    env,
-    session.username
+
+  const user = await getAdminUser(
+    session,
+    env
   );
+
 
   if (!user || !user.active) {
     return json(
@@ -462,186 +595,68 @@ async function handleMe(request, env) {
       401
     );
   }
+
 
   return json({
     ok: true,
-    username: user.username,
-    isSuperadmin: Boolean(user.is_superadmin),
-    expiresAt: session.expires_at
+
+    user: {
+      id: user.id,
+      username: user.username,
+      active: Number(user.active) === 1,
+      isSuperadmin:
+        Number(user.is_superadmin) === 1
+    },
+
+    session: {
+      expiresAt: session.expires_at
+    }
   });
 }
 
-/* =========================================================
-   SESSION + USER CHECK
-========================================================= */
 
-async function requireUser(request, env) {
-  const session = await getSession(
-    request,
-    env
-  );
-
-  if (!session) {
-    return {
-      response: json(
-        {
-          ok: false,
-          error: "Nicht angemeldet."
-        },
-        401
-      )
-    };
-  }
-
-  const user = await getUserByUsername(
-    env,
-    session.username
-  );
-
-  if (!user || !user.active) {
-    return {
-      response: json(
-        {
-          ok: false,
-          error: "Benutzer ist nicht mehr aktiv."
-        },
-        401
-      )
-    };
-  }
-
-  return {
-    user
-  };
-}
-
-/* =========================================================
-   BERECHTIGUNGEN
-========================================================= */
-
-async function getPermission(
-  env,
-  userId,
-  resource
-) {
-  return await env.DB.prepare(`
-    SELECT
-      id,
-      user_id,
-      resource,
-      can_view,
-      can_create,
-      can_edit,
-      can_delete
-    FROM admin_permissions
-    WHERE user_id = ?
-      AND resource = ?
-    LIMIT 1
-  `)
-    .bind(userId, resource)
-    .first();
-}
-
-async function hasPermission(
-  env,
-  user,
-  resource,
-  action
-) {
-  if (user.is_superadmin) {
-    return true;
-  }
-
-  if (!RESOURCES.includes(resource)) {
-    return false;
-  }
-
-  const permission = await getPermission(
-    env,
-    user.id,
-    resource
-  );
-
-  if (!permission) {
-    return false;
-  }
-
-  const field = `can_${action}`;
-
-  return Boolean(permission[field]);
-}
-
-async function requirePermission(
-  request,
-  env,
-  resource,
-  action
-) {
-  const result = await requireUser(
-    request,
-    env
-  );
-
-  if (result.response) {
-    return result.response;
-  }
-
-  const allowed = await hasPermission(
-    env,
-    result.user,
-    resource,
-    action
-  );
-
-  if (!allowed) {
-    return json(
-      {
-        ok: false,
-        error: "Keine Berechtigung.",
-        resource,
-        action
-      },
-      403
-    );
-  }
-
-  return result.user;
-}
-
-/* =========================================================
-   EIGENE RECHTE ABRUFEN
-========================================================= */
+/*******************************************************
+ * RECHTE DES AKTUELLEN BENUTZERS
+ *
+ * Wird später vom Admin-Frontend benutzt,
+ * damit es weiß, welche Bereiche angezeigt
+ * bzw. welche Buttons aktiviert werden dürfen.
+ *******************************************************/
 
 async function handleMyPermissions(
   request,
   env
 ) {
-  const result = await requireUser(
+  const auth = await requireSession(
     request,
     env
   );
 
-  if (result.response) {
-    return result.response;
+  if (auth instanceof Response) {
+    return auth;
   }
 
-  const user = result.user;
 
-  if (user.is_superadmin) {
+  const {
+    user
+  } = auth;
+
+
+  /*
+   * Superadmin bekommt automatisch
+   * alle Rechte.
+   */
+
+  if (Number(user.is_superadmin) === 1) {
     return json({
       ok: true,
-      superadmin: true,
-      permissions: RESOURCES.map(resource => ({
-        resource,
-        can_view: 1,
-        can_create: 1,
-        can_edit: 1,
-        can_delete: 1
-      }))
+      isSuperadmin: true,
+      permissions: []
     });
   }
 
-  const rows = await env.DB.prepare(`
+
+  const permissions = await env.DB.prepare(`
     SELECT
       resource,
       can_view,
@@ -650,726 +665,37 @@ async function handleMyPermissions(
       can_delete
     FROM admin_permissions
     WHERE user_id = ?
-    ORDER BY resource
+    ORDER BY resource ASC
   `)
     .bind(user.id)
     .all();
 
-  return json({
-    ok: true,
-    superadmin: false,
-    permissions: rows.results || []
-  });
-}
-
-/* =========================================================
-   BENUTZER LISTE
-========================================================= */
-
-async function handleUsersList(
-  request,
-  env
-) {
-  const user = await requirePermission(
-    request,
-    env,
-    "users",
-    "view"
-  );
-
-  if (user instanceof Response) {
-    return user;
-  }
-
-  const rows = await env.DB.prepare(`
-    SELECT
-      id,
-      username,
-      active,
-      is_superadmin,
-      created_at,
-      updated_at
-    FROM admin_users
-    ORDER BY username COLLATE NOCASE
-  `).all();
 
   return json({
     ok: true,
-    users: rows.results || []
+    isSuperadmin: false,
+    permissions:
+      permissions.results || []
   });
 }
 
-/* =========================================================
-   BENUTZER ANLEGEN
-========================================================= */
 
-async function handleUserCreate(
-  request,
-  env
-) {
-  const user = await requirePermission(
-    request,
-    env,
-    "users",
-    "create"
-  );
-
-  if (user instanceof Response) {
-    return user;
-  }
-
-  let body;
-
-  try {
-    body = await request.json();
-  } catch {
-    return json(
-      {
-        ok: false,
-        error: "Ungültige Anfrage."
-      },
-      400
-    );
-  }
-
-  const username = String(
-    body?.username || ""
-  ).trim();
-
-  const password = String(
-    body?.password || ""
-  );
-
-  const active =
-    body?.active === undefined
-      ? 1
-      : body.active
-        ? 1
-        : 0;
-
-  const isSuperadmin =
-    body?.is_superadmin ? 1 : 0;
-
-  if (!username || !password) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Benutzername und Passwort sind erforderlich."
-      },
-      400
-    );
-  }
-
-  if (username.length < 3) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Der Benutzername muss mindestens 3 Zeichen lang sein."
-      },
-      400
-    );
-  }
-
-  if (password.length < 8) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Das Passwort muss mindestens 8 Zeichen lang sein."
-      },
-      400
-    );
-  }
-
-  const existing =
-    await getUserByUsername(
-      env,
-      username
-    );
-
-  if (existing) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Dieser Benutzername existiert bereits."
-      },
-      409
-    );
-  }
-
-  /*
-   * Nur Superadmins dürfen weitere Superadmins erstellen.
-   */
-  if (
-    isSuperadmin &&
-    !user.is_superadmin
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Nur ein Superadmin darf einen weiteren Superadmin erstellen."
-      },
-      403
-    );
-  }
-
-  const passwordData =
-    await createPasswordHash(password);
-
-  const now = nowSeconds();
-  const userId = generateId();
-
-  await env.DB.prepare(`
-    INSERT INTO admin_users (
-      id,
-      username,
-      password_hash,
-      password_salt,
-      active,
-      is_superadmin,
-      created_at,
-      updated_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-    .bind(
-      userId,
-      username,
-      passwordData.hash,
-      passwordData.salt,
-      active,
-      isSuperadmin,
-      now,
-      now
-    )
-    .run();
-
-  return json(
-    {
-      ok: true,
-      user: {
-        id: userId,
-        username,
-        active,
-        is_superadmin: isSuperadmin
-      }
-    },
-    201
-  );
-}
-
-/* =========================================================
-   BENUTZER BEARBEITEN
-========================================================= */
-
-async function handleUserUpdate(
-  request,
-  env,
-  userId
-) {
-  const currentUser =
-    await requirePermission(
-      request,
-      env,
-      "users",
-      "edit"
-    );
-
-  if (currentUser instanceof Response) {
-    return currentUser;
-  }
-
-  const targetUser =
-    await getUserById(env, userId);
-
-  if (!targetUser) {
-    return json(
-      {
-        ok: false,
-        error: "Benutzer nicht gefunden."
-      },
-      404
-    );
-  }
-
-  let body;
-
-  try {
-    body = await request.json();
-  } catch {
-    return json(
-      {
-        ok: false,
-        error: "Ungültige Anfrage."
-      },
-      400
-    );
-  }
-
-  const username =
-    body?.username !== undefined
-      ? String(body.username).trim()
-      : targetUser.username;
-
-  const active =
-    body?.active !== undefined
-      ? body.active ? 1 : 0
-      : targetUser.active;
-
-  const isSuperadmin =
-    body?.is_superadmin !== undefined
-      ? body.is_superadmin ? 1 : 0
-      : targetUser.is_superadmin;
-
-  const password =
-    body?.password !== undefined
-      ? String(body.password)
-      : "";
-
-  if (!username) {
-    return json(
-      {
-        ok: false,
-        error: "Benutzername darf nicht leer sein."
-      },
-      400
-    );
-  }
-
-  /*
-   * Niemand darf seinen eigenen Superadmin-Status
-   * entfernen.
-   */
-  if (
-    targetUser.id === currentUser.id &&
-    !isSuperadmin
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Du kannst deinen eigenen Superadmin-Status nicht entfernen."
-      },
-      400
-    );
-  }
-
-  /*
-   * Nur Superadmins dürfen Superadmin-Rechte verändern.
-   */
-  if (
-    isSuperadmin !== Boolean(
-      targetUser.is_superadmin
-    ) &&
-    !currentUser.is_superadmin
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Nur Superadmins dürfen Superadmin-Rechte ändern."
-      },
-      403
-    );
-  }
-
-  const duplicate =
-    await env.DB.prepare(`
-      SELECT id
-      FROM admin_users
-      WHERE username = ?
-        AND id != ?
-      LIMIT 1
-    `)
-      .bind(username, userId)
-      .first();
-
-  if (duplicate) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Dieser Benutzername wird bereits verwendet."
-      },
-      409
-    );
-  }
-
-  const now = nowSeconds();
-
-  if (password) {
-    if (password.length < 8) {
-      return json(
-        {
-          ok: false,
-          error:
-            "Das Passwort muss mindestens 8 Zeichen lang sein."
-        },
-        400
-      );
-    }
-
-    const passwordData =
-      await createPasswordHash(password);
-
-    await env.DB.prepare(`
-      UPDATE admin_users
-      SET
-        username = ?,
-        password_hash = ?,
-        password_salt = ?,
-        active = ?,
-        is_superadmin = ?,
-        updated_at = ?
-      WHERE id = ?
-    `)
-      .bind(
-        username,
-        passwordData.hash,
-        passwordData.salt,
-        active,
-        isSuperadmin,
-        now,
-        userId
-      )
-      .run();
-  } else {
-    await env.DB.prepare(`
-      UPDATE admin_users
-      SET
-        username = ?,
-        active = ?,
-        is_superadmin = ?,
-        updated_at = ?
-      WHERE id = ?
-    `)
-      .bind(
-        username,
-        active,
-        isSuperadmin,
-        now,
-        userId
-      )
-      .run();
-  }
-
-  return json({
-    ok: true
-  });
-}
-
-/* =========================================================
-   BENUTZER LÖSCHEN
-========================================================= */
-
-async function handleUserDelete(
-  request,
-  env,
-  userId
-) {
-  const currentUser =
-    await requirePermission(
-      request,
-      env,
-      "users",
-      "delete"
-    );
-
-  if (currentUser instanceof Response) {
-    return currentUser;
-  }
-
-  if (currentUser.id === userId) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Du kannst dich nicht selbst löschen."
-      },
-      400
-    );
-  }
-
-  const targetUser =
-    await getUserById(env, userId);
-
-  if (!targetUser) {
-    return json(
-      {
-        ok: false,
-        error: "Benutzer nicht gefunden."
-      },
-      404
-    );
-  }
-
-  /*
-   * Ein normaler Benutzer darf niemals einen
-   * Superadmin löschen.
-   */
-  if (
-    targetUser.is_superadmin &&
-    !currentUser.is_superadmin
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Nur Superadmins dürfen Superadmins löschen."
-      },
-      403
-    );
-  }
-
-  await env.DB.prepare(`
-    DELETE FROM admin_permissions
-    WHERE user_id = ?
-  `)
-    .bind(userId)
-    .run();
-
-  await env.DB.prepare(`
-    DELETE FROM admin_sessions
-    WHERE username = ?
-  `)
-    .bind(targetUser.username)
-    .run();
-
-  await env.DB.prepare(`
-    DELETE FROM admin_users
-    WHERE id = ?
-  `)
-    .bind(userId)
-    .run();
-
-  return json({
-    ok: true
-  });
-}
-
-/* =========================================================
-   RECHTE EINES BENUTZERS
-========================================================= */
-
-async function handleUserPermissions(
-  request,
-  env,
-  userId
-) {
-  const currentUser =
-    await requirePermission(
-      request,
-      env,
-      "users",
-      "view"
-    );
-
-  if (currentUser instanceof Response) {
-    return currentUser;
-  }
-
-  const targetUser =
-    await getUserById(env, userId);
-
-  if (!targetUser) {
-    return json(
-      {
-        ok: false,
-        error: "Benutzer nicht gefunden."
-      },
-      404
-    );
-  }
-
-  const rows = await env.DB.prepare(`
-    SELECT
-      resource,
-      can_view,
-      can_create,
-      can_edit,
-      can_delete
-    FROM admin_permissions
-    WHERE user_id = ?
-    ORDER BY resource
-  `)
-    .bind(userId)
-    .all();
-
-  return json({
-    ok: true,
-    user: {
-      id: targetUser.id,
-      username: targetUser.username,
-      is_superadmin:
-        Boolean(targetUser.is_superadmin)
-    },
-    resources: RESOURCES,
-    permissions: rows.results || []
-  });
-}
-
-/* =========================================================
-   RECHTE SPEICHERN
-========================================================= */
-
-async function handleUserPermissionsUpdate(
-  request,
-  env,
-  userId
-) {
-  const currentUser =
-    await requirePermission(
-      request,
-      env,
-      "users",
-      "edit"
-    );
-
-  if (currentUser instanceof Response) {
-    return currentUser;
-  }
-
-  const targetUser =
-    await getUserById(env, userId);
-
-  if (!targetUser) {
-    return json(
-      {
-        ok: false,
-        error: "Benutzer nicht gefunden."
-      },
-      404
-    );
-  }
-
-  if (targetUser.is_superadmin) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Superadmins benötigen keine einzelnen Berechtigungen."
-      },
-      400
-    );
-  }
-
-  let body;
-
-  try {
-    body = await request.json();
-  } catch {
-    return json(
-      {
-        ok: false,
-        error: "Ungültige Anfrage."
-      },
-      400
-    );
-  }
-
-  const permissions =
-    Array.isArray(body?.permissions)
-      ? body.permissions
-      : [];
-
-  const now = nowSeconds();
-
-  /*
-   * Alte Rechte entfernen.
-   */
-  await env.DB.prepare(`
-    DELETE FROM admin_permissions
-    WHERE user_id = ?
-  `)
-    .bind(userId)
-    .run();
-
-  /*
-   * Neue Rechte setzen.
-   */
-  for (const item of permissions) {
-    const resource = String(
-      item?.resource || ""
-    );
-
-    if (!RESOURCES.includes(resource)) {
-      continue;
-    }
-
-    const canView =
-      item?.can_view ? 1 : 0;
-
-    const canCreate =
-      item?.can_create ? 1 : 0;
-
-    const canEdit =
-      item?.can_edit ? 1 : 0;
-
-    const canDelete =
-      item?.can_delete ? 1 : 0;
-
-    /*
-     * Wenn überhaupt kein Recht gesetzt wurde,
-     * brauchen wir keinen Datensatz.
-     */
-    if (
-      !canView &&
-      !canCreate &&
-      !canEdit &&
-      !canDelete
-    ) {
-      continue;
-    }
-
-    await env.DB.prepare(`
-      INSERT INTO admin_permissions (
-        id,
-        user_id,
-        resource,
-        can_view,
-        can_create,
-        can_edit,
-        can_delete,
-        created_at,
-        updated_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-      .bind(
-        generateId(),
-        userId,
-        resource,
-        canView,
-        canCreate,
-        canEdit,
-        canDelete,
-        now,
-        now
-      )
-      .run();
-  }
-
-  return json({
-    ok: true
-  });
-}
-
-/* =========================================================
-   ROUTER
-========================================================= */
+/*******************************************************
+ * WORKER
+ *******************************************************/
 
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
+    const url = new URL(
+      request.url
+    );
+
 
     try {
-      /* -----------------------------------------------
-         LOGIN
-      ------------------------------------------------ */
+
+      /*************************************************
+       * LOGIN
+       *************************************************/
 
       if (
         url.pathname === "/api/login" &&
@@ -1381,9 +707,10 @@ export default {
         );
       }
 
-      /* -----------------------------------------------
-         LOGOUT
-      ------------------------------------------------ */
+
+      /*************************************************
+       * LOGOUT
+       *************************************************/
 
       if (
         url.pathname === "/api/logout" &&
@@ -1395,9 +722,10 @@ export default {
         );
       }
 
-      /* -----------------------------------------------
-         ME
-      ------------------------------------------------ */
+
+      /*************************************************
+       * AKTUELLER BENUTZER
+       *************************************************/
 
       if (
         url.pathname === "/api/me" &&
@@ -1409,12 +737,13 @@ export default {
         );
       }
 
-      /* -----------------------------------------------
-         EIGENE RECHTE
-      ------------------------------------------------ */
+
+      /*************************************************
+       * EIGENE RECHTE
+       *************************************************/
 
       if (
-        url.pathname === "/api/me/permissions" &&
+        url.pathname === "/api/my-permissions" &&
         request.method === "GET"
       ) {
         return await handleMyPermissions(
@@ -1423,118 +752,48 @@ export default {
         );
       }
 
-      /* -----------------------------------------------
-         BENUTZER LISTE
-      ------------------------------------------------ */
 
-      if (
-        url.pathname === "/api/admin/users" &&
-        request.method === "GET"
-      ) {
-        return await handleUsersList(
-          request,
-          env
-        );
-      }
+      /*************************************************
+       * SPÄTERE ADMIN-APIS
+       *
+       * Hier kommen jetzt nach und nach
+       * die geschützten CRUD-APIs hin.
+       *
+       * Beispiel:
+       *
+       * const auth = await requirePermission(
+       *   request,
+       *   env,
+       *   "news",
+       *   "create"
+       * );
+       *
+       * if (auth instanceof Response) {
+       *   return auth;
+       * }
+       *************************************************/
 
-      /* -----------------------------------------------
-         BENUTZER ANLEGEN
-      ------------------------------------------------ */
 
-      if (
-        url.pathname === "/api/admin/users" &&
-        request.method === "POST"
-      ) {
-        return await handleUserCreate(
-          request,
-          env
-        );
-      }
+      /*************************************************
+       * WEBSITE / PUBLIC FILES
+       *************************************************/
 
-      /* -----------------------------------------------
-         BENUTZER EINZELN
-         PATCH = bearbeiten
-      ------------------------------------------------ */
-
-      const userMatch =
-        url.pathname.match(
-          /^\/api\/admin\/users\/([^/]+)$/
-        );
-
-      if (
-        userMatch &&
-        request.method === "PATCH"
-      ) {
-        return await handleUserUpdate(
-          request,
-          env,
-          userMatch[1]
-        );
-      }
-
-      /* -----------------------------------------------
-         BENUTZER LÖSCHEN
-      ------------------------------------------------ */
-
-      if (
-        userMatch &&
-        request.method === "DELETE"
-      ) {
-        return await handleUserDelete(
-          request,
-          env,
-          userMatch[1]
-        );
-      }
-
-      /* -----------------------------------------------
-         BENUTZER RECHTE ABRUFEN
-      ------------------------------------------------ */
-
-      const permissionMatch =
-        url.pathname.match(
-          /^\/api\/admin\/users\/([^/]+)\/permissions$/
-        );
-
-      if (
-        permissionMatch &&
-        request.method === "GET"
-      ) {
-        return await handleUserPermissions(
-          request,
-          env,
-          permissionMatch[1]
-        );
-      }
-
-      /* -----------------------------------------------
-         BENUTZER RECHTE SPEICHERN
-      ------------------------------------------------ */
-
-      if (
-        permissionMatch &&
-        request.method === "PUT"
-      ) {
-        return await handleUserPermissionsUpdate(
-          request,
-          env,
-          permissionMatch[1]
-        );
-      }
-
-      /* -----------------------------------------------
-         WEBSITE / ASSETS
-      ------------------------------------------------ */
-
-      return env.ASSETS.fetch(request);
+      return env.ASSETS.fetch(
+        request
+      );
 
     } catch (error) {
-      console.error(error);
+
+      console.error(
+        "Worker Error:",
+        error
+      );
 
       return json(
         {
           ok: false,
-          error: "Interner Serverfehler."
+          error:
+            "Interner Serverfehler."
         },
         500
       );
