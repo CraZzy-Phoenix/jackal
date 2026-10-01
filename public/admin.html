@@ -2720,13 +2720,11 @@ createUserButton.addEventListener(
                 "application/json"
             },
             body:JSON.stringify({
-
-              username,
-              password,
-              active,
-              is_superadmin
-
-            })
+  username,
+  password,
+  active,
+  is_superadmin: isSuperadmin
+})
           }
         );
 
