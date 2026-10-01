@@ -395,86 +395,91 @@ async function requireSuperadmin(
 
 /* =========================================================
    LOGIN
-========================================================= */
+   ========================================================= */
 
-async function handleLogin(
-  request,
-  env
-) {
+async function handleLogin(request, env) {
   let body;
 
   try {
-    body =
-      await request.json();
+    body = await request.json();
   } catch {
     return json(
       {
         ok: false,
-        error:
-          "Ungültige Anfrage."
+        error: "Ungültige Anfrage."
       },
       400
     );
   }
 
   const username =
-    String(
-      body?.username || ""
-    ).trim();
+    String(body?.username || "").trim();
 
   const password =
-    String(
-      body?.password || ""
-    );
+    String(body?.password || "");
 
   if (!username || !password) {
     return json(
       {
         ok: false,
-        error:
-          "Bitte Benutzername und Passwort eingeben."
+        error: "Bitte Benutzername und Passwort eingeben."
       },
       400
     );
   }
 
-  /*
-   * Benutzer aus Datenbank laden
-   */
+
+  /* ---------------------------------------------------------
+     BENUTZER AUS DATENBANK LADEN
+     --------------------------------------------------------- */
+
   const user =
-    await getAdminUserByUsername(
-      env,
-      username
-    );
+    await env.DB.prepare(`
+      SELECT
+        id,
+        username,
+        password_hash,
+        password_salt,
+        active,
+        is_superadmin
+      FROM admin_users
+      WHERE username = ?
+      LIMIT 1
+    `)
+      .bind(username)
+      .first();
+
 
   if (!user) {
     return json(
       {
         ok: false,
-        error:
-          "Benutzername oder Passwort ist falsch."
+        error: "Benutzername oder Passwort ist falsch."
       },
       401
     );
   }
 
-  /*
-   * Prüfen ob Benutzer aktiv ist
-   */
+
+  /* ---------------------------------------------------------
+     AKTIV?
+     --------------------------------------------------------- */
+
   if (!user.active) {
     return json(
       {
         ok: false,
-        error:
-          "Dieses Benutzerkonto ist deaktiviert."
+        error: "Dieses Benutzerkonto ist deaktiviert."
       },
       403
     );
   }
 
-  /*
-   * Passwort prüfen
-   */
+
+  /* ---------------------------------------------------------
+     PASSWORT PRÜFEN
+     --------------------------------------------------------- */
+
   const passwordCorrect =
     await verifyPassword(
       password,
@@ -482,43 +487,42 @@ async function handleLogin(
       user.password_salt
     );
 
+
   if (!passwordCorrect) {
     return json(
       {
         ok: false,
-        error:
-          "Benutzername oder Passwort ist falsch."
+        error: "Benutzername oder Passwort ist falsch."
       },
       401
     );
   }
 
-  /*
-   * Neue Session erstellen
-   */
+
+  /* ---------------------------------------------------------
+     SESSION ERSTELLEN
+     --------------------------------------------------------- */
+
   const sessionId =
     await createSession(
       env,
       user.username
     );
 
+
   return json(
     {
       ok: true,
       username: user.username,
-      is_superadmin:
-        Boolean(user.is_superadmin)
+      is_superadmin: !!user.is_superadmin
     },
     200,
     {
       "Set-Cookie":
-        sessionCookie(
-          sessionId
-        )
+        sessionCookie(sessionId)
     }
   );
 }
-
 
 /* =========================================================
    LOGOUT
