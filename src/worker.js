@@ -42,16 +42,10 @@ function getCookie(request, name) {
         "=([^;]*)"
     )
   );
-
-  return match
-    ? decodeURIComponent(match[1])
-    : null;
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-function sessionCookie(
-  value,
-  maxAge = SESSION_SECONDS
-) {
+function sessionCookie(value, maxAge = SESSION_SECONDS) {
   return [
     `jackal_admin_session=${encodeURIComponent(value)}`,
     "Path=/",
@@ -62,138 +56,67 @@ function sessionCookie(
   ].join("; ");
 }
 
-async function createSession(
-  env,
-  username
-) {
-  const sessionId =
-    crypto.randomUUID();
-
-  const now =
-    Math.floor(
-      Date.now() / 1000
-    );
-
-  const expiresAt =
-    now + SESSION_SECONDS;
+async function createSession(env, username) {
+  const sessionId = crypto.randomUUID();
+  const now = Math.floor(Date.now() / 1000);
+  const expiresAt = now + SESSION_SECONDS;
 
   await env.DB.prepare(`
-    INSERT INTO admin_sessions (
-      id,
-      username,
-      expires_at,
-      created_at
-    )
+    INSERT INTO admin_sessions (id, username, expires_at, created_at)
     VALUES (?, ?, ?, ?)
-  `)
-    .bind(
-      sessionId,
-      username,
-      expiresAt,
-      now
-    )
-    .run();
+  `).bind(sessionId, username, expiresAt, now).run();
 
   return sessionId;
 }
 
-async function getSession(
-  request,
-  env
-) {
-  const sessionId =
-    getCookie(
-      request,
-      "jackal_admin_session"
-    );
+async function getSession(request, env) {
+  const sessionId = getCookie(request, "jackal_admin_session");
+  if (!sessionId) return null;
 
-  if (!sessionId) {
-    return null;
-  }
+  const now = Math.floor(Date.now() / 1000);
 
-  const now =
-    Math.floor(
-      Date.now() / 1000
-    );
-
-  const row =
-    await env.DB.prepare(`
-      SELECT
-        id,
-        username,
-        expires_at
-      FROM admin_sessions
-      WHERE id = ?
-        AND expires_at > ?
-      LIMIT 1
-    `)
-      .bind(
-        sessionId,
-        now
-      )
-      .first();
+  const row = await env.DB.prepare(`
+    SELECT id, username, expires_at
+    FROM admin_sessions
+    WHERE id = ? AND expires_at > ?
+    LIMIT 1
+  `).bind(sessionId, now).first();
 
   return row || null;
 }
 
-async function getAdminUserByUsername(
-  env,
-  username
-) {
+async function getAdminUserByUsername(env, username) {
   return await env.DB.prepare(`
-    SELECT
-      id,
-      username,
-      active,
-      is_superadmin,
-      created_at,
-      updated_at
+    SELECT id, username, active, is_superadmin, created_at, updated_at
     FROM admin_users
     WHERE username = ?
     LIMIT 1
-  `)
-    .bind(
-      username
-    )
-    .first();
+  `).bind(username).first();
 }
 
-async function requireSession(
-  request,
-  env
-) {
-  const session =
-    await getSession(
-      request,
-      env
-    );
+async function requireSession(request, env) {
+  const session = await getSession(request, env);
 
   if (!session) {
     return json(
       {
         ok: false,
-        error:
-          "Nicht angemeldet."
+        error: "Nicht angemeldet."
       },
       401
     );
   }
 
-  const user =
-    await getAdminUserByUsername(
-      env,
-      session.username
-    );
+  const user = await getAdminUserByUsername(
+    env,
+    session.username
+  );
 
-  if (
-    !user ||
-    !user.active
-  ) {
+  if (!user || !user.active) {
     return json(
       {
         ok: false,
-        error:
-          "Benutzerkonto ist nicht aktiv."
+        error: "Benutzerkonto ist nicht aktiv."
       },
       403
     );
@@ -211,67 +134,46 @@ async function requirePermission(
   resource,
   action
 ) {
-  const auth =
-    await requireSession(
-      request,
-      env
-    );
+  const auth = await requireSession(
+    request,
+    env
+  );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+  if (auth.user.is_superadmin) {
     return auth;
   }
 
   if (
-    auth.user.is_superadmin
+    resource === "dashboard" &&
+    action === "view"
   ) {
     return auth;
   }
 
-  if (
-    resource ===
-      "dashboard" &&
-    action ===
-      "view"
-  ) {
-    return auth;
-  }
+  const permission = await env.DB.prepare(`
+    SELECT can_view, can_create, can_edit, can_delete
+    FROM admin_permissions
+    WHERE user_id = ? AND resource = ?
+    LIMIT 1
+  `).bind(
+    auth.user.id,
+    resource
+  ).first();
 
-  const permission =
-    await env.DB.prepare(`
-      SELECT
-        can_view,
-        can_create,
-        can_edit,
-        can_delete
-      FROM admin_permissions
-      WHERE user_id = ?
-        AND resource = ?
-      LIMIT 1
-    `)
-      .bind(
-        auth.user.id,
-        resource
-      )
-      .first();
-
-  const allowed =
-    Boolean(
-      permission &&
-      Number(
-        permission[
-          `can_${action}`
-        ]
-      ) === 1
-    );
+  const allowed = Boolean(
+    permission &&
+    Number(permission[`can_${action}`]) === 1
+  );
 
   if (!allowed) {
     return json(
       {
         ok: false,
-        error:
-          "Keine Berechtigung für diesen Bereich."
+        error: "Keine Berechtigung für diesen Bereich."
       },
       403
     );
@@ -280,31 +182,42 @@ async function requirePermission(
   return auth;
 }
 
-function bytesToHex(
-  bytes
-) {
-  return Array.from(
-    bytes
-  )
+async function requireSuperadmin(request, env) {
+  const auth = await requireSession(
+    request,
+    env
+  );
+
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+  if (!auth.user.is_superadmin) {
+    return json(
+      {
+        ok: false,
+        error: "Nur Superadmins dürfen diese Aktion ausführen."
+      },
+      403
+    );
+  }
+
+  return auth;
+}
+
+function bytesToHex(bytes) {
+  return Array
+    .from(bytes)
     .map(
-      b =>
-        b
-          .toString(16)
-          .padStart(
-            2,
-            "0"
-          )
+      b => b.toString(16).padStart(2, "0")
     )
     .join("");
 }
 
-function hexToBytes(
-  hex
-) {
-  const bytes =
-    new Uint8Array(
-      hex.length / 2
-    );
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(
+    hex.length / 2
+  );
 
   for (
     let i = 0;
@@ -313,10 +226,7 @@ function hexToBytes(
   ) {
     bytes[i] =
       parseInt(
-        hex.substr(
-          i * 2,
-          2
-        ),
+        hex.substr(i * 2, 2),
         16
       );
   }
@@ -324,16 +234,12 @@ function hexToBytes(
   return bytes;
 }
 
-function base64ToBytes(
-  value
-) {
-  const binary =
-    atob(value);
+function base64ToBytes(value) {
+  const binary = atob(value);
 
-  const bytes =
-    new Uint8Array(
-      binary.length
-    );
+  const bytes = new Uint8Array(
+    binary.length
+  );
 
   for (
     let i = 0;
@@ -347,25 +253,16 @@ function base64ToBytes(
   return bytes;
 }
 
-function bytesToBase64(
-  bytes
-) {
-  let binary =
-    "";
+function bytesToBase64(bytes) {
+  let binary = "";
 
-  for (
-    const byte of
-      bytes
-  ) {
-    binary +=
-      String.fromCharCode(
-        byte
-      );
+  for (const byte of bytes) {
+    binary += String.fromCharCode(
+      byte
+    );
   }
 
-  return btoa(
-    binary
-  );
+  return btoa(binary);
 }
 
 async function derivePasswordHash(
@@ -379,28 +276,19 @@ async function derivePasswordHash(
         password
       ),
       {
-        name:
-          "PBKDF2"
+        name: "PBKDF2"
       },
       false,
-      [
-        "deriveBits"
-      ]
+      ["deriveBits"]
     );
 
   const bits =
     await crypto.subtle.deriveBits(
       {
-        name:
-          "PBKDF2",
-
+        name: "PBKDF2",
         salt,
-
-        iterations:
-          100000,
-
-        hash:
-          "SHA-256"
+        iterations: 100000,
+        hash: "SHA-256"
       },
       keyMaterial,
       256
@@ -415,16 +303,11 @@ async function hashPassword(
   password,
   saltHex = null
 ) {
-  const salt =
-    saltHex
-      ? hexToBytes(
-          saltHex
-        )
-      : crypto.getRandomValues(
-          new Uint8Array(
-            16
-          )
-        );
+  const salt = saltHex
+    ? hexToBytes(saltHex)
+    : crypto.getRandomValues(
+        new Uint8Array(16)
+      );
 
   const derived =
     await derivePasswordHash(
@@ -433,15 +316,12 @@ async function hashPassword(
     );
 
   return {
-    hash:
-      bytesToHex(
-        derived
-      ),
-
-    salt:
-      bytesToHex(
-        salt
-      )
+    hash: bytesToHex(
+      derived
+    ),
+    salt: bytesToHex(
+      salt
+    )
   };
 }
 
@@ -455,19 +335,14 @@ async function verifyPassword(
     !storedSalt
   ) {
     return {
-      valid:
-        false,
-
-      legacy:
-        false
+      valid: false,
+      legacy: false
     };
   }
 
   if (
-    storedHash.length ===
-      64 &&
-    storedSalt.length ===
-      32 &&
+    storedHash.length === 64 &&
+    storedSalt.length === 32 &&
     /^[0-9a-fA-F]+$/.test(
       storedHash
     ) &&
@@ -478,9 +353,7 @@ async function verifyPassword(
     const derived =
       await derivePasswordHash(
         password,
-        hexToBytes(
-          storedSalt
-        )
+        hexToBytes(storedSalt)
       );
 
     return {
@@ -489,9 +362,7 @@ async function verifyPassword(
           derived
         ).toLowerCase() ===
         storedHash.toLowerCase(),
-
-      legacy:
-        false
+      legacy: false
     };
   }
 
@@ -508,20 +379,13 @@ async function verifyPassword(
       valid:
         bytesToBase64(
           derived
-        ) ===
-        storedHash,
-
-      legacy:
-        true
+        ) === storedHash,
+      legacy: true
     };
-
   } catch {
     return {
-      valid:
-        false,
-
-      legacy:
-        false
+      valid: false,
+      legacy: false
     };
   }
 }
@@ -533,17 +397,12 @@ async function handleLogin(
   let body;
 
   try {
-    body =
-      await request.json();
-
+    body = await request.json();
   } catch {
     return json(
       {
-        ok:
-          false,
-
-        error:
-          "Ungültige Anfrage."
+        ok: false,
+        error: "Ungültige Anfrage."
       },
       400
     );
@@ -551,14 +410,12 @@ async function handleLogin(
 
   const username =
     String(
-      body?.username ||
-        ""
+      body?.username || ""
     ).trim();
 
   const password =
     String(
-      body?.password ||
-        ""
+      body?.password || ""
     );
 
   if (
@@ -567,9 +424,7 @@ async function handleLogin(
   ) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Bitte Benutzername und Passwort eingeben."
       },
@@ -589,18 +444,14 @@ async function handleLogin(
       FROM admin_users
       WHERE username = ?
       LIMIT 1
-    `)
-      .bind(
-        username
-      )
-      .first();
+    `).bind(
+      username
+    ).first();
 
   if (!user) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Benutzername oder Passwort ist falsch."
       },
@@ -608,14 +459,10 @@ async function handleLogin(
     );
   }
 
-  if (
-    !user.active
-  ) {
+  if (!user.active) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Dieses Benutzerkonto ist deaktiviert."
       },
@@ -630,14 +477,10 @@ async function handleLogin(
       user.password_salt
     );
 
-  if (
-    !passwordResult.valid
-  ) {
+  if (!passwordResult.valid) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Benutzername oder Passwort ist falsch."
       },
@@ -645,9 +488,7 @@ async function handleLogin(
     );
   }
 
-  if (
-    passwordResult.legacy
-  ) {
+  if (passwordResult.legacy) {
     const upgraded =
       await hashPassword(
         password
@@ -665,14 +506,12 @@ async function handleLogin(
         password_salt = ?,
         updated_at = ?
       WHERE id = ?
-    `)
-      .bind(
-        upgraded.hash,
-        upgraded.salt,
-        now,
-        user.id
-      )
-      .run();
+    `).bind(
+      upgraded.hash,
+      upgraded.salt,
+      now,
+      user.id
+    ).run();
   }
 
   const sessionId =
@@ -683,12 +522,9 @@ async function handleLogin(
 
   return json(
     {
-      ok:
-        true,
-
+      ok: true,
       username:
         user.username,
-
       is_superadmin:
         !!user.is_superadmin
     },
@@ -712,23 +548,17 @@ async function handleLogout(
       "jackal_admin_session"
     );
 
-  if (
-    sessionId
-  ) {
-    await env.DB.prepare(`
-      DELETE FROM admin_sessions
-      WHERE id = ?
-    `)
-      .bind(
-        sessionId
-      )
-      .run();
+  if (sessionId) {
+    await env.DB.prepare(
+      `DELETE FROM admin_sessions WHERE id = ?`
+    ).bind(
+      sessionId
+    ).run();
   }
 
   return json(
     {
-      ok:
-        true
+      ok: true
     },
     200,
     {
@@ -751,40 +581,23 @@ async function handleMe(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
-  const permissions =
-    {};
+  const permissions = {};
 
   for (
-    const resource of
-      Object.keys(
-        RESOURCE_LABELS
-      )
+    const resource of Object.keys(
+      RESOURCE_LABELS
+    )
   ) {
-
-    if (
-      resource ===
-      "dashboard"
-    ) {
-      permissions[
-        resource
-      ] = {
-        can_view:
-          1,
-
-        can_create:
-          0,
-
-        can_edit:
-          0,
-
-        can_delete:
-          0
+    if (resource === "dashboard") {
+      permissions[resource] = {
+        can_view: 1,
+        can_create: 0,
+        can_edit: 0,
+        can_delete: 0
       };
 
       continue;
@@ -801,70 +614,47 @@ async function handleMe(
         WHERE user_id = ?
           AND resource = ?
         LIMIT 1
-      `)
-        .bind(
-          auth.user.id,
-          resource
-        )
-        .first();
+      `).bind(
+        auth.user.id,
+        resource
+      ).first();
 
-    permissions[
-      resource
-    ] =
+    permissions[resource] =
       auth.user.is_superadmin
         ? {
-            can_view:
-              1,
-
-            can_create:
-              1,
-
-            can_edit:
-              1,
-
-            can_delete:
-              1
+            can_view: 1,
+            can_create: 1,
+            can_edit: 1,
+            can_delete: 1
           }
         : {
             can_view:
               Number(
-                row?.can_view ||
-                  0
+                row?.can_view || 0
               ),
-
             can_create:
               Number(
-                row?.can_create ||
-                  0
+                row?.can_create || 0
               ),
-
             can_edit:
               Number(
-                row?.can_edit ||
-                  0
+                row?.can_edit || 0
               ),
-
             can_delete:
               Number(
-                row?.can_delete ||
-                  0
+                row?.can_delete || 0
               )
           };
   }
 
   return json({
-    ok:
-      true,
-
+    ok: true,
     username:
       auth.user.username,
-
     is_superadmin:
       !!auth.user.is_superadmin,
-
     expiresAt:
       auth.session.expires_at,
-
     permissions
   });
 }
@@ -879,9 +669,7 @@ async function handleAdminUsersGet(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
@@ -900,14 +688,11 @@ async function handleAdminUsersGet(
     `).all();
 
   const result =
-    users.results ||
-    [];
+    users.results || [];
 
   for (
-    const user of
-      result
+    const user of result
   ) {
-
     const permissions =
       await env.DB.prepare(`
         SELECT
@@ -922,23 +707,17 @@ async function handleAdminUsersGet(
         FROM admin_permissions
         WHERE user_id = ?
         ORDER BY resource ASC
-      `)
-        .bind(
-          user.id
-        )
-        .all();
+      `).bind(
+        user.id
+      ).all();
 
     user.permissions =
-      permissions.results ||
-      [];
+      permissions.results || [];
   }
 
   return json({
-    ok:
-      true,
-
-    users:
-      result
+    ok: true,
+    users: result
   });
 }
 
@@ -952,9 +731,7 @@ async function handleAdminUserCreate(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
@@ -963,13 +740,10 @@ async function handleAdminUserCreate(
   try {
     body =
       await request.json();
-
   } catch {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Ungültige Anfrage."
       },
@@ -979,37 +753,30 @@ async function handleAdminUserCreate(
 
   const username =
     String(
-      body?.username ||
-        ""
+      body?.username || ""
     ).trim();
 
   const password =
     String(
-      body?.password ||
-        ""
+      body?.password || ""
     );
 
   const active =
-    body?.active ===
-      false
+    body?.active === false
       ? 0
       : 1;
 
   const isSuperadmin =
-    body?.is_superadmin ===
-      true
+    body?.is_superadmin === true
       ? 1
       : 0;
 
   if (
-    username.length <
-    2
+    username.length < 2
   ) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Der Benutzername muss mindestens 2 Zeichen lang sein."
       },
@@ -1018,14 +785,11 @@ async function handleAdminUserCreate(
   }
 
   if (
-    password.length <
-    8
+    password.length < 8
   ) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Das Passwort muss mindestens 8 Zeichen lang sein."
       },
@@ -1039,20 +803,14 @@ async function handleAdminUserCreate(
       FROM admin_users
       WHERE username = ?
       LIMIT 1
-    `)
-      .bind(
-        username
-      )
-      .first();
+    `).bind(
+      username
+    ).first();
 
-  if (
-    existing
-  ) {
+  if (existing) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Dieser Benutzername existiert bereits."
       },
@@ -1085,45 +843,29 @@ async function handleAdminUserCreate(
       updated_at
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-    .bind(
-      userId,
-      username,
-      passwordData.hash,
-      passwordData.salt,
-      active,
-      isSuperadmin,
-      now,
-      now
-    )
-    .run();
+  `).bind(
+    userId,
+    username,
+    passwordData.hash,
+    passwordData.salt,
+    active,
+    isSuperadmin,
+    now,
+    now
+  ).run();
 
   return json(
     {
-      ok:
-        true,
-
+      ok: true,
       user: {
-        id:
-          userId,
-
-        username:
-          username,
-
-        active:
-          active,
-
+        id: userId,
+        username,
+        active,
         is_superadmin:
           isSuperadmin,
-
-        created_at:
-          now,
-
-        updated_at:
-          now,
-
-        permissions:
-          []
+        created_at: now,
+        updated_at: now,
+        permissions: []
       }
     },
     201
@@ -1141,9 +883,7 @@ async function handleAdminUserDelete(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
@@ -1153,9 +893,7 @@ async function handleAdminUserDelete(
   ) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Du kannst deinen eigenen Superadmin-Account nicht löschen."
       },
@@ -1171,20 +909,14 @@ async function handleAdminUserDelete(
       FROM admin_users
       WHERE id = ?
       LIMIT 1
-    `)
-      .bind(
-        userId
-      )
-      .first();
+    `).bind(
+      userId
+    ).first();
 
-  if (
-    !user
-  ) {
+  if (!user) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Benutzer nicht gefunden."
       },
@@ -1195,68 +927,27 @@ async function handleAdminUserDelete(
   await env.DB.prepare(`
     DELETE FROM admin_permissions
     WHERE user_id = ?
-  `)
-    .bind(
-      userId
-    )
-    .run();
+  `).bind(
+    userId
+  ).run();
 
   await env.DB.prepare(`
     DELETE FROM admin_sessions
     WHERE username = ?
-  `)
-    .bind(
-      user.username
-    )
-    .run();
+  `).bind(
+    user.username
+  ).run();
 
   await env.DB.prepare(`
     DELETE FROM admin_users
     WHERE id = ?
-  `)
-    .bind(
-      userId
-    )
-    .run();
+  `).bind(
+    userId
+  ).run();
 
   return json({
-    ok:
-      true
+    ok: true
   });
-}
-
-async function requireSuperadmin(
-  request,
-  env
-) {
-  const auth =
-    await requireSession(
-      request,
-      env
-    );
-
-  if (
-    auth instanceof Response
-  ) {
-    return auth;
-  }
-
-  if (
-    !auth.user.is_superadmin
-  ) {
-    return json(
-      {
-        ok:
-          false,
-
-        error:
-          "Keine Superadmin-Berechtigung."
-      },
-      403
-    );
-  }
-
-  return auth;
 }
 
 async function handleAdminPermissionsUpdate(
@@ -1270,9 +961,7 @@ async function handleAdminPermissionsUpdate(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
@@ -1284,20 +973,14 @@ async function handleAdminPermissionsUpdate(
       FROM admin_users
       WHERE id = ?
       LIMIT 1
-    `)
-      .bind(
-        userId
-      )
-      .first();
+    `).bind(
+      userId
+    ).first();
 
-  if (
-    !user
-  ) {
+  if (!user) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Benutzer nicht gefunden."
       },
@@ -1305,13 +988,9 @@ async function handleAdminPermissionsUpdate(
     );
   }
 
-  if (
-    user.is_superadmin
-  ) {
+  if (user.is_superadmin) {
     return json({
-      ok:
-        true,
-
+      ok: true,
       message:
         "Superadmins besitzen automatisch alle Rechte."
     });
@@ -1322,13 +1001,10 @@ async function handleAdminPermissionsUpdate(
   try {
     body =
       await request.json();
-
   } catch {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Ungültige Anfrage."
       },
@@ -1351,29 +1027,24 @@ async function handleAdminPermissionsUpdate(
   await env.DB.prepare(`
     DELETE FROM admin_permissions
     WHERE user_id = ?
-  `)
-    .bind(
-      userId
-    )
-    .run();
+  `).bind(
+    userId
+  ).run();
 
   for (
-    const permission of
-      permissions
+    const permission of permissions
   ) {
-
     const resource =
       String(
         permission?.resource ||
-          ""
+        ""
       ).trim();
 
     if (
       !RESOURCE_LABELS[
         resource
       ] ||
-      resource ===
-        "dashboard"
+      resource === "dashboard"
     ) {
       continue;
     }
@@ -1391,32 +1062,29 @@ async function handleAdminPermissionsUpdate(
         updated_at
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-      .bind(
-        crypto.randomUUID(),
-        userId,
-        resource,
-        permission?.can_view
-          ? 1
-          : 0,
-        permission?.can_create
-          ? 1
-          : 0,
-        permission?.can_edit
-          ? 1
-          : 0,
-        permission?.can_delete
-          ? 1
-          : 0,
-        now,
-        now
-      )
-      .run();
+    `).bind(
+      crypto.randomUUID(),
+      userId,
+      resource,
+      permission?.can_view
+        ? 1
+        : 0,
+      permission?.can_create
+        ? 1
+        : 0,
+      permission?.can_edit
+        ? 1
+        : 0,
+      permission?.can_delete
+        ? 1
+        : 0,
+      now,
+      now
+    ).run();
   }
 
   return json({
-    ok:
-      true
+    ok: true
   });
 }
 
@@ -1433,20 +1101,16 @@ function getIdentityColumn(
   schema
 ) {
   const columns =
-    schema.results ||
-    [];
+    schema.results || [];
 
   const primary =
     columns.filter(
       col =>
-        Number(
-          col.pk
-        ) === 1
+        Number(col.pk) === 1
     );
 
   if (
-    primary.length ===
-      1
+    primary.length === 1
   ) {
     return primary[0];
   }
@@ -1454,8 +1118,7 @@ function getIdentityColumn(
   const id =
     columns.find(
       col =>
-        col.name ===
-        "id"
+        col.name === "id"
     );
 
   if (id) {
@@ -1465,8 +1128,7 @@ function getIdentityColumn(
   const key =
     columns.find(
       col =>
-        col.name ===
-        "key"
+        col.name === "key"
     );
 
   if (key) {
@@ -1508,23 +1170,17 @@ async function handleAdminSchema(
       "view"
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
   const table =
-    RESOURCES[
-      resource
-    ];
+    RESOURCES[resource];
 
   if (!table) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Unbekannter Bereich."
       },
@@ -1539,51 +1195,36 @@ async function handleAdminSchema(
     );
 
   const columns =
-    (
-      schema.results ||
-      []
-    ).map(
-      col => ({
-        name:
-          col.name,
-
-        type:
-          col.type,
-
-        notnull:
-          Number(
-            col.notnull
-          ),
-
-        default:
-          col.dflt_value,
-
-        pk:
-          Number(
-            col.pk
-          )
-      })
-    );
+    (schema.results || [])
+      .map(
+        col => ({
+          name: col.name,
+          type: col.type,
+          notnull:
+            Number(
+              col.notnull
+            ),
+          default:
+            col.dflt_value,
+          pk:
+            Number(
+              col.pk
+            )
+        })
+      );
 
   return json({
-    ok:
-      true,
-
+    ok: true,
     resource,
-
     label:
       RESOURCE_LABELS[
         resource
       ],
-
     table,
-
     identity:
       getIdentityColumn(
         schema
-      )?.name ||
-      null,
-
+      )?.name || null,
     columns
   });
 }
@@ -1595,24 +1236,19 @@ function sanitizeData(
     includeIdentity = true
   } = {}
 ) {
-  const out =
-    {};
+  const out = {};
 
   const allowed =
     new Set(
       schemaColumns.map(
-        col =>
-          col.name
+        col => col.name
       )
     );
 
   if (
     !data ||
-    typeof data !==
-      "object" ||
-    Array.isArray(
-      data
-    )
+    typeof data !== "object" ||
+    Array.isArray(data)
   ) {
     throw new Error(
       "Ungültige Daten."
@@ -1620,26 +1256,18 @@ function sanitizeData(
   }
 
   for (
-    const [
-      key,
-      value
-    ] of Object.entries(
-      data
-    )
+    const [key, value]
+      of Object.entries(data)
   ) {
-
     if (
-      !allowed.has(
-        key
-      )
+      !allowed.has(key)
     ) {
       continue;
     }
 
     if (
       !includeIdentity &&
-      key ===
-        "id"
+      key === "id"
     ) {
       continue;
     }
@@ -1648,15 +1276,12 @@ function sanitizeData(
       [
         "created_at",
         "updated_at"
-      ].includes(
-        key
-      )
+      ].includes(key)
     ) {
       continue;
     }
 
-    out[key] =
-      value;
+    out[key] = value;
   }
 
   return out;
@@ -1675,50 +1300,35 @@ function normalizeDbValue(
 
   const type =
     String(
-      column.type ||
-        ""
+      column.type || ""
     ).toUpperCase();
 
   if (
-    type.includes(
-      "INT"
-    )
+    type.includes("INT")
   ) {
-
     if (
       typeof value ===
-        "boolean"
+      "boolean"
     ) {
       return value
         ? 1
         : 0;
     }
 
-    if (
-      value ===
-        "true"
-    ) {
+    if (value === "true") {
       return 1;
     }
 
-    if (
-      value ===
-        "false"
-    ) {
+    if (value === "false") {
       return 0;
     }
 
-    if (
-      value ===
-        ""
-    ) {
+    if (value === "") {
       return null;
     }
 
     const number =
-      Number(
-        value
-      );
+      Number(value);
 
     return Number.isFinite(
       number
@@ -1727,9 +1337,7 @@ function normalizeDbValue(
       : value;
   }
 
-  return String(
-    value
-  );
+  return String(value);
 }
 
 async function handleAdminDataGet(
@@ -1745,23 +1353,17 @@ async function handleAdminDataGet(
       "view"
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
   const table =
-    RESOURCES[
-      resource
-    ];
+    RESOURCES[resource];
 
   if (!table) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Unbekannter Bereich."
       },
@@ -1777,14 +1379,10 @@ async function handleAdminDataGet(
     ).all();
 
   return json({
-    ok:
-      true,
-
+    ok: true,
     resource,
-
     rows:
-      result.results ||
-      []
+      result.results || []
   });
 }
 
@@ -1801,23 +1399,17 @@ async function handleAdminDataCreate(
       "create"
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
   const table =
-    RESOURCES[
-      resource
-    ];
+    RESOURCES[resource];
 
   if (!table) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Unbekannter Bereich."
       },
@@ -1832,17 +1424,12 @@ async function handleAdminDataCreate(
     );
 
   const columns =
-    schema.results ||
-    [];
+    schema.results || [];
 
-  if (
-    !columns.length
-  ) {
+  if (!columns.length) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Tabelle nicht gefunden."
       },
@@ -1855,13 +1442,10 @@ async function handleAdminDataCreate(
   try {
     body =
       await request.json();
-
   } catch {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Ungültige Anfrage."
       },
@@ -1874,8 +1458,7 @@ async function handleAdminDataCreate(
       body,
       columns,
       {
-        includeIdentity:
-          true
+        includeIdentity: true
       }
     );
 
@@ -1886,20 +1469,13 @@ async function handleAdminDataCreate(
 
   if (
     identity &&
-    identity.name ===
-      "id" &&
-    !(
-      "id" in
-      data
-    ) &&
+    identity.name === "id" &&
+    !("id" in data) &&
     String(
-      identity.type ||
-        ""
+      identity.type || ""
     )
       .toUpperCase()
-      .includes(
-        "CHAR"
-      )
+      .includes("CHAR")
   ) {
     data.id =
       crypto.randomUUID();
@@ -1937,29 +1513,19 @@ async function handleAdminDataCreate(
   }
 
   for (
-    const col of
-      columns
+    const col of columns
   ) {
-
     if (
-      data[
-        col.name
-      ] ===
+      data[col.name] ===
         undefined &&
-      Number(
-        col.notnull
-      ) === 1 &&
+      Number(col.notnull) === 1 &&
       col.dflt_value ===
         null &&
-      Number(
-        col.pk
-      ) === 0
+      Number(col.pk) === 0
     ) {
       return json(
         {
-          ok:
-            false,
-
+          ok: false,
           error:
             `Pflichtfeld fehlt: ${col.name}`
         },
@@ -1969,18 +1535,12 @@ async function handleAdminDataCreate(
   }
 
   const keys =
-    Object.keys(
-      data
-    );
+    Object.keys(data);
 
-  if (
-    !keys.length
-  ) {
+  if (!keys.length) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Keine Daten zum Speichern."
       },
@@ -1995,49 +1555,36 @@ async function handleAdminDataCreate(
           data[key],
           columns.find(
             c =>
-              c.name ===
-              key
+              c.name === key
           )
         )
     );
 
   const placeholders =
     keys
-      .map(
-        () =>
-          "?"
-      )
-      .join(
-        ", "
-      );
+      .map(() => "?")
+      .join(", ");
 
   const quotedKeys =
     keys
       .map(
         quoteIdentifier
       )
-      .join(
-        ", "
-      );
+      .join(", ");
 
   await env.DB.prepare(`
     INSERT INTO ${quoteIdentifier(
       table
     )} (${quotedKeys})
     VALUES (${placeholders})
-  `)
-    .bind(
-      ...values
-    )
-    .run();
+  `).bind(
+    ...values
+  ).run();
 
   return json(
     {
-      ok:
-        true,
-
-      row:
-        data
+      ok: true,
+      row: data
     },
     201
   );
@@ -2057,23 +1604,17 @@ async function handleAdminDataUpdate(
       "edit"
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
   const table =
-    RESOURCES[
-      resource
-    ];
+    RESOURCES[resource];
 
   if (!table) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Unbekannter Bereich."
       },
@@ -2088,8 +1629,7 @@ async function handleAdminDataUpdate(
     );
 
   const columns =
-    schema.results ||
-    [];
+    schema.results || [];
 
   const identity =
     getIdentityColumn(
@@ -2099,9 +1639,7 @@ async function handleAdminDataUpdate(
   if (!identity) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Diese Tabelle besitzt keinen eindeutigen Identifikator und kann deshalb nicht bearbeitet werden."
       },
@@ -2114,13 +1652,10 @@ async function handleAdminDataUpdate(
   try {
     body =
       await request.json();
-
   } catch {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Ungültige Anfrage."
       },
@@ -2133,8 +1668,7 @@ async function handleAdminDataUpdate(
       body,
       columns,
       {
-        includeIdentity:
-          true
+        includeIdentity: true
       }
     );
 
@@ -2156,18 +1690,12 @@ async function handleAdminDataUpdate(
   }
 
   const keys =
-    Object.keys(
-      data
-    );
+    Object.keys(data);
 
-  if (
-    !keys.length
-  ) {
+  if (!keys.length) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Keine Änderungen übergeben."
       },
@@ -2183,9 +1711,7 @@ async function handleAdminDataUpdate(
             key
           )} = ?`
       )
-      .join(
-        ", "
-      );
+      .join(", ");
 
   const values =
     keys.map(
@@ -2194,8 +1720,7 @@ async function handleAdminDataUpdate(
           data[key],
           columns.find(
             c =>
-              c.name ===
-              key
+              c.name === key
           )
         )
     );
@@ -2218,25 +1743,20 @@ async function handleAdminDataUpdate(
       )}
       SET ${sets}
       WHERE ${identityColumn} = ?
-    `)
-      .bind(
-        ...values,
-        identityValue
-      )
-      .run();
+    `).bind(
+      ...values,
+      identityValue
+    ).run();
 
   if (
     !result.success ||
     Number(
-      result.meta?.changes ||
-        0
+      result.meta?.changes || 0
     ) === 0
   ) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Datensatz wurde nicht gefunden oder nicht geändert."
       },
@@ -2245,8 +1765,7 @@ async function handleAdminDataUpdate(
   }
 
   return json({
-    ok:
-      true
+    ok: true
   });
 }
 
@@ -2264,23 +1783,17 @@ async function handleAdminDataDelete(
       "delete"
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
   const table =
-    RESOURCES[
-      resource
-    ];
+    RESOURCES[resource];
 
   if (!table) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Unbekannter Bereich."
       },
@@ -2302,9 +1815,7 @@ async function handleAdminDataDelete(
   if (!identity) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Diese Tabelle besitzt keinen eindeutigen Identifikator und kann deshalb nicht gelöscht werden."
       },
@@ -2318,6 +1829,38 @@ async function handleAdminDataDelete(
       identity
     );
 
+  let oldImageUrl =
+    null;
+
+  if (
+    imageResourceAllowed(
+      resource
+    )
+  ) {
+    const row =
+      await env.DB.prepare(`
+        SELECT *
+        FROM ${quoteIdentifier(
+          table
+        )}
+        WHERE ${quoteIdentifier(
+          identity.name
+        )} = ?
+        LIMIT 1
+      `).bind(
+        identityValue
+      ).first();
+
+    if (
+      row &&
+      typeof row.image_url ===
+        "string"
+    ) {
+      oldImageUrl =
+        row.image_url;
+    }
+  }
+
   const result =
     await env.DB.prepare(`
       DELETE FROM ${quoteIdentifier(
@@ -2326,24 +1869,19 @@ async function handleAdminDataDelete(
       WHERE ${quoteIdentifier(
         identity.name
       )} = ?
-    `)
-      .bind(
-        identityValue
-      )
-      .run();
+    `).bind(
+      identityValue
+    ).run();
 
   if (
     !result.success ||
     Number(
-      result.meta?.changes ||
-        0
+      result.meta?.changes || 0
     ) === 0
   ) {
     return json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
           "Datensatz wurde nicht gefunden."
       },
@@ -2351,10 +1889,628 @@ async function handleAdminDataDelete(
     );
   }
 
+  if (oldImageUrl) {
+    try {
+      await deleteImageByUrl(
+        env,
+        oldImageUrl
+      );
+    } catch (error) {
+      console.error(
+        "R2 cleanup failed after record delete:",
+        error
+      );
+    }
+  }
+
   return json({
-    ok:
-      true
+    ok: true
   });
+}
+
+
+/* =========================================================
+   R2 BILDSYSTEM
+   Gemeinsames Upload-/Abruf-/Löschsystem für die öffentliche
+   Website. Das R2-Bucket bleibt privat; Bilder werden über
+   den Worker unter /media/... ausgeliefert.
+========================================================= */
+
+const IMAGE_RESOURCES =
+  new Set([
+    "races",
+    "drivers",
+    "news",
+    "blacklist",
+    "gallery"
+  ]);
+
+const IMAGE_TYPES = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif"
+};
+
+const MAX_IMAGE_SIZE =
+  10 * 1024 * 1024;
+
+function imageResourceAllowed(
+  resource
+) {
+  return IMAGE_RESOURCES.has(
+    String(
+      resource || ""
+    ).trim()
+  );
+}
+
+function imageExtensionFromType(
+  type
+) {
+  return (
+    IMAGE_TYPES[
+      String(
+        type || ""
+      ).toLowerCase()
+    ] || null
+  );
+}
+
+function imageKeyFromUrl(
+  value
+) {
+  const raw =
+    String(
+      value || ""
+    ).trim();
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed =
+      new URL(
+        raw,
+        "https://jackalracing.com"
+      );
+
+    if (
+      !parsed.pathname.startsWith(
+        "/media/"
+      )
+    ) {
+      return null;
+    }
+
+    const key =
+      decodeURIComponent(
+        parsed.pathname.slice(
+          "/media/".length
+        )
+      );
+
+    if (
+      !key ||
+      key.includes("..") ||
+      key.includes("\\")
+    ) {
+      return null;
+    }
+
+    const firstPart =
+      key.split("/")[0];
+
+    if (
+      !imageResourceAllowed(
+        firstPart
+      )
+    ) {
+      return null;
+    }
+
+    return key;
+  } catch {
+    return null;
+  }
+}
+
+async function deleteImageByUrl(
+  env,
+  imageUrl
+) {
+  if (!env.IMAGES) {
+    return false;
+  }
+
+  const key =
+    imageKeyFromUrl(
+      imageUrl
+    );
+
+  if (!key) {
+    return false;
+  }
+
+  await env.IMAGES.delete(
+    key
+  );
+
+  return true;
+}
+
+function publicImageUrl(
+  request,
+  key
+) {
+  const origin =
+    new URL(
+      request.url
+    ).origin;
+
+  return `${origin}/media/${key
+    .split("/")
+    .map(
+      encodeURIComponent
+    )
+    .join("/")}`;
+}
+
+async function handleImageUpload(
+  request,
+  env
+) {
+  const url =
+    new URL(
+      request.url
+    );
+
+  const resource =
+    String(
+      url.searchParams.get(
+        "resource"
+      ) || ""
+    ).trim();
+
+  const action =
+    String(
+      url.searchParams.get(
+        "action"
+      ) || "edit"
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    !imageResourceAllowed(
+      resource
+    )
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültiger Bildbereich."
+      },
+      400
+    );
+  }
+
+  if (
+    action !== "create" &&
+    action !== "edit"
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige Upload-Aktion."
+      },
+      400
+    );
+  }
+
+  const auth =
+    await requirePermission(
+      request,
+      env,
+      resource,
+      action
+    );
+
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+  if (!env.IMAGES) {
+    return json(
+      {
+        ok: false,
+        error:
+          "R2 ist im Worker nicht verbunden."
+      },
+      500
+    );
+  }
+
+  const contentType =
+    String(
+      request.headers.get(
+        "Content-Type"
+      ) || ""
+    ).toLowerCase();
+
+  if (
+    !contentType.startsWith(
+      "multipart/form-data"
+    )
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Upload muss als multipart/form-data erfolgen."
+      },
+      400
+    );
+  }
+
+  let formData;
+
+  try {
+    formData =
+      await request.formData();
+  } catch {
+    return json(
+      {
+        ok: false,
+        error:
+          "Upload-Daten konnten nicht gelesen werden."
+      },
+      400
+    );
+  }
+
+  const file =
+    formData.get(
+      "file"
+    );
+
+  if (
+    !(file instanceof File)
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Keine Bilddatei übergeben."
+      },
+      400
+    );
+  }
+
+  if (!file.size) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Die Bilddatei ist leer."
+      },
+      400
+    );
+  }
+
+  if (
+    file.size >
+    MAX_IMAGE_SIZE
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Das Bild darf maximal 10 MB groß sein."
+      },
+      413
+    );
+  }
+
+  const mimeType =
+    String(
+      file.type || ""
+    ).toLowerCase();
+
+  const extension =
+    imageExtensionFromType(
+      mimeType
+    );
+
+  if (!extension) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Nicht unterstütztes Bildformat. Erlaubt sind JPG, PNG, WEBP und GIF."
+      },
+      415
+    );
+  }
+
+  const now =
+    new Date();
+
+  const year =
+    String(
+      now.getUTCFullYear()
+    );
+
+  const month =
+    String(
+      now.getUTCMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  const key =
+    `${resource}/${year}/${month}/${crypto.randomUUID()}.${extension}`;
+
+  await env.IMAGES.put(
+    key,
+    file.stream(),
+    {
+      httpMetadata: {
+        contentType:
+          mimeType,
+        cacheControl:
+          "public, max-age=31536000, immutable"
+      },
+      customMetadata: {
+        resource,
+        originalName:
+          file.name ||
+          "image"
+      }
+    }
+  );
+
+  return json(
+    {
+      ok: true,
+      key,
+      url:
+        publicImageUrl(
+          request,
+          key
+        ),
+      mime_type:
+        mimeType,
+      size:
+        file.size,
+      original_name:
+        file.name ||
+        "image"
+    },
+    201
+  );
+}
+
+async function handleImageDelete(
+  request,
+  env
+) {
+  const url =
+    new URL(
+      request.url
+    );
+
+  const resource =
+    String(
+      url.searchParams.get(
+        "resource"
+      ) || ""
+    ).trim();
+
+  const action =
+    String(
+      url.searchParams.get(
+        "action"
+      ) || "edit"
+    )
+      .trim()
+      .toLowerCase();
+
+  const imageUrl =
+    String(
+      url.searchParams.get(
+        "url"
+      ) || ""
+    ).trim();
+
+  if (
+    !imageResourceAllowed(
+      resource
+    )
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültiger Bildbereich."
+      },
+      400
+    );
+  }
+
+  if (
+    action !== "delete" &&
+    action !== "edit"
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige Lösch-Aktion."
+      },
+      400
+    );
+  }
+
+  const auth =
+    await requirePermission(
+      request,
+      env,
+      resource,
+      action
+    );
+
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+  if (!env.IMAGES) {
+    return json(
+      {
+        ok: false,
+        error:
+          "R2 ist im Worker nicht verbunden."
+      },
+      500
+    );
+  }
+
+  const key =
+    imageKeyFromUrl(
+      imageUrl
+    );
+
+  if (!key) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige Bild-URL."
+      },
+      400
+    );
+  }
+
+  await env.IMAGES.delete(
+    key
+  );
+
+  return json({
+    ok: true
+  });
+}
+
+async function handlePublicImage(
+  request,
+  env
+) {
+  if (!env.IMAGES) {
+    return new Response(
+      "R2 ist nicht verbunden.",
+      {
+        status: 500
+      }
+    );
+  }
+
+  const url =
+    new URL(
+      request.url
+    );
+
+  if (
+    !url.pathname.startsWith(
+      "/media/"
+    )
+  ) {
+    return new Response(
+      "Nicht gefunden.",
+      {
+        status: 404
+      }
+    );
+  }
+
+  if (
+    request.method !== "GET" &&
+    request.method !== "HEAD"
+  ) {
+    return new Response(
+      "Method Not Allowed",
+      {
+        status: 405,
+        headers: {
+          Allow:
+            "GET, HEAD"
+        }
+      }
+    );
+  }
+
+  const key =
+    imageKeyFromUrl(
+      url.origin +
+        url.pathname
+    );
+
+  if (!key) {
+    return new Response(
+      "Nicht gefunden.",
+      {
+        status: 404
+      }
+    );
+  }
+
+  const object =
+    await env.IMAGES.get(
+      key
+    );
+
+  if (!object) {
+    return new Response(
+      "Nicht gefunden.",
+      {
+        status: 404
+      }
+    );
+  }
+
+  const headers =
+    new Headers();
+
+  object.writeHttpMetadata(
+    headers
+  );
+
+  headers.set(
+    "etag",
+    object.httpEtag
+  );
+
+  headers.set(
+    "Cache-Control",
+    "public, max-age=31536000, immutable"
+  );
+
+  headers.set(
+    "X-Content-Type-Options",
+    "nosniff"
+  );
+
+  return new Response(
+    request.method === "HEAD"
+      ? null
+      : object.body,
+    {
+      status: 200,
+      headers
+    }
+  );
 }
 
 
@@ -2377,13 +2533,11 @@ async function publicRows(
 
   const available =
     new Set(
-      (
-        schema.results ||
-        []
-      ).map(
-        column =>
-          column.name
-      )
+      (schema.results || [])
+        .map(
+          column =>
+            column.name
+        )
     );
 
   const selected =
@@ -2405,9 +2559,7 @@ async function publicRows(
       .map(
         quoteIdentifier
       )
-      .join(
-        ", "
-      );
+      .join(", ");
 
   const result =
     await env.DB.prepare(
@@ -2416,16 +2568,16 @@ async function publicRows(
       )}`
     ).all();
 
-  return result.results ||
-    [];
+  return (
+    result.results || []
+  );
 }
 
 function normalizePublicStatus(
   value
 ) {
   return String(
-    value ??
-      ""
+    value ?? ""
   )
     .trim()
     .toLowerCase();
@@ -2583,56 +2735,40 @@ async function handlePublicData(
     drivers
       .slice()
       .sort(
-        (
-          a,
-          b
-        ) => {
-
+        (a, b) => {
           const points =
-            (
-              Number(
-                b.points
-              ) || 0
-            ) -
-            (
-              Number(
-                a.points
-              ) || 0
-            );
+            (Number(
+              b.points
+            ) || 0) -
+            (Number(
+              a.points
+            ) || 0);
 
           if (
-            points !==
-            0
+            points !== 0
           ) {
             return points;
           }
 
           const wins =
-            (
-              Number(
-                b.wins
-              ) || 0
-            ) -
-            (
-              Number(
-                a.wins
-              ) || 0
-            );
+            (Number(
+              b.wins
+            ) || 0) -
+            (Number(
+              a.wins
+            ) || 0);
 
           if (
-            wins !==
-            0
+            wins !== 0
           ) {
             return wins;
           }
 
           return String(
-            a.name ||
-              ""
+            a.name || ""
           ).localeCompare(
             String(
-              b.name ||
-                ""
+              b.name || ""
             ),
             "de-DE"
           );
@@ -2645,31 +2781,22 @@ async function handlePublicData(
         ) => ({
           place:
             index + 1,
-
           ...driver
         })
       );
 
   return json(
     {
-      ok:
-        true,
-
+      ok: true,
       generated_at:
         new Date().toISOString(),
-
       races,
-
       drivers,
-
       ranking,
-
       news:
         publicNews,
-
       blacklist:
         publicBlacklist,
-
       gallery
     },
     200,
@@ -2680,21 +2807,17 @@ async function handlePublicData(
   );
 }
 
-
 export default {
-
   async fetch(
     request,
     env
   ) {
-
     const url =
       new URL(
         request.url
       );
 
     try {
-
       if (
         url.pathname ===
           "/api/login" &&
@@ -2731,10 +2854,47 @@ export default {
         );
       }
 
+      if (
+        url.pathname ===
+          "/api/admin/media/upload" &&
+        request.method ===
+          "POST"
+      ) {
+        return await handleImageUpload(
+          request,
+          env
+        );
+      }
 
-      /*
-       * Zentrale öffentliche API
-       */
+      if (
+        url.pathname ===
+          "/api/admin/media" &&
+        request.method ===
+          "DELETE"
+      ) {
+        return await handleImageDelete(
+          request,
+          env
+        );
+      }
+
+      if (
+        url.pathname.startsWith(
+          "/media/"
+        ) &&
+        (
+          request.method ===
+            "GET" ||
+          request.method ===
+            "HEAD"
+        )
+      ) {
+        return await handlePublicImage(
+          request,
+          env
+        );
+      }
+
       if (
         url.pathname ===
           "/api/public/data" &&
@@ -2745,7 +2905,6 @@ export default {
           env
         );
       }
-
 
       if (
         url.pathname ===
@@ -2827,16 +2986,13 @@ export default {
           /^\/api\/admin\/data\/([^/]+)$/
         );
 
-      if (
-        dataMatch
-      ) {
-
+      if (dataMatch) {
         const resource =
           dataMatch[1];
 
         if (
           request.method ===
-          "GET"
+            "GET"
         ) {
           return await handleAdminDataGet(
             request,
@@ -2847,7 +3003,7 @@ export default {
 
         if (
           request.method ===
-          "POST"
+            "POST"
         ) {
           return await handleAdminDataCreate(
             request,
@@ -2862,10 +3018,7 @@ export default {
           /^\/api\/admin\/data\/([^/]+)\/([^/]+)$/
         );
 
-      if (
-        dataIdMatch
-      ) {
-
+      if (dataIdMatch) {
         const resource =
           dataIdMatch[1];
 
@@ -2876,7 +3029,7 @@ export default {
 
         if (
           request.method ===
-          "PUT"
+            "PUT"
         ) {
           return await handleAdminDataUpdate(
             request,
@@ -2888,7 +3041,7 @@ export default {
 
         if (
           request.method ===
-          "DELETE"
+            "DELETE"
         ) {
           return await handleAdminDataDelete(
             request,
@@ -2902,11 +3055,9 @@ export default {
       return env.ASSETS.fetch(
         request
       );
-
     } catch (
       error
     ) {
-
       console.error(
         "Worker error:",
         error
@@ -2914,9 +3065,7 @@ export default {
 
       return json(
         {
-          ok:
-            false,
-
+          ok: false,
           error:
             "Interner Serverfehler."
         },
