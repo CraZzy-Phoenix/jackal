@@ -714,6 +714,35 @@ button{
   }
 
 }
+
+/* =========================================================
+   CRUD MANAGEMENT
+========================================================= */
+
+.crud-toolbar{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}
+.crud-info{color:#777784;font-size:12px}
+.crud-table-wrap{width:100%;overflow:auto;border:1px solid #22222e;border-radius:12px}
+.crud-table{width:100%;border-collapse:collapse;min-width:720px}
+.crud-table th,.crud-table td{padding:12px 14px;border-bottom:1px solid #22222e;text-align:left;vertical-align:middle}
+.crud-table th{color:#777784;background:#0b0b11;font-size:10px;letter-spacing:.8px;text-transform:uppercase}
+.crud-table td{color:#d8d8df;font-size:12px}
+.crud-table tr:last-child td{border-bottom:0}
+.crud-table tr:hover td{background:#11111a}
+.crud-actions{display:flex;gap:7px;justify-content:flex-end}
+.crud-button{border:1px solid #2a2a35;border-radius:8px;padding:7px 10px;color:#bbb;background:#15151d;font-size:11px}
+.crud-button:hover{color:#fff;border-color:#8d5cff}
+.crud-button.danger:hover{color:#ff7777;border-color:#ff5555}
+.crud-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.crud-form .full{grid-column:1/-1}
+.crud-field label{display:block;margin-bottom:7px;color:#aaaab5;font-size:11px;text-transform:uppercase;letter-spacing:.8px}
+.crud-field input,.crud-field textarea,.crud-field select{width:100%;border:1px solid #292936;border-radius:9px;padding:11px 12px;outline:none;color:#fff;background:#101018}
+.crud-field input:focus,.crud-field textarea:focus,.crud-field select:focus{border-color:#8d5cff}
+.crud-checkbox{display:flex;align-items:center;gap:9px;min-height:43px;padding:0 12px;border:1px solid #292936;border-radius:9px;background:#101018}
+.crud-checkbox input{width:16px;height:16px;accent-color:#8d5cff}
+.crud-checkbox span{color:#bbb;font-size:12px}
+.modal-wide{width:min(1050px,100%)}
+@media(max-width:700px){.crud-form{grid-template-columns:1fr}.crud-form .full{grid-column:auto}}
+
 </style>
 </head>
 
@@ -939,589 +968,71 @@ button{
          RENNEN
     ====================================================== -->
 
-    <section
-      id="page-races"
-      class="page"
-    >
-
-      <div class="card">
-
-        <div class="card-header">
-
-          <div>
-            <h2>
-              Rennen verwalten
-            </h2>
-
-            <span>
-              Rennen erstellen und bearbeiten
-            </span>
-          </div>
-
-          <button
-            class="action-button"
-            data-form="raceForm"
-          >
-            + Neues Rennen
-          </button>
-
-        </div>
-
-
-        <div
-          id="raceForm"
-          class="hidden"
-        >
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Rennname</label>
-              <input
-                type="text"
-                placeholder="z. B. JACKAL NIGHT RUN"
-              >
-            </div>
-
-            <div class="field">
-              <label>Status</label>
-
-              <select>
-                <option>upcoming</option>
-                <option>active</option>
-                <option>completed</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>Ort</label>
-              <input
-                type="text"
-                placeholder="Sandy Shores Airfield"
-              >
-            </div>
-
-            <div class="field">
-              <label>Datum</label>
-              <input type="date">
-            </div>
-
-            <div class="field">
-              <label>Uhrzeit</label>
-              <input type="time">
-            </div>
-
-            <div class="field">
-              <label>Bild URL</label>
-              <input
-                type="text"
-                placeholder="Optional"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Beschreibung</label>
-
-              <textarea
-                rows="4"
-                placeholder="Informationen zum Rennen"
-              ></textarea>
-            </div>
-
-          </div>
-
-
-          <div class="form-actions">
-
-            <button
-              class="secondary-button"
-              data-close="raceForm"
-            >
-              Abbrechen
-            </button>
-
-            <button
-              class="primary-button small"
-            >
-              Speichern
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="empty">
-          Noch keine Rennen vorhanden.
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         FAHRER
-    ====================================================== -->
-
-    <section
-      id="page-drivers"
-      class="page"
-    >
-
-      <div class="card">
-
-        <div class="card-header">
-
-          <div>
-            <h2>
-              Fahrer verwalten
-            </h2>
-
-            <span>
-              Fahrer, Fahrzeuge und Teams
-            </span>
-          </div>
-
-          <button
-            class="action-button"
-            data-form="driverForm"
-          >
-            + Neuer Fahrer
-          </button>
-
-        </div>
-
-
-        <div
-          id="driverForm"
-          class="hidden"
-        >
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Name</label>
-              <input
-                type="text"
-                placeholder="APEX"
-              >
-            </div>
-
-            <div class="field">
-              <label>Spitzname</label>
-              <input
-                type="text"
-                placeholder="Optional"
-              >
-            </div>
-
-            <div class="field">
-              <label>Startnummer</label>
-              <input
-                type="number"
-                placeholder="01"
-              >
-            </div>
-
-            <div class="field">
-              <label>Team</label>
-              <input
-                type="text"
-                placeholder="Optional"
-              >
-            </div>
-
-            <div class="field">
-              <label>Fahrzeug</label>
-              <input
-                type="text"
-                placeholder="WENNY ISSI SPORT"
-              >
-            </div>
-
-            <div class="field">
-              <label>Bild URL</label>
-              <input
-                type="text"
-                placeholder="Optional"
-              >
-            </div>
-
-          </div>
-
-
-          <div class="form-actions">
-
-            <button
-              class="secondary-button"
-              data-close="driverForm"
-            >
-              Abbrechen
-            </button>
-
-            <button
-              class="primary-button small"
-            >
-              Speichern
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="empty">
-          Noch keine Fahrer vorhanden.
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         ERGEBNISSE
-    ====================================================== -->
-
-    <section
-      id="page-results"
-      class="page"
-    >
-
-      <div class="card">
-
-        <div class="card-header">
-
-          <div>
-            <h2>
-              Rennergebnisse
-            </h2>
-
-            <span>
-              Platzierungen und Punkte verwalten
-            </span>
-          </div>
-
-        </div>
-
-        <div class="empty">
-          Ergebnisse können hier später pro Rennen eingetragen werden.
-          Die Rangliste wird daraus automatisch berechnet.
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         NEWS
-    ====================================================== -->
-
-    <section
-      id="page-news"
-      class="page"
-    >
-
-      <div class="card">
-
-        <div class="card-header">
-
-          <div>
-            <h2>
-              News verwalten
-            </h2>
-
-            <span>
-              Neuigkeiten und Ankündigungen
-            </span>
-          </div>
-
-          <button
-            class="action-button"
-            data-form="newsForm"
-          >
-            + Neue News
-          </button>
-
-        </div>
-
-
-        <div
-          id="newsForm"
-          class="hidden"
-        >
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Titel</label>
-              <input
-                type="text"
-                placeholder="NEWS TITEL"
-              >
-            </div>
-
-            <div class="field">
-              <label>Kategorie</label>
-              <input
-                type="text"
-                placeholder="EVENT / NEWS / RANGLISTE"
-              >
-            </div>
-
-            <div class="field full">
-              <label>Text</label>
-
-              <textarea
-                rows="5"
-                placeholder="News-Inhalt"
-              ></textarea>
-            </div>
-
-            <div class="field">
-              <label>Bild URL</label>
-              <input
-                type="text"
-                placeholder="Optional"
-              >
-            </div>
-
-            <div class="field">
-              <label>Status</label>
-
-              <select>
-                <option>Veröffentlicht</option>
-                <option>Entwurf</option>
-              </select>
-            </div>
-
-          </div>
-
-
-          <div class="form-actions">
-
-            <button
-              class="secondary-button"
-              data-close="newsForm"
-            >
-              Abbrechen
-            </button>
-
-            <button
-              class="primary-button small"
-            >
-              Speichern
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="empty">
-          Noch keine News vorhanden.
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         BLACKLIST
-    ====================================================== -->
-
-    <section
-      id="page-blacklist"
-      class="page"
-    >
-
-      <div class="card">
-
-        <div class="card-header">
-
-          <div>
-            <h2>
-              Fahrzeug-Blacklist
-            </h2>
-
-            <span>
-              Von der Liga ausgeschlossene Fahrzeuge
-            </span>
-          </div>
-
-          <button
-            class="action-button"
-            data-form="blacklistForm"
-          >
-            + Fahrzeug sperren
-          </button>
-
-        </div>
-
-
-        <div
-          id="blacklistForm"
-          class="hidden"
-        >
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Fahrzeug</label>
-              <input
-                type="text"
-                placeholder="Fahrzeugname"
-              >
-            </div>
-
-            <div class="field">
-              <label>Status</label>
-
-              <select>
-                <option>active</option>
-                <option>inactive</option>
-              </select>
-            </div>
-
-            <div class="field full">
-              <label>Grund</label>
-
-              <textarea
-                rows="4"
-                placeholder="Warum ist das Fahrzeug gesperrt?"
-              ></textarea>
-            </div>
-
-          </div>
-
-
-          <div class="form-actions">
-
-            <button
-              class="secondary-button"
-              data-close="blacklistForm"
-            >
-              Abbrechen
-            </button>
-
-            <button
-              class="primary-button small"
-            >
-              Speichern
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="empty">
-          Noch keine Fahrzeuge auf der Blacklist.
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         GALLERY
-    ====================================================== -->
-
-    <section
-      id="page-gallery"
-      class="page"
-    >
-
-      <div class="card">
-
-        <div class="card-header">
-
-          <div>
-            <h2>
-              Gallery
-            </h2>
-
-            <span>
-              Bilder der Jackal Racing League
-            </span>
-          </div>
-
-          <button
-            class="action-button"
-            data-form="galleryForm"
-          >
-            + Bild hinzufügen
-          </button>
-
-        </div>
-
-
-        <div
-          id="galleryForm"
-          class="hidden"
-        >
-
-          <div class="form-grid">
-
-            <div class="field">
-              <label>Titel</label>
-              <input
-                type="text"
-                placeholder="Bildtitel"
-              >
-            </div>
-
-            <div class="field">
-              <label>Bild URL</label>
-              <input
-                type="text"
-                placeholder="https://..."
-              >
-            </div>
-
-            <div class="field full">
-              <label>Beschreibung</label>
-
-              <textarea
-                rows="3"
-                placeholder="Optional"
-              ></textarea>
-            </div>
-
-          </div>
-
-
-          <div class="form-actions">
-
-            <button
-              class="secondary-button"
-              data-close="galleryForm"
-            >
-              Abbrechen
-            </button>
-
-            <button
-              class="primary-button small"
-            >
-              Speichern
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="empty">
-          Noch keine Bilder vorhanden.
-        </div>
-
-      </div>
-
-    </section>
+    <section id="page-races" class="page crud-page" data-resource="races">
+  <div class="card">
+    <div class="card-header">
+      <div><h2>Rennen verwalten</h2><span>Rennen erstellen, bearbeiten und löschen</span></div>
+      <button class="action-button crud-create-button" data-resource="races">+ Neues Rennen</button>
+    </div>
+    <div class="crud-toolbar"><div class="crud-info" id="crud-info-races">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="races">↻ Aktualisieren</button></div>
+    <div id="crud-table-races"></div>
+  </div>
+</section>
+
+<section id="page-drivers" class="page crud-page" data-resource="drivers">
+  <div class="card">
+    <div class="card-header">
+      <div><h2>Fahrer verwalten</h2><span>Fahrer und deren Daten verwalten</span></div>
+      <button class="action-button crud-create-button" data-resource="drivers">+ Neuer Fahrer</button>
+    </div>
+    <div class="crud-toolbar"><div class="crud-info" id="crud-info-drivers">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="drivers">↻ Aktualisieren</button></div>
+    <div id="crud-table-drivers"></div>
+  </div>
+</section>
+
+<section id="page-results" class="page crud-page" data-resource="results">
+  <div class="card">
+    <div class="card-header">
+      <div><h2>Ergebnisse verwalten</h2><span>Rennergebnisse und Punkte verwalten</span></div>
+      <button class="action-button crud-create-button" data-resource="results">+ Ergebnis hinzufügen</button>
+    </div>
+    <div class="crud-toolbar"><div class="crud-info" id="crud-info-results">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="results">↻ Aktualisieren</button></div>
+    <div id="crud-table-results"></div>
+  </div>
+</section>
+
+<section id="page-news" class="page crud-page" data-resource="news">
+  <div class="card">
+    <div class="card-header">
+      <div><h2>News verwalten</h2><span>Neuigkeiten erstellen, bearbeiten und löschen</span></div>
+      <button class="action-button crud-create-button" data-resource="news">+ Neue News</button>
+    </div>
+    <div class="crud-toolbar"><div class="crud-info" id="crud-info-news">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="news">↻ Aktualisieren</button></div>
+    <div id="crud-table-news"></div>
+  </div>
+</section>
+
+<section id="page-blacklist" class="page crud-page" data-resource="blacklist">
+  <div class="card">
+    <div class="card-header">
+      <div><h2>Fahrzeug-Blacklist</h2><span>Gesperrte Fahrzeuge verwalten</span></div>
+      <button class="action-button crud-create-button" data-resource="blacklist">+ Fahrzeug sperren</button>
+    </div>
+    <div class="crud-toolbar"><div class="crud-info" id="crud-info-blacklist">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="blacklist">↻ Aktualisieren</button></div>
+    <div id="crud-table-blacklist"></div>
+  </div>
+</section>
+
+<section id="page-gallery" class="page crud-page" data-resource="gallery">
+  <div class="card">
+    <div class="card-header">
+      <div><h2>Gallery verwalten</h2><span>Bilder hinzufügen, bearbeiten und löschen</span></div>
+      <button class="action-button crud-create-button" data-resource="gallery">+ Bild hinzufügen</button>
+    </div>
+    <div class="crud-toolbar"><div class="crud-info" id="crud-info-gallery">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="gallery">↻ Aktualisieren</button></div>
+    <div id="crud-table-gallery"></div>
+  </div>
+</section>
 
 
     <!-- =====================================================
@@ -1534,6 +1045,25 @@ button{
     >
 
       <!-- WEBSITE SETTINGS -->
+
+      <div class="card crud-page" data-resource="settings">
+
+        <div class="card-header">
+          <div>
+            <h2>Website-Daten verwalten</h2>
+            <span>Einstellungen direkt aus D1 verwalten</span>
+          </div>
+          <button class="action-button crud-create-button" data-resource="settings">+ Einstellung hinzufügen</button>
+        </div>
+
+        <div class="crud-toolbar">
+          <div class="crud-info" id="crud-info-settings">Daten werden geladen...</div>
+          <button class="user-button crud-refresh" data-resource="settings">↻ Aktualisieren</button>
+        </div>
+
+        <div id="crud-table-settings"></div>
+
+      </div>
 
       <div class="card">
 
@@ -1782,6 +1312,30 @@ button{
 
 
 <!-- =========================================================
+     CRUD MODAL
+========================================================= -->
+
+<div id="crudModal" class="modal-backdrop hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div>
+        <h2 id="crudModalTitle">Datensatz</h2>
+        <p id="crudModalSubtitle">Datensatz verwalten</p>
+      </div>
+      <button id="crudModalClose" class="modal-close" type="button">×</button>
+    </div>
+    <form id="crudForm">
+      <div id="crudFormBody" class="crud-form"></div>
+      <div id="crudFormMessage" class="user-message"></div>
+      <div class="modal-actions">
+        <button id="crudModalCancel" class="secondary-button" type="button">Abbrechen</button>
+        <button id="crudModalSave" class="primary-button small" type="submit">Speichern</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =========================================================
      PERMISSIONS MODAL
 ========================================================= -->
 
@@ -1917,6 +1471,53 @@ const logoutButton =
   document.getElementById("logoutButton");
 
 
+let currentUser = null;
+let currentPermissions = {};
+let crudSchemas = {};
+let crudRows = {};
+let crudEditing = null;
+
+const CRUD_RESOURCES = [
+  { key:"races" },
+  { key:"drivers" },
+  { key:"results" },
+  { key:"news" },
+  { key:"blacklist" },
+  { key:"gallery" },
+  { key:"settings" }
+];
+
+function hasPermission(resource, action){
+  if(currentUser?.is_superadmin) return true;
+  return Number(currentPermissions?.[resource]?.[`can_${action}`] || 0) === 1;
+}
+
+function applyPermissionsToNavigation(){
+  menuButtons.forEach(button => {
+    const resource = button.dataset.page;
+    const allowed = resource === "dashboard" || hasPermission(resource,"view");
+    button.classList.toggle("hidden", !allowed);
+  });
+  document.querySelectorAll(".crud-page").forEach(page => {
+    const resource = page.dataset.resource;
+    page.querySelectorAll(".crud-create-button").forEach(button => {
+      button.classList.toggle("hidden", !hasPermission(resource,"create"));
+    });
+  });
+}
+
+async function loadCurrentUser(){
+  const response = await fetch("/api/me", {credentials:"same-origin", cache:"no-store"});
+  const data = await response.json().catch(() => ({}));
+  if(!response.ok || !data.ok){
+    throw new Error(data.error || "Session konnte nicht geladen werden.");
+  }
+  currentUser = data;
+  currentPermissions = data.permissions || {};
+  applyPermissionsToNavigation();
+}
+
+
 async function checkSession(){
 
   try{
@@ -1931,7 +1532,9 @@ async function checkSession(){
 
     if(response.ok){
 
+      await loadCurrentUser();
       showAdmin();
+      loadAllVisibleCrud();
 
     }else{
 
@@ -1972,6 +1575,9 @@ function showLogin(){
   loginScreen.classList.remove(
     "hidden"
   );
+
+  currentUser = null;
+  currentPermissions = {};
 
 }
 
@@ -2033,9 +1639,11 @@ loginForm.addEventListener(
           )
           .value = "";
 
+        await loadCurrentUser();
         showAdmin();
 
         loadUsers();
+        loadAllVisibleCrud();
 
         return;
       }
@@ -2128,6 +1736,11 @@ menuButtons.forEach(
 
         const page =
           button.dataset.page;
+
+        if(page !== "dashboard" && !hasPermission(page, "view")){
+          showToast("Keine Berechtigung für diesen Bereich.", true);
+          return;
+        }
 
         menuButtons.forEach(
           x =>
@@ -2720,11 +2333,13 @@ createUserButton.addEventListener(
                 "application/json"
             },
             body:JSON.stringify({
-  username,
-  password,
-  active,
-  is_superadmin: isSuperadmin
-})
+
+              username,
+              password,
+              active,
+              is_superadmin
+
+            })
           }
         );
 
@@ -3415,6 +3030,180 @@ document
     }
   );
 
+
+
+
+/* =========================================================
+   GENERIC CRUD
+========================================================= */
+
+function visibleColumns(schema){
+  return (schema.columns || []).filter(col =>
+    col.name !== "id" && col.name !== "created_at" && col.name !== "updated_at"
+  );
+}
+
+function prettyColumn(name){
+  return name.replaceAll("_"," ").replace(/\b\w/g,m => m.toUpperCase());
+}
+
+function isBooleanColumn(col){
+  return String(col.type || "").toUpperCase().includes("INT") &&
+    /^(active|enabled|published|is_[a-z_]+)$/i.test(col.name);
+}
+
+function inputType(col){
+  const type = String(col.type || "").toUpperCase();
+  const name = col.name.toLowerCase();
+  if(name.includes("date")) return "date";
+  if(name.includes("time")) return "time";
+  if(type.includes("INT") || type.includes("REAL") || type.includes("NUM")) return "number";
+  return "text";
+}
+
+async function loadCrudResource(resource){
+  if(!hasPermission(resource,"view")) return;
+  const info = document.getElementById(`crud-info-${resource}`);
+  const container = document.getElementById(`crud-table-${resource}`);
+  if(!info || !container) return;
+  info.textContent = "Daten werden geladen...";
+  container.innerHTML = `<div class="empty">Daten werden geladen...</div>`;
+
+  try{
+    if(!crudSchemas[resource]){
+      const r = await fetch(`/api/admin/schema/${encodeURIComponent(resource)}`, {credentials:"same-origin",cache:"no-store"});
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok || !d.ok) throw new Error(d.error || "Schema konnte nicht geladen werden.");
+      crudSchemas[resource]=d;
+    }
+    const r = await fetch(`/api/admin/data/${encodeURIComponent(resource)}`, {credentials:"same-origin",cache:"no-store"});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok || !d.ok) throw new Error(d.error || "Daten konnten nicht geladen werden.");
+    crudRows[resource]=Array.isArray(d.rows)?d.rows:[];
+    renderCrudTable(resource);
+  }catch(error){
+    info.textContent="Fehler";
+    container.innerHTML=`<div class="empty">${escapeHtml(error.message || "Fehler beim Laden.")}</div>`;
+  }
+}
+
+function renderCrudTable(resource){
+  const schema=crudSchemas[resource];
+  const rows=crudRows[resource]||[];
+  const info=document.getElementById(`crud-info-${resource}`);
+  const container=document.getElementById(`crud-table-${resource}`);
+  if(!schema||!info||!container) return;
+
+  const columns=visibleColumns(schema).slice(0,8);
+  info.textContent=`${rows.length} Datensatz${rows.length===1?"":"s"}`;
+  if(!rows.length){container.innerHTML=`<div class="empty">Noch keine Daten vorhanden.</div>`;return;}
+
+  const head=columns.map(c=>`<th>${escapeHtml(prettyColumn(c.name))}</th>`).join("");
+  const body=rows.map(row=>{
+    const identity=schema.identity;
+    const id=identity?row[identity]:null;
+    const cells=columns.map(c=>{
+      const raw=row[c.name];
+      const text=raw===null||raw===undefined||raw===""?"—":String(raw);
+      return `<td>${escapeHtml(text.length>90?text.slice(0,87)+"...":text)}</td>`;
+    }).join("");
+    const edit=(hasPermission(resource,"edit")&&identity)?`<button class="crud-button crud-edit" data-resource="${resource}" data-id="${escapeHtml(String(id))}">Bearbeiten</button>`:"";
+    const del=(hasPermission(resource,"delete")&&identity)?`<button class="crud-button danger crud-delete" data-resource="${resource}" data-id="${escapeHtml(String(id))}">Löschen</button>`:"";
+    return `<tr>${cells}<td><div class="crud-actions">${edit}${del}</div></td></tr>`;
+  }).join("");
+  container.innerHTML=`<div class="crud-table-wrap"><table class="crud-table"><thead><tr>${head}<th>Aktionen</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+function openCrudModal(resource,row=null){
+  if(row===null&&!hasPermission(resource,"create")){showToast("Keine Berechtigung zum Erstellen.",true);return;}
+  if(row!==null&&!hasPermission(resource,"edit")){showToast("Keine Berechtigung zum Bearbeiten.",true);return;}
+  const schema=crudSchemas[resource];
+  if(!schema){loadCrudResource(resource).then(()=>openCrudModal(resource,row));return;}
+
+  crudEditing={resource,row};
+  const modal=document.getElementById("crudModal");
+  const body=document.getElementById("crudFormBody");
+  document.getElementById("crudModalTitle").textContent=row?"Datensatz bearbeiten":"Datensatz erstellen";
+  document.getElementById("crudModalSubtitle").textContent=`${schema.label||resource}`;
+  document.getElementById("crudFormMessage").textContent="";
+  document.getElementById("crudFormMessage").classList.remove("error");
+
+  body.innerHTML=visibleColumns(schema).map(col=>{
+    const value=row?.[col.name]??"";
+    const label=prettyColumn(col.name);
+    const required=Number(col.notnull)===1&&col.default===null?"required":"";
+    if(isBooleanColumn(col)){
+      const checked=Number(value)===1||value===true||value==="1";
+      return `<div class="crud-checkbox"><input type="checkbox" name="${escapeHtml(col.name)}" ${checked?"checked":""}><span>${escapeHtml(label)}</span></div>`;
+    }
+    const textarea=/description|content|text|reason|message/i.test(col.name)||String(col.type||"").toUpperCase().includes("TEXT")&&String(value).length>80;
+    if(textarea){
+      return `<div class="crud-field full"><label>${escapeHtml(label)}</label><textarea rows="5" name="${escapeHtml(col.name)}" ${required}>${escapeHtml(String(value))}</textarea></div>`;
+    }
+    return `<div class="crud-field"><label>${escapeHtml(label)}</label><input type="${inputType(col)}" name="${escapeHtml(col.name)}" value="${escapeHtml(String(value))}" ${required}></div>`;
+  }).join("");
+  modal.classList.remove("hidden");
+}
+
+function closeCrudModal(){crudEditing=null;document.getElementById("crudModal").classList.add("hidden");}
+
+async function saveCrudForm(event){
+  event.preventDefault();
+  if(!crudEditing) return;
+  const {resource,row}=crudEditing;
+  const schema=crudSchemas[resource];
+  const form=event.currentTarget;
+  const message=document.getElementById("crudFormMessage");
+  const button=document.getElementById("crudModalSave");
+  const data={};
+
+  visibleColumns(schema).forEach(col=>{
+    const el=form.elements.namedItem(col.name);
+    if(!el)return;
+    data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
+  });
+
+  button.disabled=true;button.textContent="Wird gespeichert...";message.textContent="";
+  try{
+    let url=`/api/admin/data/${encodeURIComponent(resource)}`;
+    let method="POST";
+    if(row!==null){method="PUT";url+=`/${encodeURIComponent(String(row[schema.identity]))}`;}
+    const r=await fetch(url,{method,credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.ok)throw new Error(d.error||"Speichern fehlgeschlagen.");
+    closeCrudModal();showToast(row?"Änderungen gespeichert.":"Datensatz erstellt.");await loadCrudResource(resource);
+  }catch(error){message.textContent=error.message||"Speichern fehlgeschlagen.";message.classList.add("error");}
+  finally{button.disabled=false;button.textContent="Speichern";}
+}
+
+async function deleteCrudRow(resource,id){
+  if(!hasPermission(resource,"delete")){showToast("Keine Berechtigung zum Löschen.",true);return;}
+  const schema=crudSchemas[resource];
+  if(!schema?.identity){showToast("Dieser Datensatz kann nicht eindeutig gelöscht werden.",true);return;}
+  if(!confirm("Diesen Datensatz wirklich löschen?"))return;
+  try{
+    const r=await fetch(`/api/admin/data/${encodeURIComponent(resource)}/${encodeURIComponent(String(id))}`,{method:"DELETE",credentials:"same-origin"});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.ok)throw new Error(d.error||"Löschen fehlgeschlagen.");
+    showToast("Datensatz wurde gelöscht.");await loadCrudResource(resource);
+  }catch(error){showToast(error.message||"Löschen fehlgeschlagen.",true);}
+}
+
+async function loadAllVisibleCrud(){
+  for(const item of CRUD_RESOURCES){if(hasPermission(item.key,"view"))await loadCrudResource(item.key);}
+}
+
+document.addEventListener("click",event=>{
+  const create=event.target.closest(".crud-create-button");if(create){openCrudModal(create.dataset.resource);return;}
+  const refresh=event.target.closest(".crud-refresh");if(refresh){loadCrudResource(refresh.dataset.resource);return;}
+  const edit=event.target.closest(".crud-edit");if(edit){const r=edit.dataset.resource;const id=edit.dataset.id;const row=(crudRows[r]||[]).find(x=>String(x[crudSchemas[r]?.identity])===String(id));if(row)openCrudModal(r,row);return;}
+  const del=event.target.closest(".crud-delete");if(del){deleteCrudRow(del.dataset.resource,del.dataset.id);}
+});
+
+document.getElementById("crudForm").addEventListener("submit",saveCrudForm);
+document.getElementById("crudModalClose").addEventListener("click",closeCrudModal);
+document.getElementById("crudModalCancel").addEventListener("click",closeCrudModal);
+document.getElementById("crudModal").addEventListener("click",event=>{if(event.target===document.getElementById("crudModal"))closeCrudModal();});
 
 /* =========================================================
    HTML ESCAPE
