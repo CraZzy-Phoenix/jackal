@@ -16,5 +16,12 @@
       "database_name": "jackal-racing-db",
       "database_id": "3cf9ebf2-2227-490b-a609-d61b948d99ec"
     }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "jackal-racing-images"
+    }
   ]
 }
