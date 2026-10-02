@@ -42,10 +42,16 @@ function getCookie(request, name) {
         "=([^;]*)"
     )
   );
-  return match ? decodeURIComponent(match[1]) : null;
+
+  return match
+    ? decodeURIComponent(match[1])
+    : null;
 }
 
-function sessionCookie(value, maxAge = SESSION_SECONDS) {
+function sessionCookie(
+  value,
+  maxAge = SESSION_SECONDS
+) {
   return [
     `jackal_admin_session=${encodeURIComponent(value)}`,
     "Path=/",
@@ -56,66 +62,138 @@ function sessionCookie(value, maxAge = SESSION_SECONDS) {
   ].join("; ");
 }
 
-async function createSession(env, username) {
-  const sessionId = crypto.randomUUID();
-  const now = Math.floor(Date.now() / 1000);
-  const expiresAt = now + SESSION_SECONDS;
+async function createSession(
+  env,
+  username
+) {
+  const sessionId =
+    crypto.randomUUID();
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const expiresAt =
+    now + SESSION_SECONDS;
 
   await env.DB.prepare(`
-    INSERT INTO admin_sessions (id, username, expires_at, created_at)
+    INSERT INTO admin_sessions (
+      id,
+      username,
+      expires_at,
+      created_at
+    )
     VALUES (?, ?, ?, ?)
-  `).bind(sessionId, username, expiresAt, now).run();
+  `)
+    .bind(
+      sessionId,
+      username,
+      expiresAt,
+      now
+    )
+    .run();
 
   return sessionId;
 }
 
-async function getSession(request, env) {
-  const sessionId = getCookie(request, "jackal_admin_session");
-  if (!sessionId) return null;
+async function getSession(
+  request,
+  env
+) {
+  const sessionId =
+    getCookie(
+      request,
+      "jackal_admin_session"
+    );
 
-  const now = Math.floor(Date.now() / 1000);
-  const row = await env.DB.prepare(`
-    SELECT id, username, expires_at
-    FROM admin_sessions
-    WHERE id = ? AND expires_at > ?
-    LIMIT 1
-  `).bind(sessionId, now).first();
+  if (!sessionId) {
+    return null;
+  }
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const row =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        username,
+        expires_at
+      FROM admin_sessions
+      WHERE id = ?
+        AND expires_at > ?
+      LIMIT 1
+    `)
+      .bind(
+        sessionId,
+        now
+      )
+      .first();
 
   return row || null;
 }
 
-async function getAdminUserByUsername(env, username) {
+async function getAdminUserByUsername(
+  env,
+  username
+) {
   return await env.DB.prepare(`
-    SELECT id, username, active, is_superadmin, created_at, updated_at
+    SELECT
+      id,
+      username,
+      active,
+      is_superadmin,
+      created_at,
+      updated_at
     FROM admin_users
     WHERE username = ?
     LIMIT 1
-  `).bind(username).first();
+  `)
+    .bind(
+      username
+    )
+    .first();
 }
 
-async function requireSession(request, env) {
-  const session = await getSession(request, env);
+async function requireSession(
+  request,
+  env
+) {
+  const session =
+    await getSession(
+      request,
+      env
+    );
 
   if (!session) {
     return json(
       {
         ok: false,
-        error: "Nicht angemeldet."
+        error:
+          "Nicht angemeldet."
       },
       401
     );
   }
 
-  const user = await getAdminUserByUsername(
-    env,
-    session.username
-  );
+  const user =
+    await getAdminUserByUsername(
+      env,
+      session.username
+    );
 
-  if (!user || !user.active) {
+  if (
+    !user ||
+    !user.active
+  ) {
     return json(
       {
         ok: false,
-        error: "Benutzerkonto ist nicht aktiv."
+        error:
+          "Benutzerkonto ist nicht aktiv."
       },
       403
     );
@@ -133,51 +211,60 @@ async function requirePermission(
   resource,
   action
 ) {
-  const auth = await requireSession(
-    request,
-    env
-  );
-
-  if (auth instanceof Response) {
-    return auth;
-  }
-
-  if (auth.user.is_superadmin) {
-    return auth;
-  }
+  const auth =
+    await requireSession(
+      request,
+      env
+    );
 
   if (
-    resource === "dashboard" &&
-    action === "view"
+    auth instanceof Response
   ) {
     return auth;
   }
 
-  const permission = await env.DB.prepare(`
-    SELECT
-      can_view,
-      can_create,
-      can_edit,
-      can_delete
-    FROM admin_permissions
-    WHERE user_id = ?
-      AND resource = ?
-    LIMIT 1
-  `)
-    .bind(
-      auth.user.id,
-      resource
-    )
-    .first();
+  if (
+    auth.user.is_superadmin
+  ) {
+    return auth;
+  }
 
-  const allowed = Boolean(
-    permission &&
-    Number(
-      permission[
-        `can_${action}`
-      ]
-    ) === 1
-  );
+  if (
+    resource ===
+      "dashboard" &&
+    action ===
+      "view"
+  ) {
+    return auth;
+  }
+
+  const permission =
+    await env.DB.prepare(`
+      SELECT
+        can_view,
+        can_create,
+        can_edit,
+        can_delete
+      FROM admin_permissions
+      WHERE user_id = ?
+        AND resource = ?
+      LIMIT 1
+    `)
+      .bind(
+        auth.user.id,
+        resource
+      )
+      .first();
+
+  const allowed =
+    Boolean(
+      permission &&
+      Number(
+        permission[
+          `can_${action}`
+        ]
+      ) === 1
+    );
 
   if (!allowed) {
     return json(
@@ -193,18 +280,27 @@ async function requirePermission(
   return auth;
 }
 
-function bytesToHex(bytes) {
-  return Array.from(bytes)
+function bytesToHex(
+  bytes
+) {
+  return Array.from(
+    bytes
+  )
     .map(
       b =>
         b
           .toString(16)
-          .padStart(2, "0")
+          .padStart(
+            2,
+            "0"
+          )
     )
     .join("");
 }
 
-function hexToBytes(hex) {
+function hexToBytes(
+  hex
+) {
   const bytes =
     new Uint8Array(
       hex.length / 2
@@ -228,7 +324,9 @@ function hexToBytes(hex) {
   return bytes;
 }
 
-function base64ToBytes(value) {
+function base64ToBytes(
+  value
+) {
   const binary =
     atob(value);
 
@@ -249,11 +347,15 @@ function base64ToBytes(value) {
   return bytes;
 }
 
-function bytesToBase64(bytes) {
-  let binary = "";
+function bytesToBase64(
+  bytes
+) {
+  let binary =
+    "";
 
   for (
-    const byte of bytes
+    const byte of
+      bytes
   ) {
     binary +=
       String.fromCharCode(
@@ -261,7 +363,9 @@ function bytesToBase64(bytes) {
       );
   }
 
-  return btoa(binary);
+  return btoa(
+    binary
+  );
 }
 
 async function derivePasswordHash(
@@ -275,19 +379,28 @@ async function derivePasswordHash(
         password
       ),
       {
-        name: "PBKDF2"
+        name:
+          "PBKDF2"
       },
       false,
-      ["deriveBits"]
+      [
+        "deriveBits"
+      ]
     );
 
   const bits =
     await crypto.subtle.deriveBits(
       {
-        name: "PBKDF2",
+        name:
+          "PBKDF2",
+
         salt,
-        iterations: 100000,
-        hash: "SHA-256"
+
+        iterations:
+          100000,
+
+        hash:
+          "SHA-256"
       },
       keyMaterial,
       256
@@ -308,7 +421,9 @@ async function hashPassword(
           saltHex
         )
       : crypto.getRandomValues(
-          new Uint8Array(16)
+          new Uint8Array(
+            16
+          )
         );
 
   const derived =
@@ -322,6 +437,7 @@ async function hashPassword(
       bytesToHex(
         derived
       ),
+
     salt:
       bytesToHex(
         salt
@@ -339,17 +455,19 @@ async function verifyPassword(
     !storedSalt
   ) {
     return {
-      valid: false,
-      legacy: false
+      valid:
+        false,
+
+      legacy:
+        false
     };
   }
 
-  /*
-   * Neues HEX-Format
-   */
   if (
-    storedHash.length === 64 &&
-    storedSalt.length === 32 &&
+    storedHash.length ===
+      64 &&
+    storedSalt.length ===
+      32 &&
     /^[0-9a-fA-F]+$/.test(
       storedHash
     ) &&
@@ -372,13 +490,11 @@ async function verifyPassword(
         ).toLowerCase() ===
         storedHash.toLowerCase(),
 
-      legacy: false
+      legacy:
+        false
     };
   }
 
-  /*
-   * Altes Base64-Format
-   */
   try {
     const derived =
       await derivePasswordHash(
@@ -395,13 +511,17 @@ async function verifyPassword(
         ) ===
         storedHash,
 
-      legacy: true
+      legacy:
+        true
     };
 
   } catch {
     return {
-      valid: false,
-      legacy: false
+      valid:
+        false,
+
+      legacy:
+        false
     };
   }
 }
@@ -419,7 +539,9 @@ async function handleLogin(
   } catch {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Ungültige Anfrage."
       },
@@ -429,12 +551,14 @@ async function handleLogin(
 
   const username =
     String(
-      body?.username || ""
+      body?.username ||
+        ""
     ).trim();
 
   const password =
     String(
-      body?.password || ""
+      body?.password ||
+        ""
     );
 
   if (
@@ -443,7 +567,9 @@ async function handleLogin(
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Bitte Benutzername und Passwort eingeben."
       },
@@ -472,7 +598,9 @@ async function handleLogin(
   if (!user) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Benutzername oder Passwort ist falsch."
       },
@@ -480,10 +608,14 @@ async function handleLogin(
     );
   }
 
-  if (!user.active) {
+  if (
+    !user.active
+  ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Dieses Benutzerkonto ist deaktiviert."
       },
@@ -503,7 +635,9 @@ async function handleLogin(
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Benutzername oder Passwort ist falsch."
       },
@@ -511,10 +645,6 @@ async function handleLogin(
     );
   }
 
-  /*
-   * Altes Passwortformat automatisch
-   * beim erfolgreichen Login migrieren.
-   */
   if (
     passwordResult.legacy
   ) {
@@ -553,9 +683,12 @@ async function handleLogin(
 
   return json(
     {
-      ok: true,
+      ok:
+        true,
+
       username:
         user.username,
+
       is_superadmin:
         !!user.is_superadmin
     },
@@ -579,7 +712,9 @@ async function handleLogout(
       "jackal_admin_session"
     );
 
-  if (sessionId) {
+  if (
+    sessionId
+  ) {
     await env.DB.prepare(`
       DELETE FROM admin_sessions
       WHERE id = ?
@@ -592,7 +727,8 @@ async function handleLogout(
 
   return json(
     {
-      ok: true
+      ok:
+        true
     },
     200,
     {
@@ -621,7 +757,8 @@ async function handleMe(
     return auth;
   }
 
-  const permissions = {};
+  const permissions =
+    {};
 
   for (
     const resource of
@@ -629,6 +766,7 @@ async function handleMe(
         RESOURCE_LABELS
       )
   ) {
+
     if (
       resource ===
       "dashboard"
@@ -636,10 +774,17 @@ async function handleMe(
       permissions[
         resource
       ] = {
-        can_view: 1,
-        can_create: 0,
-        can_edit: 0,
-        can_delete: 0
+        can_view:
+          1,
+
+        can_create:
+          0,
+
+        can_edit:
+          0,
+
+        can_delete:
+          0
       };
 
       continue;
@@ -668,36 +813,48 @@ async function handleMe(
     ] =
       auth.user.is_superadmin
         ? {
-            can_view: 1,
-            can_create: 1,
-            can_edit: 1,
-            can_delete: 1
+            can_view:
+              1,
+
+            can_create:
+              1,
+
+            can_edit:
+              1,
+
+            can_delete:
+              1
           }
         : {
             can_view:
               Number(
-                row?.can_view || 0
+                row?.can_view ||
+                  0
               ),
 
             can_create:
               Number(
-                row?.can_create || 0
+                row?.can_create ||
+                  0
               ),
 
             can_edit:
               Number(
-                row?.can_edit || 0
+                row?.can_edit ||
+                  0
               ),
 
             can_delete:
               Number(
-                row?.can_delete || 0
+                row?.can_delete ||
+                  0
               )
           };
   }
 
   return json({
-    ok: true,
+    ok:
+      true,
 
     username:
       auth.user.username,
@@ -738,7 +895,8 @@ async function handleAdminUsersGet(
         created_at,
         updated_at
       FROM admin_users
-      ORDER BY username COLLATE NOCASE ASC
+      ORDER BY
+        username COLLATE NOCASE ASC
     `).all();
 
   const result =
@@ -746,8 +904,10 @@ async function handleAdminUsersGet(
     [];
 
   for (
-    const user of result
+    const user of
+      result
   ) {
+
     const permissions =
       await env.DB.prepare(`
         SELECT
@@ -774,7 +934,9 @@ async function handleAdminUsersGet(
   }
 
   return json({
-    ok: true,
+    ok:
+      true,
+
     users:
       result
   });
@@ -805,7 +967,9 @@ async function handleAdminUserCreate(
   } catch {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Ungültige Anfrage."
       },
@@ -815,30 +979,37 @@ async function handleAdminUserCreate(
 
   const username =
     String(
-      body?.username || ""
+      body?.username ||
+        ""
     ).trim();
 
   const password =
     String(
-      body?.password || ""
+      body?.password ||
+        ""
     );
 
   const active =
-    body?.active === false
+    body?.active ===
+      false
       ? 0
       : 1;
 
   const isSuperadmin =
-    body?.is_superadmin === true
+    body?.is_superadmin ===
+      true
       ? 1
       : 0;
 
   if (
-    username.length < 2
+    username.length <
+    2
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Der Benutzername muss mindestens 2 Zeichen lang sein."
       },
@@ -847,11 +1018,14 @@ async function handleAdminUserCreate(
   }
 
   if (
-    password.length < 8
+    password.length <
+    8
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Das Passwort muss mindestens 8 Zeichen lang sein."
       },
@@ -871,10 +1045,14 @@ async function handleAdminUserCreate(
       )
       .first();
 
-  if (existing) {
+  if (
+    existing
+  ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Dieser Benutzername existiert bereits."
       },
@@ -922,7 +1100,8 @@ async function handleAdminUserCreate(
 
   return json(
     {
-      ok: true,
+      ok:
+        true,
 
       user: {
         id:
@@ -943,7 +1122,8 @@ async function handleAdminUserCreate(
         updated_at:
           now,
 
-        permissions: []
+        permissions:
+          []
       }
     },
     201
@@ -973,7 +1153,9 @@ async function handleAdminUserDelete(
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Du kannst deinen eigenen Superadmin-Account nicht löschen."
       },
@@ -995,10 +1177,14 @@ async function handleAdminUserDelete(
       )
       .first();
 
-  if (!user) {
+  if (
+    !user
+  ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Benutzer nicht gefunden."
       },
@@ -1034,8 +1220,43 @@ async function handleAdminUserDelete(
     .run();
 
   return json({
-    ok: true
+    ok:
+      true
   });
+}
+
+async function requireSuperadmin(
+  request,
+  env
+) {
+  const auth =
+    await requireSession(
+      request,
+      env
+    );
+
+  if (
+    auth instanceof Response
+  ) {
+    return auth;
+  }
+
+  if (
+    !auth.user.is_superadmin
+  ) {
+    return json(
+      {
+        ok:
+          false,
+
+        error:
+          "Keine Superadmin-Berechtigung."
+      },
+      403
+    );
+  }
+
+  return auth;
 }
 
 async function handleAdminPermissionsUpdate(
@@ -1069,10 +1290,14 @@ async function handleAdminPermissionsUpdate(
       )
       .first();
 
-  if (!user) {
+  if (
+    !user
+  ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Benutzer nicht gefunden."
       },
@@ -1084,7 +1309,9 @@ async function handleAdminPermissionsUpdate(
     user.is_superadmin
   ) {
     return json({
-      ok: true,
+      ok:
+        true,
+
       message:
         "Superadmins besitzen automatisch alle Rechte."
     });
@@ -1099,7 +1326,9 @@ async function handleAdminPermissionsUpdate(
   } catch {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Ungültige Anfrage."
       },
@@ -1129,11 +1358,14 @@ async function handleAdminPermissionsUpdate(
     .run();
 
   for (
-    const permission of permissions
+    const permission of
+      permissions
   ) {
+
     const resource =
       String(
-        permission?.resource || ""
+        permission?.resource ||
+          ""
       ).trim();
 
     if (
@@ -1164,23 +1396,18 @@ async function handleAdminPermissionsUpdate(
         crypto.randomUUID(),
         userId,
         resource,
-
         permission?.can_view
           ? 1
           : 0,
-
         permission?.can_create
           ? 1
           : 0,
-
         permission?.can_edit
           ? 1
           : 0,
-
         permission?.can_delete
           ? 1
           : 0,
-
         now,
         now
       )
@@ -1188,40 +1415,9 @@ async function handleAdminPermissionsUpdate(
   }
 
   return json({
-    ok: true
+    ok:
+      true
   });
-}
-
-async function requireSuperadmin(
-  request,
-  env
-) {
-  const auth =
-    await requireSession(
-      request,
-      env
-    );
-
-  if (
-    auth instanceof Response
-  ) {
-    return auth;
-  }
-
-  if (
-    !auth.user.is_superadmin
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Keine Superadmin-Berechtigung."
-      },
-      403
-    );
-  }
-
-  return auth;
 }
 
 async function getTableSchema(
@@ -1249,7 +1445,8 @@ function getIdentityColumn(
     );
 
   if (
-    primary.length === 1
+    primary.length ===
+      1
   ) {
     return primary[0];
   }
@@ -1325,7 +1522,9 @@ async function handleAdminSchema(
   if (!table) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Unbekannter Bereich."
       },
@@ -1367,7 +1566,8 @@ async function handleAdminSchema(
     );
 
   return json({
-    ok: true,
+    ok:
+      true,
 
     resource,
 
@@ -1381,7 +1581,8 @@ async function handleAdminSchema(
     identity:
       getIdentityColumn(
         schema
-      )?.name || null,
+      )?.name ||
+      null,
 
     columns
   });
@@ -1394,7 +1595,8 @@ function sanitizeData(
     includeIdentity = true
   } = {}
 ) {
-  const out = {};
+  const out =
+    {};
 
   const allowed =
     new Set(
@@ -1425,6 +1627,7 @@ function sanitizeData(
       data
     )
   ) {
+
     if (
       !allowed.has(
         key
@@ -1472,7 +1675,8 @@ function normalizeDbValue(
 
   const type =
     String(
-      column.type || ""
+      column.type ||
+        ""
     ).toUpperCase();
 
   if (
@@ -1480,9 +1684,10 @@ function normalizeDbValue(
       "INT"
     )
   ) {
+
     if (
       typeof value ===
-      "boolean"
+        "boolean"
     ) {
       return value
         ? 1
@@ -1554,7 +1759,9 @@ async function handleAdminDataGet(
   if (!table) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Unbekannter Bereich."
       },
@@ -1570,7 +1777,9 @@ async function handleAdminDataGet(
     ).all();
 
   return json({
-    ok: true,
+    ok:
+      true,
+
     resource,
 
     rows:
@@ -1606,7 +1815,9 @@ async function handleAdminDataCreate(
   if (!table) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Unbekannter Bereich."
       },
@@ -1629,7 +1840,9 @@ async function handleAdminDataCreate(
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Tabelle nicht gefunden."
       },
@@ -1646,7 +1859,9 @@ async function handleAdminDataCreate(
   } catch {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Ungültige Anfrage."
       },
@@ -1669,11 +1884,6 @@ async function handleAdminDataCreate(
       schema
     );
 
-  /*
-   * Automatische ID.
-   * TEXT / CHAR / CLOB werden
-   * mit UUID versorgt.
-   */
   if (
     identity &&
     identity.name ===
@@ -1681,28 +1891,18 @@ async function handleAdminDataCreate(
     !(
       "id" in
       data
+    ) &&
+    String(
+      identity.type ||
+        ""
     )
-  ) {
-    const identityType =
-      String(
-        identity.type ||
-          ""
-      ).toUpperCase();
-
-    if (
-      identityType.includes(
-        "TEXT"
-      ) ||
-      identityType.includes(
+      .toUpperCase()
+      .includes(
         "CHAR"
-      ) ||
-      identityType.includes(
-        "CLOB"
       )
-    ) {
-      data.id =
-        crypto.randomUUID();
-    }
+  ) {
+    data.id =
+      crypto.randomUUID();
   }
 
   const now =
@@ -1736,13 +1936,11 @@ async function handleAdminDataCreate(
       now;
   }
 
-  /*
-   * Pflichtfelder prüfen.
-   */
   for (
     const col of
       columns
   ) {
+
     if (
       data[
         col.name
@@ -1759,7 +1957,9 @@ async function handleAdminDataCreate(
     ) {
       return json(
         {
-          ok: false,
+          ok:
+            false,
+
           error:
             `Pflichtfeld fehlt: ${col.name}`
         },
@@ -1778,7 +1978,9 @@ async function handleAdminDataCreate(
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Keine Daten zum Speichern."
       },
@@ -1802,7 +2004,8 @@ async function handleAdminDataCreate(
   const placeholders =
     keys
       .map(
-        () => "?"
+        () =>
+          "?"
       )
       .join(
         ", "
@@ -1830,362 +2033,15 @@ async function handleAdminDataCreate(
 
   return json(
     {
-      ok: true,
+      ok:
+        true,
+
       row:
         data
     },
     201
   );
 }
-
-
-/* =========================================================
-   SPEZIELLES FAHRER-UPDATE
-   Für die Rangliste
-========================================================= */
-
-async function handleDriverUpdate(
-  request,
-  env,
-  driverId
-) {
-  const auth =
-    await requirePermission(
-      request,
-      env,
-      "drivers",
-      "edit"
-    );
-
-  if (
-    auth instanceof Response
-  ) {
-    return auth;
-  }
-
-  const schema =
-    await getTableSchema(
-      env,
-      "drivers"
-    );
-
-  const columns =
-    schema.results ||
-    [];
-
-  const identity =
-    getIdentityColumn(
-      schema
-    );
-
-  if (!identity) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Die Fahrertabelle besitzt keinen eindeutigen Identifikator."
-      },
-      400
-    );
-  }
-
-  let body;
-
-  try {
-    body =
-      await request.json();
-
-  } catch {
-    return json(
-      {
-        ok: false,
-        error:
-          "Ungültige Anfrage."
-      },
-      400
-    );
-  }
-
-  const existingColumns =
-    new Set(
-      columns.map(
-        c =>
-          c.name
-      )
-    );
-
-  /*
-   * Mögliche Feldnamen der Fahrertabelle.
-   */
-  const aliases = {
-    name: [
-      "name",
-      "driver_name",
-      "username"
-    ],
-
-    number: [
-      "number",
-      "start_number",
-      "startnummer"
-    ],
-
-    nickname: [
-      "nickname",
-      "nick",
-      "spitzname"
-    ],
-
-    team: [
-      "team"
-    ],
-
-    vehicle: [
-      "vehicle",
-      "car",
-      "fahrzeug"
-    ],
-
-    points: [
-      "points"
-    ],
-
-    wins: [
-      "wins",
-      "victories",
-      "siege"
-    ],
-
-    image: [
-      "image",
-      "photo",
-      "avatar",
-      "bild"
-    ],
-
-    active: [
-      "active",
-      "enabled",
-      "is_active"
-    ]
-  };
-
-  const updates = {};
-
-  for (
-    const [
-      logical,
-      candidates
-    ] of Object.entries(
-      aliases
-    )
-  ) {
-    const column =
-      candidates.find(
-        name =>
-          existingColumns.has(
-            name
-          )
-      );
-
-    if (!column) {
-      continue;
-    }
-
-    if (
-      !Object.prototype.hasOwnProperty.call(
-        body || {},
-        logical
-      )
-    ) {
-      continue;
-    }
-
-    let value =
-      body[
-        logical
-      ];
-
-    /*
-     * Punkte und Siege immer
-     * als positive Zahlen speichern.
-     */
-    if (
-      logical === "points" ||
-      logical === "wins"
-    ) {
-      value =
-        Math.max(
-          0,
-          Number(
-            value
-          ) || 0
-        );
-    }
-
-    /*
-     * Aktiv / Inaktiv abhängig
-     * vom tatsächlichen DB-Typ speichern.
-     */
-    if (
-      logical === "active"
-    ) {
-      const col =
-        columns.find(
-          c =>
-            c.name ===
-            column
-        );
-
-      const type =
-        String(
-          col?.type ||
-            ""
-        ).toUpperCase();
-
-      const checked =
-        value === true ||
-        Number(
-          value
-        ) === 1 ||
-        String(
-          value
-        ).toUpperCase() ===
-          "JA" ||
-        String(
-          value
-        ).toLowerCase() ===
-          "active" ||
-        String(
-          value
-        ).toLowerCase() ===
-          "true";
-
-      value =
-        type.includes(
-          "INT"
-        )
-          ? checked
-            ? 1
-            : 0
-          : checked
-            ? "JA"
-            : "NEIN";
-    }
-
-    updates[
-      column
-    ] =
-      value;
-  }
-
-  if (
-    existingColumns.has(
-      "updated_at"
-    )
-  ) {
-    updates.updated_at =
-      Math.floor(
-        Date.now() / 1000
-      );
-  }
-
-  const keys =
-    Object.keys(
-      updates
-    );
-
-  if (
-    !keys.length
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Keine Änderungen übergeben."
-      },
-      400
-    );
-  }
-
-  const setList =
-    keys
-      .map(
-        key =>
-          `${quoteIdentifier(
-            key
-          )} = ?`
-      )
-      .join(
-        ", "
-      );
-
-  const values =
-    keys.map(
-      key =>
-        updates[key]
-    );
-
-  const result =
-    await env.DB.prepare(`
-      UPDATE ${quoteIdentifier(
-        "drivers"
-      )}
-      SET ${setList}
-      WHERE ${quoteIdentifier(
-        identity.name
-      )} = ?
-    `)
-      .bind(
-        ...values,
-        driverId
-      )
-      .run();
-
-  if (
-    !result.success ||
-    Number(
-      result.meta?.changes ||
-        0
-    ) === 0
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Fahrer wurde nicht gefunden oder nicht geändert."
-      },
-      404
-    );
-  }
-
-  const updated =
-    await env.DB.prepare(`
-      SELECT *
-      FROM ${quoteIdentifier(
-        "drivers"
-      )}
-      WHERE ${quoteIdentifier(
-        identity.name
-      )} = ?
-      LIMIT 1
-    `)
-      .bind(
-        driverId
-      )
-      .first();
-
-  return json({
-    ok: true,
-    row:
-      updated
-  });
-}
-
-
-/* =========================================================
-   ALLGEMEINES UPDATE
-========================================================= */
 
 async function handleAdminDataUpdate(
   request,
@@ -2215,7 +2071,9 @@ async function handleAdminDataUpdate(
   if (!table) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Unbekannter Bereich."
       },
@@ -2241,7 +2099,9 @@ async function handleAdminDataUpdate(
   if (!identity) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Diese Tabelle besitzt keinen eindeutigen Identifikator und kann deshalb nicht bearbeitet werden."
       },
@@ -2258,7 +2118,9 @@ async function handleAdminDataUpdate(
   } catch {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Ungültige Anfrage."
       },
@@ -2303,7 +2165,9 @@ async function handleAdminDataUpdate(
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Keine Änderungen übergeben."
       },
@@ -2370,7 +2234,9 @@ async function handleAdminDataUpdate(
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Datensatz wurde nicht gefunden oder nicht geändert."
       },
@@ -2379,14 +2245,10 @@ async function handleAdminDataUpdate(
   }
 
   return json({
-    ok: true
+    ok:
+      true
   });
 }
-
-
-/* =========================================================
-   DELETE
-========================================================= */
 
 async function handleAdminDataDelete(
   request,
@@ -2416,7 +2278,9 @@ async function handleAdminDataDelete(
   if (!table) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Unbekannter Bereich."
       },
@@ -2438,7 +2302,9 @@ async function handleAdminDataDelete(
   if (!identity) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Diese Tabelle besitzt keinen eindeutigen Identifikator und kann deshalb nicht gelöscht werden."
       },
@@ -2475,7 +2341,9 @@ async function handleAdminDataDelete(
   ) {
     return json(
       {
-        ok: false,
+        ok:
+          false,
+
         error:
           "Datensatz wurde nicht gefunden."
       },
@@ -2484,14 +2352,334 @@ async function handleAdminDataDelete(
   }
 
   return json({
-    ok: true
+    ok:
+      true
   });
 }
 
 
 /* =========================================================
-   ROUTER
+   ÖFFENTLICHE WEBSITE-DATEN
+   Ein zentraler Endpunkt für die komplette öffentliche Website.
+   Sensible Admin-Tabellen werden NICHT ausgegeben.
 ========================================================= */
+
+async function publicRows(
+  env,
+  table,
+  preferredColumns = []
+) {
+  const schema =
+    await getTableSchema(
+      env,
+      table
+    );
+
+  const available =
+    new Set(
+      (
+        schema.results ||
+        []
+      ).map(
+        column =>
+          column.name
+      )
+    );
+
+  const selected =
+    preferredColumns.filter(
+      column =>
+        available.has(
+          column
+        )
+    );
+
+  if (
+    !selected.length
+  ) {
+    return [];
+  }
+
+  const columnList =
+    selected
+      .map(
+        quoteIdentifier
+      )
+      .join(
+        ", "
+      );
+
+  const result =
+    await env.DB.prepare(
+      `SELECT ${columnList} FROM ${quoteIdentifier(
+        table
+      )}`
+    ).all();
+
+  return result.results ||
+    [];
+}
+
+function normalizePublicStatus(
+  value
+) {
+  return String(
+    value ??
+      ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function isPublicActive(
+  value
+) {
+  return [
+    "active",
+    "aktiv",
+    "aktive",
+    "published",
+    "1",
+    "true",
+    "ja"
+  ].includes(
+    normalizePublicStatus(
+      value
+    )
+  );
+}
+
+async function handlePublicData(
+  env
+) {
+  const [
+    races,
+    drivers,
+    news,
+    blacklist,
+    gallery
+  ] =
+    await Promise.all([
+      publicRows(
+        env,
+        "races",
+        [
+          "id",
+          "name",
+          "title",
+          "city",
+          "location",
+          "date",
+          "time",
+          "description",
+          "status",
+          "image",
+          "image_url",
+          "created_at"
+        ]
+      ),
+
+      publicRows(
+        env,
+        "drivers",
+        [
+          "id",
+          "name",
+          "nickname",
+          "number",
+          "team",
+          "car",
+          "image_url",
+          "status",
+          "points",
+          "wins",
+          "created_at"
+        ]
+      ),
+
+      publicRows(
+        env,
+        "news",
+        [
+          "id",
+          "date",
+          "title",
+          "text",
+          "content",
+          "image",
+          "image_url",
+          "category",
+          "status",
+          "active",
+          "created_at"
+        ]
+      ),
+
+      publicRows(
+        env,
+        "blacklist",
+        [
+          "id",
+          "vehicle_name",
+          "reason",
+          "image_url",
+          "status",
+          "created_at"
+        ]
+      ),
+
+      publicRows(
+        env,
+        "gallery",
+        [
+          "id",
+          "title",
+          "image",
+          "image_url",
+          "description",
+          "category",
+          "status",
+          "created_at"
+        ]
+      )
+    ]);
+
+  const publicNews =
+    news.filter(
+      item => {
+        if (
+          item.active ===
+            undefined &&
+          item.status ===
+            undefined
+        ) {
+          return true;
+        }
+
+        if (
+          item.active !==
+            undefined
+        ) {
+          return isPublicActive(
+            item.active
+          );
+        }
+
+        return isPublicActive(
+          item.status
+        );
+      }
+    );
+
+  const publicBlacklist =
+    blacklist.filter(
+      item =>
+        isPublicActive(
+          item.status
+        )
+    );
+
+  const ranking =
+    drivers
+      .slice()
+      .sort(
+        (
+          a,
+          b
+        ) => {
+
+          const points =
+            (
+              Number(
+                b.points
+              ) || 0
+            ) -
+            (
+              Number(
+                a.points
+              ) || 0
+            );
+
+          if (
+            points !==
+            0
+          ) {
+            return points;
+          }
+
+          const wins =
+            (
+              Number(
+                b.wins
+              ) || 0
+            ) -
+            (
+              Number(
+                a.wins
+              ) || 0
+            );
+
+          if (
+            wins !==
+            0
+          ) {
+            return wins;
+          }
+
+          return String(
+            a.name ||
+              ""
+          ).localeCompare(
+            String(
+              b.name ||
+                ""
+            ),
+            "de-DE"
+          );
+        }
+      )
+      .map(
+        (
+          driver,
+          index
+        ) => ({
+          place:
+            index + 1,
+
+          ...driver
+        })
+      );
+
+  return json(
+    {
+      ok:
+        true,
+
+      generated_at:
+        new Date().toISOString(),
+
+      races,
+
+      drivers,
+
+      ranking,
+
+      news:
+        publicNews,
+
+      blacklist:
+        publicBlacklist,
+
+      gallery
+    },
+    200,
+    {
+      "Cache-Control":
+        "public, max-age=60"
+    }
+  );
+}
+
 
 export default {
 
@@ -2499,6 +2687,7 @@ export default {
     request,
     env
   ) {
+
     const url =
       new URL(
         request.url
@@ -2506,9 +2695,6 @@ export default {
 
     try {
 
-      /*
-       * LOGIN
-       */
       if (
         url.pathname ===
           "/api/login" &&
@@ -2521,10 +2707,6 @@ export default {
         );
       }
 
-
-      /*
-       * LOGOUT
-       */
       if (
         url.pathname ===
           "/api/logout" &&
@@ -2537,10 +2719,6 @@ export default {
         );
       }
 
-
-      /*
-       * ME
-       */
       if (
         url.pathname ===
           "/api/me" &&
@@ -2555,9 +2733,20 @@ export default {
 
 
       /*
-       * ADMIN USERS
-       * GET
+       * Zentrale öffentliche API
        */
+      if (
+        url.pathname ===
+          "/api/public/data" &&
+        request.method ===
+          "GET"
+      ) {
+        return await handlePublicData(
+          env
+        );
+      }
+
+
       if (
         url.pathname ===
           "/api/admin/users" &&
@@ -2570,11 +2759,6 @@ export default {
         );
       }
 
-
-      /*
-       * ADMIN USERS
-       * CREATE
-       */
       if (
         url.pathname ===
           "/api/admin/users" &&
@@ -2587,10 +2771,6 @@ export default {
         );
       }
 
-
-      /*
-       * ADMIN USER PERMISSIONS
-       */
       const permissionMatch =
         url.pathname.match(
           /^\/api\/admin\/users\/([^/]+)\/permissions$/
@@ -2608,10 +2788,6 @@ export default {
         );
       }
 
-
-      /*
-       * ADMIN USER DELETE
-       */
       const userDeleteMatch =
         url.pathname.match(
           /^\/api\/admin\/users\/([^/]+)$/
@@ -2629,10 +2805,6 @@ export default {
         );
       }
 
-
-      /*
-       * SCHEMA
-       */
       const schemaMatch =
         url.pathname.match(
           /^\/api\/admin\/schema\/([^/]+)$/
@@ -2650,38 +2822,6 @@ export default {
         );
       }
 
-
-      /*
-       * SPEZIELLES FAHRER-UPDATE
-       *
-       * Dieses wird von der Rangliste
-       * verwendet.
-       */
-      const driverUpdateMatch =
-        url.pathname.match(
-          /^\/api\/admin\/drivers\/([^/]+)$/
-        );
-
-      if (
-        driverUpdateMatch &&
-        request.method ===
-          "PUT"
-      ) {
-        return await handleDriverUpdate(
-          request,
-          env,
-          decodeURIComponent(
-            driverUpdateMatch[1]
-          )
-        );
-      }
-
-
-      /*
-       * ADMIN DATA
-       *
-       * GET / POST
-       */
       const dataMatch =
         url.pathname.match(
           /^\/api\/admin\/data\/([^/]+)$/
@@ -2690,6 +2830,7 @@ export default {
       if (
         dataMatch
       ) {
+
         const resource =
           dataMatch[1];
 
@@ -2716,12 +2857,6 @@ export default {
         }
       }
 
-
-      /*
-       * ADMIN DATA
-       *
-       * UPDATE / DELETE
-       */
       const dataIdMatch =
         url.pathname.match(
           /^\/api\/admin\/data\/([^/]+)\/([^/]+)$/
@@ -2730,6 +2865,7 @@ export default {
       if (
         dataIdMatch
       ) {
+
         const resource =
           dataIdMatch[1];
 
@@ -2763,10 +2899,6 @@ export default {
         }
       }
 
-
-      /*
-       * PUBLIC FILES / WEBSITE
-       */
       return env.ASSETS.fetch(
         request
       );
@@ -2782,7 +2914,9 @@ export default {
 
       return json(
         {
-          ok: false,
+          ok:
+            false,
+
           error:
             "Interner Serverfehler."
         },
