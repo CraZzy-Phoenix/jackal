@@ -166,17 +166,51 @@ function hexToBytes(hex) {
 }
 
 
-async function hashPassword(
-  password,
-  saltHex = null
-) {
-  const encoder = new TextEncoder();
+function base64ToBytes(base64) {
+  const binaryString =
+    atob(base64);
 
-  const salt = saltHex
-    ? hexToBytes(saltHex)
-    : crypto.getRandomValues(
-        new Uint8Array(16)
-      );
+  const bytes =
+    new Uint8Array(
+      binaryString.length
+    );
+
+  for (
+    let i = 0;
+    i < binaryString.length;
+    i++
+  ) {
+    bytes[i] =
+      binaryString.charCodeAt(i);
+  }
+
+  return bytes;
+}
+
+
+function bytesToBase64(bytes) {
+  let binary = "";
+
+  for (
+    let i = 0;
+    i < bytes.length;
+    i++
+  ) {
+    binary += String.fromCharCode(
+      bytes[i]
+    );
+  }
+
+  return btoa(binary);
+}
+
+
+async function derivePasswordHash(
+  password,
+  salt
+) {
+  const encoder =
+    new TextEncoder();
 
   const keyMaterial =
     await crypto.subtle.importKey(
@@ -201,17 +235,47 @@ async function hashPassword(
       256
     );
 
+  return new Uint8Array(
+    derivedBits
+  );
+}
+
+
+async function hashPassword(
+  password,
+  saltHex = null
+) {
+  const salt =
+    saltHex
+      ? hexToBytes(saltHex)
+      : crypto.getRandomValues(
+          new Uint8Array(16)
+        );
+
+  const derivedBits =
+    await derivePasswordHash(
+      password,
+      salt
+    );
+
   return {
-    hash: bytesToHex(
-      new Uint8Array(derivedBits)
-    ),
-    salt: bytesToHex(salt)
+    hash:
+      bytesToHex(
+        derivedBits
+      ),
+    salt:
+      bytesToHex(
+        salt
+      )
   };
 }
 
 
 /* =========================================================
    PASSWORD VERIFY
+   Unterstützt:
+   - neues Hex-Format
+   - altes Base64-Format
    ========================================================= */
 
 async function verifyPassword(
@@ -219,17 +283,95 @@ async function verifyPassword(
   storedHash,
   storedSalt
 ) {
-  if (!storedHash || !storedSalt) {
-    return false;
+  if (
+    !storedHash ||
+    !storedSalt
+  ) {
+    return {
+      valid: false,
+      legacy: false
+    };
   }
 
-  const passwordData =
-    await hashPassword(
-      password,
-      storedSalt
-    );
 
-  return passwordData.hash === storedHash;
+  /*
+   * NEUES FORMAT
+   *
+   * 64 Zeichen Hash
+   * 32 Zeichen Salt
+   */
+  if (
+    /^[0-9a-fA-F]+$/.test(
+      storedHash
+    ) &&
+    storedHash.length === 64 &&
+    /^[0-9a-fA-F]+$/.test(
+      storedSalt
+    ) &&
+    storedSalt.length === 32
+  ) {
+    const salt =
+      hexToBytes(
+        storedSalt
+      );
+
+    const derived =
+      await derivePasswordHash(
+        password,
+        salt
+      );
+
+    const calculatedHash =
+      bytesToHex(
+        derived
+      );
+
+    return {
+      valid:
+        calculatedHash.toLowerCase() ===
+        storedHash.toLowerCase(),
+
+      legacy: false
+    };
+  }
+
+
+  /*
+   * ALTES FORMAT
+   *
+   * Base64 Hash / Base64 Salt
+   */
+  try {
+    const salt =
+      base64ToBytes(
+        storedSalt
+      );
+
+    const derived =
+      await derivePasswordHash(
+        password,
+        salt
+      );
+
+    const calculatedHash =
+      bytesToBase64(
+        derived
+      );
+
+    return {
+      valid:
+        calculatedHash ===
+        storedHash,
+
+      legacy: true
+    };
+
+  } catch {
+    return {
+      valid: false,
+      legacy: false
+    };
+  }
 }
 
 
@@ -261,6 +403,7 @@ async function handleLogin(request, env) {
     String(
       body?.password || ""
     );
+
 
   if (!username || !password) {
     return json(
@@ -297,10 +440,6 @@ async function handleLogin(request, env) {
       .first();
 
 
-  /* ---------------------------------------------------------
-     BENUTZER NICHT GEFUNDEN
-     --------------------------------------------------------- */
-
   if (!user) {
     return json(
       {
@@ -333,14 +472,15 @@ async function handleLogin(request, env) {
      PASSWORT PRÜFEN
      --------------------------------------------------------- */
 
-  const passwordCorrect =
+  const passwordResult =
     await verifyPassword(
       password,
       user.password_hash,
       user.password_salt
     );
 
-  if (!passwordCorrect) {
+
+  if (!passwordResult.valid) {
     return json(
       {
         ok: false,
@@ -349,6 +489,39 @@ async function handleLogin(request, env) {
       },
       401
     );
+  }
+
+
+  /* ---------------------------------------------------------
+     ALTES PASSWORTFORMAT AUTOMATISCH MIGRIEREN
+     --------------------------------------------------------- */
+
+  if (passwordResult.legacy) {
+    const newPasswordData =
+      await hashPassword(
+        password
+      );
+
+    const now =
+      Math.floor(
+        Date.now() / 1000
+      );
+
+    await env.DB.prepare(`
+      UPDATE admin_users
+      SET
+        password_hash = ?,
+        password_salt = ?,
+        updated_at = ?
+      WHERE id = ?
+    `)
+      .bind(
+        newPasswordData.hash,
+        newPasswordData.salt,
+        now,
+        user.id
+      )
+      .run();
   }
 
 
@@ -363,21 +536,21 @@ async function handleLogin(request, env) {
     );
 
 
-  /* ---------------------------------------------------------
-     LOGIN ERFOLGREICH
-     --------------------------------------------------------- */
-
   return json(
     {
       ok: true,
-      username: user.username,
+      username:
+        user.username,
+
       is_superadmin:
         !!user.is_superadmin
     },
     200,
     {
       "Set-Cookie":
-        sessionCookie(sessionId)
+        sessionCookie(
+          sessionId
+        )
     }
   );
 }
@@ -413,7 +586,10 @@ async function handleLogout(
     200,
     {
       "Set-Cookie":
-        sessionCookie("", 0)
+        sessionCookie(
+          "",
+          0
+        )
     }
   );
 }
@@ -444,8 +620,10 @@ async function handleMe(
 
   return json({
     ok: true,
+
     username:
       session.username,
+
     expiresAt:
       session.expires_at
   });
@@ -578,7 +756,11 @@ async function handleAdminUsersGet(
   const result =
     users.results || [];
 
-  for (const user of result) {
+
+  for (
+    const user of result
+  ) {
+
     const permissions =
       await env.DB.prepare(`
         SELECT
@@ -600,6 +782,7 @@ async function handleAdminUsersGet(
     user.permissions =
       permissions.results || [];
   }
+
 
   return json({
     ok: true,
@@ -642,6 +825,7 @@ async function handleAdminUserCreate(
     );
   }
 
+
   const username =
     String(
       body?.username || ""
@@ -661,6 +845,7 @@ async function handleAdminUserCreate(
     body?.is_superadmin === true
       ? 1
       : 0;
+
 
   if (!username) {
     return json(
@@ -792,10 +977,12 @@ async function handleAdminUserCreate(
       ? body.permissions
       : [];
 
+
   for (
     const permission
     of permissions
   ) {
+
     const resource =
       String(
         permission?.resource || ""
@@ -805,8 +992,10 @@ async function handleAdminUserCreate(
       continue;
     }
 
+
     const permissionId =
       crypto.randomUUID();
+
 
     await env.DB.prepare(`
       INSERT INTO admin_permissions (
@@ -826,10 +1015,18 @@ async function handleAdminUserCreate(
         permissionId,
         userId,
         resource,
-        permission?.can_view ? 1 : 0,
-        permission?.can_create ? 1 : 0,
-        permission?.can_edit ? 1 : 0,
-        permission?.can_delete ? 1 : 0,
+        permission?.can_view
+          ? 1
+          : 0,
+        permission?.can_create
+          ? 1
+          : 0,
+        permission?.can_edit
+          ? 1
+          : 0,
+        permission?.can_delete
+          ? 1
+          : 0,
         now,
         now
       )
@@ -837,21 +1034,28 @@ async function handleAdminUserCreate(
   }
 
 
-  /* ---------------------------------------------------------
-     USER ZURÜCKGEBEN
-     --------------------------------------------------------- */
-
   return json(
     {
       ok: true,
+
       user: {
-        id: userId,
-        username,
-        active,
+        id:
+          userId,
+
+        username:
+          username,
+
+        active:
+          active,
+
         is_superadmin:
           isSuperadmin,
-        created_at: now,
-        updated_at: now
+
+        created_at:
+          now,
+
+        updated_at:
+          now
       }
     },
     201
@@ -860,10 +1064,10 @@ async function handleAdminUserCreate(
 
 
 /* =========================================================
-   ADMIN USER DELETE
+   UPDATE PERMISSIONS
    ========================================================= */
 
-async function handleAdminUserDelete(
+async function handleAdminPermissionsUpdate(
   request,
   env,
   userId
@@ -890,10 +1094,338 @@ async function handleAdminUserDelete(
   }
 
 
-  /* ---------------------------------------------------------
-     SICH SELBST NICHT LÖSCHEN
-     --------------------------------------------------------- */
+  const user =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        username,
+        is_superadmin
+      FROM admin_users
+      WHERE id = ?
+      LIMIT 1
+    `)
+      .bind(userId)
+      .first();
 
+
+  if (!user) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Benutzer nicht gefunden."
+      },
+      404
+    );
+  }
+
+
+  if (user.is_superadmin) {
+    return json({
+      ok: true,
+      message:
+        "Superadmins besitzen automatisch alle Rechte."
+    });
+  }
+
+
+  let body;
+
+  try {
+    body =
+      await request.json();
+  } catch {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige Anfrage."
+      },
+      400
+    );
+  }
+
+
+  const permissions =
+    Array.isArray(
+      body?.permissions
+    )
+      ? body.permissions
+      : [];
+
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+
+  /*
+   * Alte Berechtigungen löschen
+   */
+  await env.DB.prepare(`
+    DELETE FROM admin_permissions
+    WHERE user_id = ?
+  `)
+    .bind(userId)
+    .run();
+
+
+  /*
+   * Neue Berechtigungen speichern
+   */
+  for (
+    const permission
+    of permissions
+  ) {
+
+    const resource =
+      String(
+        permission?.resource || ""
+      ).trim();
+
+    if (!resource) {
+      continue;
+    }
+
+
+    const permissionId =
+      crypto.randomUUID();
+
+
+    await env.DB.prepare(`
+      INSERT INTO admin_permissions (
+        id,
+        user_id,
+        resource,
+        can_view,
+        can_create,
+        can_edit,
+        can_delete,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+      .bind(
+        permissionId,
+        userId,
+        resource,
+        permission?.can_view
+          ? 1
+          : 0,
+        permission?.can_create
+          ? 1
+          : 0,
+        permission?.can_edit
+          ? 1
+          : 0,
+        permission?.can_delete
+          ? 1
+          : 0,
+        now,
+        now
+      )
+      .run();
+  }
+
+
+  return json({
+    ok: true
+  });
+}
+
+
+/* =========================================================
+   RESET PASSWORD
+   ========================================================= */
+
+async function handleAdminPasswordReset(
+  request,
+  env,
+  userId
+) {
+  const auth =
+    await requireSuperadmin(
+      request,
+      env
+    );
+
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+
+  if (!userId) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Benutzer-ID fehlt."
+      },
+      400
+    );
+  }
+
+
+  const user =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        username
+      FROM admin_users
+      WHERE id = ?
+      LIMIT 1
+    `)
+      .bind(userId)
+      .first();
+
+
+  if (!user) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Benutzer nicht gefunden."
+      },
+      404
+    );
+  }
+
+
+  let body;
+
+  try {
+    body =
+      await request.json();
+  } catch {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige Anfrage."
+      },
+      400
+    );
+  }
+
+
+  const password =
+    String(
+      body?.password || ""
+    );
+
+
+  if (!password) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Neues Passwort fehlt."
+      },
+      400
+    );
+  }
+
+
+  if (password.length < 8) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Das Passwort muss mindestens 8 Zeichen lang sein."
+      },
+      400
+    );
+  }
+
+
+  const passwordData =
+    await hashPassword(
+      password
+    );
+
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+
+  await env.DB.prepare(`
+    UPDATE admin_users
+    SET
+      password_hash = ?,
+      password_salt = ?,
+      updated_at = ?
+    WHERE id = ?
+  `)
+    .bind(
+      passwordData.hash,
+      passwordData.salt,
+      now,
+      userId
+    )
+    .run();
+
+
+  /*
+   * Alle alten Sessions des Users
+   * entfernen.
+   */
+  await env.DB.prepare(`
+    DELETE FROM admin_sessions
+    WHERE username = ?
+  `)
+    .bind(
+      user.username
+    )
+    .run();
+
+
+  return json({
+    ok: true,
+    message:
+      "Passwort wurde erfolgreich zurückgesetzt."
+  });
+}
+
+
+/* =========================================================
+   DELETE USER
+   ========================================================= */
+
+async function handleAdminUserDelete(
+  request,
+  env,
+  userId
+) {
+  const auth =
+    await requireSuperadmin(
+      request,
+      env
+    );
+
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+
+  if (!userId) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Benutzer-ID fehlt."
+      },
+      400
+    );
+  }
+
+
+  /*
+   * Eigenen Superadmin nicht löschen
+   */
   if (
     userId === auth.user.id
   ) {
@@ -908,10 +1440,6 @@ async function handleAdminUserDelete(
   }
 
 
-  /* ---------------------------------------------------------
-     USER LADEN
-     --------------------------------------------------------- */
-
   const user =
     await env.DB.prepare(`
       SELECT
@@ -923,6 +1451,7 @@ async function handleAdminUserDelete(
     `)
       .bind(userId)
       .first();
+
 
   if (!user) {
     return json(
@@ -936,10 +1465,9 @@ async function handleAdminUserDelete(
   }
 
 
-  /* ---------------------------------------------------------
-     BERECHTIGUNGEN LÖSCHEN
-     --------------------------------------------------------- */
-
+  /*
+   * Berechtigungen löschen
+   */
   await env.DB.prepare(`
     DELETE FROM admin_permissions
     WHERE user_id = ?
@@ -948,28 +1476,29 @@ async function handleAdminUserDelete(
     .run();
 
 
-  /* ---------------------------------------------------------
-     SESSIONS LÖSCHEN
-     --------------------------------------------------------- */
-
+  /*
+   * Sessions löschen
+   */
   await env.DB.prepare(`
     DELETE FROM admin_sessions
     WHERE username = ?
   `)
-    .bind(user.username)
+    .bind(
+      user.username
+    )
     .run();
 
 
-  /* ---------------------------------------------------------
-     USER LÖSCHEN
-     --------------------------------------------------------- */
-
+  /*
+   * Benutzer löschen
+   */
   await env.DB.prepare(`
     DELETE FROM admin_users
     WHERE id = ?
   `)
     .bind(userId)
     .run();
+
 
   return json({
     ok: true
@@ -983,8 +1512,10 @@ async function handleAdminUserDelete(
 
 export default {
   async fetch(request, env) {
+
     const url =
       new URL(request.url);
+
 
     try {
 
@@ -993,8 +1524,10 @@ export default {
       --------------------------------------------- */
 
       if (
-        url.pathname === "/api/login" &&
-        request.method === "POST"
+        url.pathname ===
+          "/api/login" &&
+        request.method ===
+          "POST"
       ) {
         return await handleLogin(
           request,
@@ -1008,8 +1541,10 @@ export default {
       --------------------------------------------- */
 
       if (
-        url.pathname === "/api/logout" &&
-        request.method === "POST"
+        url.pathname ===
+          "/api/logout" &&
+        request.method ===
+          "POST"
       ) {
         return await handleLogout(
           request,
@@ -1023,8 +1558,10 @@ export default {
       --------------------------------------------- */
 
       if (
-        url.pathname === "/api/me" &&
-        request.method === "GET"
+        url.pathname ===
+          "/api/me" &&
+        request.method ===
+          "GET"
       ) {
         return await handleMe(
           request,
@@ -1034,12 +1571,14 @@ export default {
 
 
       /* ---------------------------------------------
-         ADMIN USERS - LIST
+         ADMIN USERS - GET
       --------------------------------------------- */
 
       if (
-        url.pathname === "/api/admin/users" &&
-        request.method === "GET"
+        url.pathname ===
+          "/api/admin/users" &&
+        request.method ===
+          "GET"
       ) {
         return await handleAdminUsersGet(
           request,
@@ -1053,12 +1592,60 @@ export default {
       --------------------------------------------- */
 
       if (
-        url.pathname === "/api/admin/users" &&
-        request.method === "POST"
+        url.pathname ===
+          "/api/admin/users" &&
+        request.method ===
+          "POST"
       ) {
         return await handleAdminUserCreate(
           request,
           env
+        );
+      }
+
+
+      /* ---------------------------------------------
+         ADMIN USERS - PERMISSIONS
+      --------------------------------------------- */
+
+      const permissionMatch =
+        url.pathname.match(
+          /^\/api\/admin\/users\/([^/]+)\/permissions$/
+        );
+
+
+      if (
+        permissionMatch &&
+        request.method ===
+          "PUT"
+      ) {
+        return await handleAdminPermissionsUpdate(
+          request,
+          env,
+          permissionMatch[1]
+        );
+      }
+
+
+      /* ---------------------------------------------
+         ADMIN USERS - PASSWORD RESET
+      --------------------------------------------- */
+
+      const passwordResetMatch =
+        url.pathname.match(
+          /^\/api\/admin\/users\/([^/]+)\/password$/
+        );
+
+
+      if (
+        passwordResetMatch &&
+        request.method ===
+          "POST"
+      ) {
+        return await handleAdminPasswordReset(
+          request,
+          env,
+          passwordResetMatch[1]
         );
       }
 
@@ -1072,9 +1659,11 @@ export default {
           /^\/api\/admin\/users\/([^/]+)$/
         );
 
+
       if (
         userDeleteMatch &&
-        request.method === "DELETE"
+        request.method ===
+          "DELETE"
       ) {
         return await handleAdminUserDelete(
           request,
@@ -1092,12 +1681,14 @@ export default {
         request
       );
 
+
     } catch (error) {
 
       console.error(
         "Worker error:",
         error
       );
+
 
       return json(
         {
