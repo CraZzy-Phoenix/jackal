@@ -925,13 +925,26 @@
       font-size: 21px;
     }
 
+    .blacklist-card .image-wrap {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      background: #11111a;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .blacklist-card .image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
 
     .blacklist-card .reason {
-
       color: #aaa;
-
       margin-top: 10px;
-
       font-size: 14px;
     }
 
@@ -1744,7 +1757,7 @@
        DATEN AUS GOOGLE SHEETS LADEN
     ===================================================== */
 
-    function loadWebsite() {
+    async function loadWebsite() {
 
       /* CLOUDFARE / STATIC TESTDATEN
        * Diese Daten ersetzen vorübergehend Google Sheets.
@@ -1785,6 +1798,19 @@
         blacklist: [],
         gallery: []
       };
+
+      try {
+        const response = await fetch("/api/public/blacklist", {
+          credentials: "same-origin",
+          cache: "no-store"
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.ok && Array.isArray(data.blacklist)) {
+          websiteData.blacklist = data.blacklist;
+        }
+      } catch (error) {
+        /* Fallback auf lokale Daten. */
+      }
 
       renderWebsite();
     }
@@ -2824,10 +2850,12 @@
               class="card blacklist-card">
 
 
+              ${item.image_url ? '<div class="image-wrap"><img src="' + escapeHtml(item.image_url) + '" alt="' + escapeHtml(item.vehicle_name || "Blacklist") + '" loading="lazy" onerror="this.parentElement.style.display=\'none\'"></div>' : ""}
+
               <h2>
 
                 ${escapeHtml(
-                  item.name || ""
+                  item.vehicle_name || ""
                 )}
 
               </h2>
