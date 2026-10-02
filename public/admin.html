@@ -2999,7 +2999,7 @@ async function saveRankingDriver(event){
 
     if(editing){
       method = "PUT";
-      url += "/" + encodeURIComponent(String(rankingEditingId));
+      url = "/api/admin/drivers/" + encodeURIComponent(String(rankingEditingId));
     }
 
     const response = await fetch(url, {
@@ -3018,7 +3018,7 @@ async function saveRankingDriver(event){
     }
 
     closeRankingModal();
-    showToast(editing ? "Fahrer wurde geändert." : "Fahrer wurde zur Rangliste hinzugefügt.");
+    showToast(editing ? "Fahrer wurde gespeichert." : "Fahrer wurde zur Rangliste hinzugefügt.");
     await loadRanking();
 
   }catch(error){
