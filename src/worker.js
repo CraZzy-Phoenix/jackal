@@ -1,11 +1,6 @@
 const SESSION_DAYS = 7;
 const SESSION_SECONDS = SESSION_DAYS * 24 * 60 * 60;
 
-
-/* =========================================================
-   RESSOURCEN
-========================================================= */
-
 const RESOURCES = {
   races: "races",
   drivers: "drivers",
@@ -27,68 +22,30 @@ const RESOURCE_LABELS = {
   settings: "Einstellungen"
 };
 
-
-/* =========================================================
-   JSON RESPONSE
-========================================================= */
-
-function json(
-  data,
-  status = 200,
-  extraHeaders = {}
-) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status,
-      headers: {
-        "Content-Type":
-          "application/json; charset=utf-8",
-        "Cache-Control":
-          "no-store",
-        ...extraHeaders
-      }
+function json(data, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      ...extraHeaders
     }
-  );
+  });
 }
 
-
-/* =========================================================
-   COOKIE
-========================================================= */
-
-function getCookie(
-  request,
-  name
-) {
-  const cookie =
-    request.headers.get("Cookie") || "";
-
-  const escapedName =
-    name.replace(
-      /[.*+?^${}()|[\]\\]/g,
-      "\\$&"
-    );
-
-  const match =
-    cookie.match(
-      new RegExp(
-        "(?:^|;\\s*)" +
-        escapedName +
+function getCookie(request, name) {
+  const cookie = request.headers.get("Cookie") || "";
+  const match = cookie.match(
+    new RegExp(
+      "(?:^|;\\s*)" +
+        name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
         "=([^;]*)"
-      )
-    );
-
-  return match
-    ? decodeURIComponent(match[1])
-    : null;
+    )
+  );
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-
-function sessionCookie(
-  value,
-  maxAge = SESSION_SECONDS
-) {
+function sessionCookie(value, maxAge = SESSION_SECONDS) {
   return [
     `jackal_admin_session=${encodeURIComponent(value)}`,
     "Path=/",
@@ -99,183 +56,66 @@ function sessionCookie(
   ].join("; ");
 }
 
-
-/* =========================================================
-   SESSION
-========================================================= */
-
-async function createSession(
-  env,
-  username
-) {
-  const sessionId =
-    crypto.randomUUID();
-
-  const now =
-    Math.floor(
-      Date.now() / 1000
-    );
-
-  const expiresAt =
-    now + SESSION_SECONDS;
+async function createSession(env, username) {
+  const sessionId = crypto.randomUUID();
+  const now = Math.floor(Date.now() / 1000);
+  const expiresAt = now + SESSION_SECONDS;
 
   await env.DB.prepare(`
-    INSERT INTO admin_sessions (
-      id,
-      username,
-      expires_at,
-      created_at
-    )
+    INSERT INTO admin_sessions (id, username, expires_at, created_at)
     VALUES (?, ?, ?, ?)
-  `)
-    .bind(
-      sessionId,
-      username,
-      expiresAt,
-      now
-    )
-    .run();
+  `).bind(sessionId, username, expiresAt, now).run();
 
   return sessionId;
 }
 
+async function getSession(request, env) {
+  const sessionId = getCookie(request, "jackal_admin_session");
+  if (!sessionId) return null;
 
-async function getSession(
-  request,
-  env
-) {
-  const sessionId =
-    getCookie(
-      request,
-      "jackal_admin_session"
-    );
-
-  if (!sessionId) {
-    return null;
-  }
-
-  const now =
-    Math.floor(
-      Date.now() / 1000
-    );
-
-  const row =
-    await env.DB.prepare(`
-      SELECT
-        id,
-        username,
-        expires_at
-      FROM admin_sessions
-      WHERE id = ?
-        AND expires_at > ?
-      LIMIT 1
-    `)
-      .bind(
-        sessionId,
-        now
-      )
-      .first();
+  const now = Math.floor(Date.now() / 1000);
+  const row = await env.DB.prepare(`
+    SELECT id, username, expires_at
+    FROM admin_sessions
+    WHERE id = ? AND expires_at > ?
+    LIMIT 1
+  `).bind(sessionId, now).first();
 
   return row || null;
 }
 
-
-/* =========================================================
-   ADMIN USER
-========================================================= */
-
-async function getAdminUserByUsername(
-  env,
-  username
-) {
+async function getAdminUserByUsername(env, username) {
   return await env.DB.prepare(`
-    SELECT
-      id,
-      username,
-      active,
-      is_superadmin,
-      created_at,
-      updated_at
+    SELECT id, username, active, is_superadmin, created_at, updated_at
     FROM admin_users
     WHERE username = ?
     LIMIT 1
-  `)
-    .bind(username)
-    .first();
+  `).bind(username).first();
 }
 
-
-async function getAdminUserById(
-  env,
-  userId
-) {
-  return await env.DB.prepare(`
-    SELECT
-      id,
-      username,
-      password_hash,
-      password_salt,
-      active,
-      is_superadmin,
-      created_at,
-      updated_at
-    FROM admin_users
-    WHERE id = ?
-    LIMIT 1
-  `)
-    .bind(userId)
-    .first();
-}
-
-
-/* =========================================================
-   SESSION CHECK
-========================================================= */
-
-async function requireSession(
-  request,
-  env
-) {
-  const session =
-    await getSession(
-      request,
-      env
-    );
+async function requireSession(request, env) {
+  const session = await getSession(request, env);
 
   if (!session) {
     return json(
       {
         ok: false,
-        error:
-          "Nicht angemeldet."
+        error: "Nicht angemeldet."
       },
       401
     );
   }
 
-  const user =
-    await getAdminUserByUsername(
-      env,
-      session.username
-    );
+  const user = await getAdminUserByUsername(
+    env,
+    session.username
+  );
 
-  if (!user) {
+  if (!user || !user.active) {
     return json(
       {
         ok: false,
-        error:
-          "Benutzerkonto wurde nicht gefunden."
-      },
-      403
-    );
-  }
-
-  if (!user.active) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Benutzerkonto ist deaktiviert."
+        error: "Benutzerkonto ist nicht aktiv."
       },
       403
     );
@@ -287,35 +127,64 @@ async function requireSession(
   };
 }
 
-
-/* =========================================================
-   SUPERADMIN CHECK
-========================================================= */
-
-async function requireSuperadmin(
+async function requirePermission(
   request,
-  env
+  env,
+  resource,
+  action
 ) {
-  const auth =
-    await requireSession(
-      request,
-      env
-    );
+  const auth = await requireSession(
+    request,
+    env
+  );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+  if (auth.user.is_superadmin) {
     return auth;
   }
 
   if (
-    !auth.user.is_superadmin
+    resource === "dashboard" &&
+    action === "view"
   ) {
+    return auth;
+  }
+
+  const permission = await env.DB.prepare(`
+    SELECT
+      can_view,
+      can_create,
+      can_edit,
+      can_delete
+    FROM admin_permissions
+    WHERE user_id = ?
+      AND resource = ?
+    LIMIT 1
+  `)
+    .bind(
+      auth.user.id,
+      resource
+    )
+    .first();
+
+  const allowed = Boolean(
+    permission &&
+    Number(
+      permission[
+        `can_${action}`
+      ]
+    ) === 1
+  );
+
+  if (!allowed) {
     return json(
       {
         ok: false,
         error:
-          "Keine Superadmin-Berechtigung."
+          "Keine Berechtigung für diesen Bereich."
       },
       403
     );
@@ -324,28 +193,18 @@ async function requireSuperadmin(
   return auth;
 }
 
-
-/* =========================================================
-   PASSWORD HASHING
-========================================================= */
-
-function bytesToHex(
-  bytes
-) {
+function bytesToHex(bytes) {
   return Array.from(bytes)
     .map(
-      byte =>
-        byte
+      b =>
+        b
           .toString(16)
           .padStart(2, "0")
     )
     .join("");
 }
 
-
-function hexToBytes(
-  hex
-) {
+function hexToBytes(hex) {
   const bytes =
     new Uint8Array(
       hex.length / 2
@@ -369,10 +228,7 @@ function hexToBytes(
   return bytes;
 }
 
-
-function base64ToBytes(
-  value
-) {
+function base64ToBytes(value) {
   const binary =
     atob(value);
 
@@ -393,10 +249,7 @@ function base64ToBytes(
   return bytes;
 }
 
-
-function bytesToBase64(
-  bytes
-) {
+function bytesToBase64(bytes) {
   let binary = "";
 
   for (
@@ -410,7 +263,6 @@ function bytesToBase64(
 
   return btoa(binary);
 }
-
 
 async function derivePasswordHash(
   password,
@@ -441,9 +293,10 @@ async function derivePasswordHash(
       256
     );
 
-  return new Uint8Array(bits);
+  return new Uint8Array(
+    bits
+  );
 }
-
 
 async function hashPassword(
   password,
@@ -451,7 +304,9 @@ async function hashPassword(
 ) {
   const salt =
     saltHex
-      ? hexToBytes(saltHex)
+      ? hexToBytes(
+          saltHex
+        )
       : crypto.getRandomValues(
           new Uint8Array(16)
         );
@@ -467,19 +322,12 @@ async function hashPassword(
       bytesToHex(
         derived
       ),
-
     salt:
       bytesToHex(
         salt
       )
   };
 }
-
-
-/* =========================================================
-   PASSWORD VERIFY
-   Neues + altes Format
-========================================================= */
 
 async function verifyPassword(
   password,
@@ -496,14 +344,9 @@ async function verifyPassword(
     };
   }
 
-
   /*
-   * NEUES HEX-FORMAT
-   *
-   * Hash = 64 Zeichen
-   * Salt = 32 Zeichen
+   * Neues HEX-Format
    */
-
   if (
     storedHash.length === 64 &&
     storedSalt.length === 32 &&
@@ -533,11 +376,9 @@ async function verifyPassword(
     };
   }
 
-
   /*
-   * ALTES BASE64-FORMAT
+   * Altes Base64-Format
    */
-
   try {
     const derived =
       await derivePasswordHash(
@@ -565,11 +406,6 @@ async function verifyPassword(
   }
 }
 
-
-/* =========================================================
-   LOGIN
-========================================================= */
-
 async function handleLogin(
   request,
   env
@@ -579,6 +415,7 @@ async function handleLogin(
   try {
     body =
       await request.json();
+
   } catch {
     return json(
       {
@@ -590,7 +427,6 @@ async function handleLogin(
     );
   }
 
-
   const username =
     String(
       body?.username || ""
@@ -600,7 +436,6 @@ async function handleLogin(
     String(
       body?.password || ""
     );
-
 
   if (
     !username ||
@@ -615,7 +450,6 @@ async function handleLogin(
       400
     );
   }
-
 
   const user =
     await env.DB.prepare(`
@@ -635,7 +469,6 @@ async function handleLogin(
       )
       .first();
 
-
   if (!user) {
     return json(
       {
@@ -646,7 +479,6 @@ async function handleLogin(
       401
     );
   }
-
 
   if (!user.active) {
     return json(
@@ -659,14 +491,12 @@ async function handleLogin(
     );
   }
 
-
   const passwordResult =
     await verifyPassword(
       password,
       user.password_hash,
       user.password_salt
     );
-
 
   if (
     !passwordResult.valid
@@ -681,13 +511,10 @@ async function handleLogin(
     );
   }
 
-
   /*
    * Altes Passwortformat automatisch
-   * beim ersten erfolgreichen Login
-   * in das neue Format umwandeln.
+   * beim erfolgreichen Login migrieren.
    */
-
   if (
     passwordResult.legacy
   ) {
@@ -718,13 +545,11 @@ async function handleLogin(
       .run();
   }
 
-
   const sessionId =
     await createSession(
       env,
       user.username
     );
-
 
   return json(
     {
@@ -743,11 +568,6 @@ async function handleLogin(
     }
   );
 }
-
-
-/* =========================================================
-   LOGOUT
-========================================================= */
 
 async function handleLogout(
   request,
@@ -770,7 +590,6 @@ async function handleLogout(
       .run();
   }
 
-
   return json(
     {
       ok: true
@@ -785,11 +604,6 @@ async function handleLogout(
     }
   );
 }
-
-
-/* =========================================================
-   /API/ME
-========================================================= */
 
 async function handleMe(
   request,
@@ -807,9 +621,7 @@ async function handleMe(
     return auth;
   }
 
-
   const permissions = {};
-
 
   for (
     const resource of
@@ -817,7 +629,6 @@ async function handleMe(
         RESOURCE_LABELS
       )
   ) {
-
     if (
       resource ===
       "dashboard"
@@ -833,7 +644,6 @@ async function handleMe(
 
       continue;
     }
-
 
     const row =
       await env.DB.prepare(`
@@ -852,7 +662,6 @@ async function handleMe(
           resource
         )
         .first();
-
 
     permissions[
       resource
@@ -887,7 +696,6 @@ async function handleMe(
           };
   }
 
-
   return json({
     ok: true,
 
@@ -903,11 +711,6 @@ async function handleMe(
     permissions
   });
 }
-
-
-/* =========================================================
-   ADMIN USERS - LIST
-========================================================= */
 
 async function handleAdminUsersGet(
   request,
@@ -925,7 +728,6 @@ async function handleAdminUsersGet(
     return auth;
   }
 
-
   const users =
     await env.DB.prepare(`
       SELECT
@@ -939,15 +741,13 @@ async function handleAdminUsersGet(
       ORDER BY username COLLATE NOCASE ASC
     `).all();
 
-
   const result =
-    users.results || [];
-
+    users.results ||
+    [];
 
   for (
     const user of result
   ) {
-
     const permissions =
       await env.DB.prepare(`
         SELECT
@@ -968,12 +768,10 @@ async function handleAdminUsersGet(
         )
         .all();
 
-
     user.permissions =
       permissions.results ||
       [];
   }
-
 
   return json({
     ok: true,
@@ -981,11 +779,6 @@ async function handleAdminUsersGet(
       result
   });
 }
-
-
-/* =========================================================
-   ADMIN USER - CREATE
-========================================================= */
 
 async function handleAdminUserCreate(
   request,
@@ -1003,12 +796,12 @@ async function handleAdminUserCreate(
     return auth;
   }
 
-
   let body;
 
   try {
     body =
       await request.json();
+
   } catch {
     return json(
       {
@@ -1019,7 +812,6 @@ async function handleAdminUserCreate(
       400
     );
   }
-
 
   const username =
     String(
@@ -1041,7 +833,6 @@ async function handleAdminUserCreate(
       ? 1
       : 0;
 
-
   if (
     username.length < 2
   ) {
@@ -1054,7 +845,6 @@ async function handleAdminUserCreate(
       400
     );
   }
-
 
   if (
     password.length < 8
@@ -1069,7 +859,6 @@ async function handleAdminUserCreate(
     );
   }
 
-
   const existing =
     await env.DB.prepare(`
       SELECT id
@@ -1082,7 +871,6 @@ async function handleAdminUserCreate(
       )
       .first();
 
-
   if (existing) {
     return json(
       {
@@ -1094,12 +882,10 @@ async function handleAdminUserCreate(
     );
   }
 
-
   const passwordData =
     await hashPassword(
       password
     );
-
 
   const userId =
     crypto.randomUUID();
@@ -1108,7 +894,6 @@ async function handleAdminUserCreate(
     Math.floor(
       Date.now() / 1000
     );
-
 
   await env.DB.prepare(`
     INSERT INTO admin_users (
@@ -1134,7 +919,6 @@ async function handleAdminUserCreate(
       now
     )
     .run();
-
 
   return json(
     {
@@ -1166,11 +950,6 @@ async function handleAdminUserCreate(
   );
 }
 
-
-/* =========================================================
-   ADMIN USER - DELETE
-========================================================= */
-
 async function handleAdminUserDelete(
   request,
   env,
@@ -1188,7 +967,6 @@ async function handleAdminUserDelete(
     return auth;
   }
 
-
   if (
     userId ===
     auth.user.id
@@ -1202,7 +980,6 @@ async function handleAdminUserDelete(
       400
     );
   }
-
 
   const user =
     await env.DB.prepare(`
@@ -1218,7 +995,6 @@ async function handleAdminUserDelete(
       )
       .first();
 
-
   if (!user) {
     return json(
       {
@@ -1230,7 +1006,6 @@ async function handleAdminUserDelete(
     );
   }
 
-
   await env.DB.prepare(`
     DELETE FROM admin_permissions
     WHERE user_id = ?
@@ -1239,7 +1014,6 @@ async function handleAdminUserDelete(
       userId
     )
     .run();
-
 
   await env.DB.prepare(`
     DELETE FROM admin_sessions
@@ -1250,7 +1024,6 @@ async function handleAdminUserDelete(
     )
     .run();
 
-
   await env.DB.prepare(`
     DELETE FROM admin_users
     WHERE id = ?
@@ -1260,16 +1033,10 @@ async function handleAdminUserDelete(
     )
     .run();
 
-
   return json({
     ok: true
   });
 }
-
-
-/* =========================================================
-   ADMIN USER - PERMISSIONS
-========================================================= */
 
 async function handleAdminPermissionsUpdate(
   request,
@@ -1288,7 +1055,6 @@ async function handleAdminPermissionsUpdate(
     return auth;
   }
 
-
   const user =
     await env.DB.prepare(`
       SELECT
@@ -1303,7 +1069,6 @@ async function handleAdminPermissionsUpdate(
       )
       .first();
 
-
   if (!user) {
     return json(
       {
@@ -1315,7 +1080,6 @@ async function handleAdminPermissionsUpdate(
     );
   }
 
-
   if (
     user.is_superadmin
   ) {
@@ -1326,12 +1090,12 @@ async function handleAdminPermissionsUpdate(
     });
   }
 
-
   let body;
 
   try {
     body =
       await request.json();
+
   } catch {
     return json(
       {
@@ -1343,7 +1107,6 @@ async function handleAdminPermissionsUpdate(
     );
   }
 
-
   const permissions =
     Array.isArray(
       body?.permissions
@@ -1351,16 +1114,11 @@ async function handleAdminPermissionsUpdate(
       ? body.permissions
       : [];
 
-
   const now =
     Math.floor(
       Date.now() / 1000
     );
 
-
-  /*
-   * Alte Rechte vollständig löschen
-   */
   await env.DB.prepare(`
     DELETE FROM admin_permissions
     WHERE user_id = ?
@@ -1370,20 +1128,13 @@ async function handleAdminPermissionsUpdate(
     )
     .run();
 
-
-  /*
-   * Neue Rechte speichern
-   */
   for (
-    const permission
-    of permissions
+    const permission of permissions
   ) {
-
     const resource =
       String(
         permission?.resource || ""
       ).trim();
-
 
     if (
       !RESOURCE_LABELS[
@@ -1394,7 +1145,6 @@ async function handleAdminPermissionsUpdate(
     ) {
       continue;
     }
-
 
     await env.DB.prepare(`
       INSERT INTO admin_permissions (
@@ -1437,24 +1187,17 @@ async function handleAdminPermissionsUpdate(
       .run();
   }
 
-
   return json({
     ok: true
   });
 }
 
-
-/* =========================================================
-   PASSWORD RESET
-========================================================= */
-
-async function handleAdminPasswordReset(
+async function requireSuperadmin(
   request,
-  env,
-  userId
+  env
 ) {
   const auth =
-    await requireSuperadmin(
+    await requireSession(
       request,
       env
     );
@@ -1465,145 +1208,45 @@ async function handleAdminPasswordReset(
     return auth;
   }
 
-
-  const user =
-    await getAdminUserById(
-      env,
-      userId
-    );
-
-
-  if (!user) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Benutzer nicht gefunden."
-      },
-      404
-    );
-  }
-
-
-  let body;
-
-  try {
-    body =
-      await request.json();
-  } catch {
-    return json(
-      {
-        ok: false,
-        error:
-          "Ungültige Anfrage."
-      },
-      400
-    );
-  }
-
-
-  const password =
-    String(
-      body?.password || ""
-    );
-
-
   if (
-    password.length < 8
+    !auth.user.is_superadmin
   ) {
     return json(
       {
         ok: false,
         error:
-          "Das Passwort muss mindestens 8 Zeichen lang sein."
+          "Keine Superadmin-Berechtigung."
       },
-      400
+      403
     );
   }
 
-
-  const passwordData =
-    await hashPassword(
-      password
-    );
-
-
-  const now =
-    Math.floor(
-      Date.now() / 1000
-    );
-
-
-  await env.DB.prepare(`
-    UPDATE admin_users
-    SET
-      password_hash = ?,
-      password_salt = ?,
-      updated_at = ?
-    WHERE id = ?
-  `)
-    .bind(
-      passwordData.hash,
-      passwordData.salt,
-      now,
-      userId
-    )
-    .run();
-
-
-  /*
-   * Alte Sessions beenden.
-   */
-  await env.DB.prepare(`
-    DELETE FROM admin_sessions
-    WHERE username = ?
-  `)
-    .bind(
-      user.username
-    )
-    .run();
-
-
-  return json({
-    ok: true,
-    message:
-      "Passwort wurde erfolgreich zurückgesetzt."
-  });
+  return auth;
 }
-
-
-/* =========================================================
-   TABLE SCHEMA
-========================================================= */
 
 async function getTableSchema(
   env,
   table
 ) {
   return await env.DB.prepare(
-    `PRAGMA table_info("${table}")`
+    `PRAGMA table_info(${table})`
   ).all();
 }
-
 
 function getIdentityColumn(
   schema
 ) {
   const columns =
-    schema.results || [];
+    schema.results ||
+    [];
 
-
-  /*
-   * Primärschlüssel bevorzugen
-   */
   const primary =
     columns.filter(
-      column =>
+      col =>
         Number(
-          column.pk
+          col.pk
         ) === 1
     );
-
 
   if (
     primary.length === 1
@@ -1611,19 +1254,30 @@ function getIdentityColumn(
     return primary[0];
   }
 
-
-  /*
-   * Fallback auf "id"
-   */
-  return (
+  const id =
     columns.find(
-      column =>
-        column.name ===
+      col =>
+        col.name ===
         "id"
-    ) || null
-  );
-}
+    );
 
+  if (id) {
+    return id;
+  }
+
+  const key =
+    columns.find(
+      col =>
+        col.name ===
+        "key"
+    );
+
+  if (key) {
+    return key;
+  }
+
+  return null;
+}
 
 function quoteIdentifier(
   value
@@ -1634,17 +1288,15 @@ function quoteIdentifier(
     )
   ) {
     throw new Error(
-      "Ungültiger Datenbank-Bezeichner."
+      "Ungültiger Bezeichner."
     );
   }
 
-  return `"${value}"`;
+  return `"${value.replaceAll(
+    '"',
+    '""'
+  )}"`;
 }
-
-
-/* =========================================================
-   ADMIN SCHEMA
-========================================================= */
 
 async function handleAdminSchema(
   request,
@@ -1659,19 +1311,16 @@ async function handleAdminSchema(
       "view"
     );
 
-
   if (
     auth instanceof Response
   ) {
     return auth;
   }
 
-
   const table =
     RESOURCES[
       resource
     ];
-
 
   if (!table) {
     return json(
@@ -1684,13 +1333,38 @@ async function handleAdminSchema(
     );
   }
 
-
   const schema =
     await getTableSchema(
       env,
       table
     );
 
+  const columns =
+    (
+      schema.results ||
+      []
+    ).map(
+      col => ({
+        name:
+          col.name,
+
+        type:
+          col.type,
+
+        notnull:
+          Number(
+            col.notnull
+          ),
+
+        default:
+          col.dflt_value,
+
+        pk:
+          Number(
+            col.pk
+          )
+      })
+    );
 
   return json({
     ok: true,
@@ -1709,124 +1383,149 @@ async function handleAdminSchema(
         schema
       )?.name || null,
 
-    columns:
-      schema.results || []
+    columns
   });
 }
 
-
-/* =========================================================
-   PERMISSION CHECK
-========================================================= */
-
-async function requirePermission(
-  request,
-  env,
-  resource,
-  action
+function sanitizeData(
+  data,
+  schemaColumns,
+  {
+    includeIdentity = true
+  } = {}
 ) {
-  const auth =
-    await requireSession(
-      request,
-      env
-    );
+  const out = {};
 
-
-  if (
-    auth instanceof Response
-  ) {
-    return auth;
-  }
-
-
-  /*
-   * Superadmin darf alles.
-   */
-  if (
-    auth.user.is_superadmin
-  ) {
-    return auth;
-  }
-
-
-  /*
-   * Dashboard darf grundsätzlich
-   * angezeigt werden.
-   */
-  if (
-    resource ===
-      "dashboard" &&
-    action ===
-      "view"
-  ) {
-    return auth;
-  }
-
-
-  if (
-    !RESOURCE_LABELS[
-      resource
-    ]
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Unbekannter Bereich."
-      },
-      404
-    );
-  }
-
-
-  const permission =
-    await env.DB.prepare(`
-      SELECT
-        can_view,
-        can_create,
-        can_edit,
-        can_delete
-      FROM admin_permissions
-      WHERE user_id = ?
-        AND resource = ?
-      LIMIT 1
-    `)
-      .bind(
-        auth.user.id,
-        resource
+  const allowed =
+    new Set(
+      schemaColumns.map(
+        col =>
+          col.name
       )
-      .first();
-
-
-  const permissionField =
-    `can_${action}`;
-
+    );
 
   if (
-    Number(
-      permission?.[
-        permissionField
-      ] || 0
-    ) !== 1
+    !data ||
+    typeof data !==
+      "object" ||
+    Array.isArray(
+      data
+    )
   ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Keine Berechtigung für diesen Bereich."
-      },
-      403
+    throw new Error(
+      "Ungültige Daten."
     );
   }
 
+  for (
+    const [
+      key,
+      value
+    ] of Object.entries(
+      data
+    )
+  ) {
+    if (
+      !allowed.has(
+        key
+      )
+    ) {
+      continue;
+    }
 
-  return auth;
+    if (
+      !includeIdentity &&
+      key ===
+        "id"
+    ) {
+      continue;
+    }
+
+    if (
+      [
+        "created_at",
+        "updated_at"
+      ].includes(
+        key
+      )
+    ) {
+      continue;
+    }
+
+    out[key] =
+      value;
+  }
+
+  return out;
 }
 
+function normalizeDbValue(
+  value,
+  column
+) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return null;
+  }
 
-/* =========================================================
-   ADMIN DATA - GET
-========================================================= */
+  const type =
+    String(
+      column.type || ""
+    ).toUpperCase();
+
+  if (
+    type.includes(
+      "INT"
+    )
+  ) {
+    if (
+      typeof value ===
+      "boolean"
+    ) {
+      return value
+        ? 1
+        : 0;
+    }
+
+    if (
+      value ===
+        "true"
+    ) {
+      return 1;
+    }
+
+    if (
+      value ===
+        "false"
+    ) {
+      return 0;
+    }
+
+    if (
+      value ===
+        ""
+    ) {
+      return null;
+    }
+
+    const number =
+      Number(
+        value
+      );
+
+    return Number.isFinite(
+      number
+    )
+      ? number
+      : value;
+  }
+
+  return String(
+    value
+  );
+}
 
 async function handleAdminDataGet(
   request,
@@ -1841,19 +1540,16 @@ async function handleAdminDataGet(
       "view"
     );
 
-
   if (
     auth instanceof Response
   ) {
     return auth;
   }
 
-
   const table =
     RESOURCES[
       resource
     ];
-
 
   if (!table) {
     return json(
@@ -1866,27 +1562,22 @@ async function handleAdminDataGet(
     );
   }
 
-
   const result =
     await env.DB.prepare(
-      `SELECT * FROM ${quoteIdentifier(table)}`
+      `SELECT * FROM ${quoteIdentifier(
+        table
+      )}`
     ).all();
-
 
   return json({
     ok: true,
-
     resource,
 
     rows:
-      result.results || []
+      result.results ||
+      []
   });
 }
-
-
-/* =========================================================
-   ADMIN DATA - CREATE
-========================================================= */
 
 async function handleAdminDataCreate(
   request,
@@ -1901,19 +1592,16 @@ async function handleAdminDataCreate(
       "create"
     );
 
-
   if (
     auth instanceof Response
   ) {
     return auth;
   }
 
-
   const table =
     RESOURCES[
       resource
     ];
-
 
   if (!table) {
     return json(
@@ -1926,35 +1614,35 @@ async function handleAdminDataCreate(
     );
   }
 
-
   const schema =
     await getTableSchema(
       env,
       table
     );
 
-
   const columns =
-    schema.results || [];
+    schema.results ||
+    [];
 
-
-  if (!columns.length) {
+  if (
+    !columns.length
+  ) {
     return json(
       {
         ok: false,
         error:
-          "Tabelle wurde nicht gefunden."
+          "Tabelle nicht gefunden."
       },
       404
     );
   }
-
 
   let body;
 
   try {
     body =
       await request.json();
+
   } catch {
     return json(
       {
@@ -1966,98 +1654,40 @@ async function handleAdminDataCreate(
     );
   }
 
-
-  if (
-    !body ||
-    typeof body !==
-      "object" ||
-    Array.isArray(body)
-  ) {
-    return json(
+  const data =
+    sanitizeData(
+      body,
+      columns,
       {
-        ok: false,
-        error:
-          "Ungültige Daten."
-      },
-      400
+        includeIdentity:
+          true
+      }
     );
-  }
 
-
-  const data = {};
-
-
-  /*
-   * Nur tatsächlich vorhandene Spalten
-   * übernehmen.
-   */
-  for (
-    const column of
-      columns
-  ) {
-
-    const name =
-      column.name;
-
-
-    /*
-     * Zeitfelder werden unten
-     * automatisch gesetzt.
-     */
-    if (
-      name ===
-        "created_at" ||
-      name ===
-        "updated_at"
-    ) {
-      continue;
-    }
-
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        body,
-        name
-      )
-    ) {
-      data[name] =
-        body[name];
-    }
-  }
-
-
-  /*
-   * AUTOMATISCHE ID
-   *
-   * Wichtig:
-   * D1 verwendet bei uns TEXT-IDs.
-   *
-   * Deshalb wird eine UUID erzeugt,
-   * sobald die Tabelle eine id-Spalte
-   * besitzt und keine ID vom Frontend
-   * geliefert wurde.
-   */
   const identity =
     getIdentityColumn(
       schema
     );
 
-
+  /*
+   * Automatische ID.
+   * TEXT / CHAR / CLOB werden
+   * mit UUID versorgt.
+   */
   if (
     identity &&
     identity.name ===
       "id" &&
-    !Object.prototype.hasOwnProperty.call(
-      data,
-      "id"
+    !(
+      "id" in
+      data
     )
   ) {
-
     const identityType =
       String(
-        identity.type || ""
+        identity.type ||
+          ""
       ).toUpperCase();
-
 
     if (
       identityType.includes(
@@ -2075,88 +1705,77 @@ async function handleAdminDataCreate(
     }
   }
 
-
-  /*
-   * Zeitstempel
-   */
   const now =
     Math.floor(
       Date.now() / 1000
     );
 
-
   if (
     columns.some(
-      column =>
-        column.name ===
+      c =>
+        c.name ===
         "created_at"
-    )
+    ) &&
+    data.created_at ===
+      undefined
   ) {
     data.created_at =
       now;
   }
 
-
   if (
     columns.some(
-      column =>
-        column.name ===
+      c =>
+        c.name ===
         "updated_at"
-    )
+    ) &&
+    data.updated_at ===
+      undefined
   ) {
     data.updated_at =
       now;
   }
 
-
   /*
    * Pflichtfelder prüfen.
    */
   for (
-    const column of
+    const col of
       columns
   ) {
-
-    const present =
-      Object.prototype.hasOwnProperty.call(
-        data,
-        column.name
-      );
-
-
     if (
+      data[
+        col.name
+      ] ===
+        undefined &&
       Number(
-        column.notnull
+        col.notnull
       ) === 1 &&
-
-      Number(
-        column.pk
-      ) === 0 &&
-
-      column.dflt_value ===
+      col.dflt_value ===
         null &&
-
-      !present
+      Number(
+        col.pk
+      ) === 0
     ) {
       return json(
         {
           ok: false,
           error:
-            `Pflichtfeld fehlt: ${column.name}`
+            `Pflichtfeld fehlt: ${col.name}`
         },
         400
       );
     }
   }
 
-
   const keys =
     Object.keys(
       data
     );
 
-
-  if (!keys.length) {
+  if (
+    !keys.length
+  ) {
     return json(
       {
         ok: false,
@@ -2167,41 +1786,47 @@ async function handleAdminDataCreate(
     );
   }
 
-
-  const columnList =
-    keys
-      .map(
-        quoteIdentifier
-      )
-      .join(", ");
-
+  const values =
+    keys.map(
+      key =>
+        normalizeDbValue(
+          data[key],
+          columns.find(
+            c =>
+              c.name ===
+              key
+          )
+        )
+    );
 
   const placeholders =
     keys
       .map(
         () => "?"
       )
-      .join(", ");
+      .join(
+        ", "
+      );
 
-
-  const values =
-    keys.map(
-      key =>
-        data[key]
-    );
-
+  const quotedKeys =
+    keys
+      .map(
+        quoteIdentifier
+      )
+      .join(
+        ", "
+      );
 
   await env.DB.prepare(`
-    INSERT INTO ${quoteIdentifier(table)}
-      (${columnList})
-    VALUES
-      (${placeholders})
+    INSERT INTO ${quoteIdentifier(
+      table
+    )} (${quotedKeys})
+    VALUES (${placeholders})
   `)
     .bind(
       ...values
     )
     .run();
-
 
   return json(
     {
@@ -2215,23 +1840,22 @@ async function handleAdminDataCreate(
 
 
 /* =========================================================
-   ADMIN DATA - UPDATE
+   SPEZIELLES FAHRER-UPDATE
+   Für die Rangliste
 ========================================================= */
 
-async function handleAdminDataUpdate(
+async function handleDriverUpdate(
   request,
   env,
-  resource,
-  recordId
+  driverId
 ) {
   const auth =
     await requirePermission(
       request,
       env,
-      resource,
+      "drivers",
       "edit"
     );
-
 
   if (
     auth instanceof Response
@@ -2239,59 +1863,38 @@ async function handleAdminDataUpdate(
     return auth;
   }
 
-
-  const table =
-    RESOURCES[
-      resource
-    ];
-
-
-  if (!table) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Unbekannter Bereich."
-      },
-      404
-    );
-  }
-
-
   const schema =
     await getTableSchema(
       env,
-      table
+      "drivers"
     );
 
-
   const columns =
-    schema.results || [];
-
+    schema.results ||
+    [];
 
   const identity =
     getIdentityColumn(
       schema
     );
 
-
   if (!identity) {
     return json(
       {
         ok: false,
         error:
-          "Diese Tabelle besitzt keinen eindeutigen Identifikator."
+          "Die Fahrertabelle besitzt keinen eindeutigen Identifikator."
       },
       400
     );
   }
-
 
   let body;
 
   try {
     body =
       await request.json();
+
   } catch {
     return json(
       {
@@ -2303,95 +1906,198 @@ async function handleAdminDataUpdate(
     );
   }
 
-
-  const allowed =
+  const existingColumns =
     new Set(
       columns.map(
-        column =>
-          column.name
+        c =>
+          c.name
       )
     );
 
+  /*
+   * Mögliche Feldnamen der Fahrertabelle.
+   */
+  const aliases = {
+    name: [
+      "name",
+      "driver_name",
+      "username"
+    ],
 
-  const data = {};
+    number: [
+      "number",
+      "start_number",
+      "startnummer"
+    ],
 
+    nickname: [
+      "nickname",
+      "nick",
+      "spitzname"
+    ],
+
+    team: [
+      "team"
+    ],
+
+    vehicle: [
+      "vehicle",
+      "car",
+      "fahrzeug"
+    ],
+
+    points: [
+      "points"
+    ],
+
+    wins: [
+      "wins",
+      "victories",
+      "siege"
+    ],
+
+    image: [
+      "image",
+      "photo",
+      "avatar",
+      "bild"
+    ],
+
+    active: [
+      "active",
+      "enabled",
+      "is_active"
+    ]
+  };
+
+  const updates = {};
 
   for (
     const [
-      key,
-      value
+      logical,
+      candidates
     ] of Object.entries(
-      body || {}
+      aliases
     )
   ) {
+    const column =
+      candidates.find(
+        name =>
+          existingColumns.has(
+            name
+          )
+      );
+
+    if (!column) {
+      continue;
+    }
 
     if (
-      !allowed.has(
-        key
+      !Object.prototype.hasOwnProperty.call(
+        body || {},
+        logical
       )
     ) {
       continue;
     }
 
+    let value =
+      body[
+        logical
+      ];
 
     /*
-     * Primärschlüssel nicht verändern.
+     * Punkte und Siege immer
+     * als positive Zahlen speichern.
      */
     if (
-      key ===
-      identity.name
+      logical === "points" ||
+      logical === "wins"
     ) {
-      continue;
+      value =
+        Math.max(
+          0,
+          Number(
+            value
+          ) || 0
+        );
     }
-
 
     /*
-     * created_at niemals überschreiben.
+     * Aktiv / Inaktiv abhängig
+     * vom tatsächlichen DB-Typ speichern.
      */
     if (
-      key ===
-        "created_at"
+      logical === "active"
     ) {
-      continue;
+      const col =
+        columns.find(
+          c =>
+            c.name ===
+            column
+        );
+
+      const type =
+        String(
+          col?.type ||
+            ""
+        ).toUpperCase();
+
+      const checked =
+        value === true ||
+        Number(
+          value
+        ) === 1 ||
+        String(
+          value
+        ).toUpperCase() ===
+          "JA" ||
+        String(
+          value
+        ).toLowerCase() ===
+          "active" ||
+        String(
+          value
+        ).toLowerCase() ===
+          "true";
+
+      value =
+        type.includes(
+          "INT"
+        )
+          ? checked
+            ? 1
+            : 0
+          : checked
+            ? "JA"
+            : "NEIN";
     }
 
-
-    /*
-     * updated_at wird automatisch
-     * gesetzt.
-     */
-    if (
-      key ===
-        "updated_at"
-    ) {
-      continue;
-    }
-
-
-    data[key] =
+    updates[
+      column
+    ] =
       value;
   }
 
-
   if (
-    allowed.has(
+    existingColumns.has(
       "updated_at"
     )
   ) {
-    data.updated_at =
+    updates.updated_at =
       Math.floor(
         Date.now() / 1000
       );
   }
 
-
   const keys =
     Object.keys(
-      data
+      updates
     );
 
-
-  if (!keys.length) {
+  if (
+    !keys.length
+  ) {
     return json(
       {
         ok: false,
@@ -2402,7 +2108,6 @@ async function handleAdminDataUpdate(
     );
   }
 
-
   const setList =
     keys
       .map(
@@ -2411,54 +2116,90 @@ async function handleAdminDataUpdate(
             key
           )} = ?`
       )
-      .join(", ");
-
+      .join(
+        ", "
+      );
 
   const values =
     keys.map(
       key =>
-        data[key]
+        updates[key]
     );
 
+  const result =
+    await env.DB.prepare(`
+      UPDATE ${quoteIdentifier(
+        "drivers"
+      )}
+      SET ${setList}
+      WHERE ${quoteIdentifier(
+        identity.name
+      )} = ?
+    `)
+      .bind(
+        ...values,
+        driverId
+      )
+      .run();
 
-  await env.DB.prepare(`
-    UPDATE ${quoteIdentifier(table)}
-    SET ${setList}
-    WHERE ${quoteIdentifier(
-      identity.name
-    )} = ?
-  `)
-    .bind(
-      ...values,
-      recordId
-    )
-    .run();
+  if (
+    !result.success ||
+    Number(
+      result.meta?.changes ||
+        0
+    ) === 0
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Fahrer wurde nicht gefunden oder nicht geändert."
+      },
+      404
+    );
+  }
 
+  const updated =
+    await env.DB.prepare(`
+      SELECT *
+      FROM ${quoteIdentifier(
+        "drivers"
+      )}
+      WHERE ${quoteIdentifier(
+        identity.name
+      )} = ?
+      LIMIT 1
+    `)
+      .bind(
+        driverId
+      )
+      .first();
 
   return json({
-    ok: true
+    ok: true,
+    row:
+      updated
   });
 }
 
 
 /* =========================================================
-   ADMIN DATA - DELETE
+   ALLGEMEINES UPDATE
 ========================================================= */
 
-async function handleAdminDataDelete(
+async function handleAdminDataUpdate(
   request,
   env,
   resource,
-  recordId
+  value
 ) {
   const auth =
     await requirePermission(
       request,
       env,
       resource,
-      "delete"
+      "edit"
     );
-
 
   if (
     auth instanceof Response
@@ -2466,12 +2207,10 @@ async function handleAdminDataDelete(
     return auth;
   }
 
-
   const table =
     RESOURCES[
       resource
     ];
-
 
   if (!table) {
     return json(
@@ -2484,6 +2223,206 @@ async function handleAdminDataDelete(
     );
   }
 
+  const schema =
+    await getTableSchema(
+      env,
+      table
+    );
+
+  const columns =
+    schema.results ||
+    [];
+
+  const identity =
+    getIdentityColumn(
+      schema
+    );
+
+  if (!identity) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Diese Tabelle besitzt keinen eindeutigen Identifikator und kann deshalb nicht bearbeitet werden."
+      },
+      400
+    );
+  }
+
+  let body;
+
+  try {
+    body =
+      await request.json();
+
+  } catch {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige Anfrage."
+      },
+      400
+    );
+  }
+
+  const data =
+    sanitizeData(
+      body,
+      columns,
+      {
+        includeIdentity:
+          true
+      }
+    );
+
+  delete data[
+    identity.name
+  ];
+
+  if (
+    columns.some(
+      c =>
+        c.name ===
+        "updated_at"
+    )
+  ) {
+    data.updated_at =
+      Math.floor(
+        Date.now() / 1000
+      );
+  }
+
+  const keys =
+    Object.keys(
+      data
+    );
+
+  if (
+    !keys.length
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Keine Änderungen übergeben."
+      },
+      400
+    );
+  }
+
+  const sets =
+    keys
+      .map(
+        key =>
+          `${quoteIdentifier(
+            key
+          )} = ?`
+      )
+      .join(
+        ", "
+      );
+
+  const values =
+    keys.map(
+      key =>
+        normalizeDbValue(
+          data[key],
+          columns.find(
+            c =>
+              c.name ===
+              key
+          )
+        )
+    );
+
+  const identityColumn =
+    quoteIdentifier(
+      identity.name
+    );
+
+  const identityValue =
+    normalizeDbValue(
+      value,
+      identity
+    );
+
+  const result =
+    await env.DB.prepare(`
+      UPDATE ${quoteIdentifier(
+        table
+      )}
+      SET ${sets}
+      WHERE ${identityColumn} = ?
+    `)
+      .bind(
+        ...values,
+        identityValue
+      )
+      .run();
+
+  if (
+    !result.success ||
+    Number(
+      result.meta?.changes ||
+        0
+    ) === 0
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Datensatz wurde nicht gefunden oder nicht geändert."
+      },
+      404
+    );
+  }
+
+  return json({
+    ok: true
+  });
+}
+
+
+/* =========================================================
+   DELETE
+========================================================= */
+
+async function handleAdminDataDelete(
+  request,
+  env,
+  resource,
+  value
+) {
+  const auth =
+    await requirePermission(
+      request,
+      env,
+      resource,
+      "delete"
+    );
+
+  if (
+    auth instanceof Response
+  ) {
+    return auth;
+  }
+
+  const table =
+    RESOURCES[
+      resource
+    ];
+
+  if (!table) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Unbekannter Bereich."
+      },
+      404
+    );
+  }
 
   const schema =
     await getTableSchema(
@@ -2491,36 +2430,58 @@ async function handleAdminDataDelete(
       table
     );
 
-
   const identity =
     getIdentityColumn(
       schema
     );
-
 
   if (!identity) {
     return json(
       {
         ok: false,
         error:
-          "Diese Tabelle besitzt keinen eindeutigen Identifikator."
+          "Diese Tabelle besitzt keinen eindeutigen Identifikator und kann deshalb nicht gelöscht werden."
       },
       400
     );
   }
 
+  const identityValue =
+    normalizeDbValue(
+      value,
+      identity
+    );
 
-  await env.DB.prepare(`
-    DELETE FROM ${quoteIdentifier(table)}
-    WHERE ${quoteIdentifier(
-      identity.name
-    )} = ?
-  `)
-    .bind(
-      recordId
-    )
-    .run();
+  const result =
+    await env.DB.prepare(`
+      DELETE FROM ${quoteIdentifier(
+        table
+      )}
+      WHERE ${quoteIdentifier(
+        identity.name
+      )} = ?
+    `)
+      .bind(
+        identityValue
+      )
+      .run();
 
+  if (
+    !result.success ||
+    Number(
+      result.meta?.changes ||
+        0
+    ) === 0
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Datensatz wurde nicht gefunden."
+      },
+      404
+    );
+  }
 
   return json({
     ok: true
@@ -2538,325 +2499,286 @@ export default {
     request,
     env
   ) {
-
     const url =
       new URL(
         request.url
       );
 
-
     try {
 
-      /* ---------------------------------------------
-         LOGIN
-      --------------------------------------------- */
-
+      /*
+       * LOGIN
+       */
       if (
         url.pathname ===
           "/api/login" &&
         request.method ===
           "POST"
       ) {
-
         return await handleLogin(
           request,
           env
         );
-
       }
 
 
-      /* ---------------------------------------------
-         LOGOUT
-      --------------------------------------------- */
-
+      /*
+       * LOGOUT
+       */
       if (
         url.pathname ===
           "/api/logout" &&
         request.method ===
           "POST"
       ) {
-
         return await handleLogout(
           request,
           env
         );
-
       }
 
 
-      /* ---------------------------------------------
-         ME
-      --------------------------------------------- */
-
+      /*
+       * ME
+       */
       if (
         url.pathname ===
           "/api/me" &&
         request.method ===
           "GET"
       ) {
-
         return await handleMe(
           request,
           env
         );
-
       }
 
 
-      /* ---------------------------------------------
-         ADMIN USERS - GET
-      --------------------------------------------- */
-
+      /*
+       * ADMIN USERS
+       * GET
+       */
       if (
         url.pathname ===
           "/api/admin/users" &&
         request.method ===
           "GET"
       ) {
-
         return await handleAdminUsersGet(
           request,
           env
         );
-
       }
 
 
-      /* ---------------------------------------------
-         ADMIN USERS - CREATE
-      --------------------------------------------- */
-
+      /*
+       * ADMIN USERS
+       * CREATE
+       */
       if (
         url.pathname ===
           "/api/admin/users" &&
         request.method ===
           "POST"
       ) {
-
         return await handleAdminUserCreate(
           request,
           env
         );
-
       }
 
 
-      /* ---------------------------------------------
-         ADMIN USERS - DELETE
-      --------------------------------------------- */
+      /*
+       * ADMIN USER PERMISSIONS
+       */
+      const permissionMatch =
+        url.pathname.match(
+          /^\/api\/admin\/users\/([^/]+)\/permissions$/
+        );
 
+      if (
+        permissionMatch &&
+        request.method ===
+          "PUT"
+      ) {
+        return await handleAdminPermissionsUpdate(
+          request,
+          env,
+          permissionMatch[1]
+        );
+      }
+
+
+      /*
+       * ADMIN USER DELETE
+       */
       const userDeleteMatch =
         url.pathname.match(
           /^\/api\/admin\/users\/([^/]+)$/
         );
-
 
       if (
         userDeleteMatch &&
         request.method ===
           "DELETE"
       ) {
-
         return await handleAdminUserDelete(
           request,
           env,
           userDeleteMatch[1]
         );
-
       }
 
 
-      /* ---------------------------------------------
-         ADMIN USERS - PERMISSIONS
-      --------------------------------------------- */
-
-      const permissionsMatch =
-        url.pathname.match(
-          /^\/api\/admin\/users\/([^/]+)\/permissions$/
-        );
-
-
-      if (
-        permissionsMatch &&
-        request.method ===
-          "PUT"
-      ) {
-
-        return await handleAdminPermissionsUpdate(
-          request,
-          env,
-          permissionsMatch[1]
-        );
-
-      }
-
-
-      /* ---------------------------------------------
-         ADMIN USERS - PASSWORD RESET
-      --------------------------------------------- */
-
-      const passwordMatch =
-        url.pathname.match(
-          /^\/api\/admin\/users\/([^/]+)\/password$/
-        );
-
-
-      if (
-        passwordMatch &&
-        request.method ===
-          "POST"
-      ) {
-
-        return await handleAdminPasswordReset(
-          request,
-          env,
-          passwordMatch[1]
-        );
-
-      }
-
-
-      /* ---------------------------------------------
-         ADMIN SCHEMA
-      --------------------------------------------- */
-
+      /*
+       * SCHEMA
+       */
       const schemaMatch =
         url.pathname.match(
           /^\/api\/admin\/schema\/([^/]+)$/
         );
-
 
       if (
         schemaMatch &&
         request.method ===
           "GET"
       ) {
-
         return await handleAdminSchema(
           request,
           env,
           schemaMatch[1]
         );
-
       }
 
 
-      /* ---------------------------------------------
-         ADMIN DATA - GET / CREATE
-      --------------------------------------------- */
+      /*
+       * SPEZIELLES FAHRER-UPDATE
+       *
+       * Dieses wird von der Rangliste
+       * verwendet.
+       */
+      const driverUpdateMatch =
+        url.pathname.match(
+          /^\/api\/admin\/drivers\/([^/]+)$/
+        );
 
+      if (
+        driverUpdateMatch &&
+        request.method ===
+          "PUT"
+      ) {
+        return await handleDriverUpdate(
+          request,
+          env,
+          decodeURIComponent(
+            driverUpdateMatch[1]
+          )
+        );
+      }
+
+
+      /*
+       * ADMIN DATA
+       *
+       * GET / POST
+       */
       const dataMatch =
         url.pathname.match(
           /^\/api\/admin\/data\/([^/]+)$/
         );
 
-
-      if (dataMatch) {
-
+      if (
+        dataMatch
+      ) {
         const resource =
           dataMatch[1];
-
 
         if (
           request.method ===
           "GET"
         ) {
-
           return await handleAdminDataGet(
             request,
             env,
             resource
           );
-
         }
-
 
         if (
           request.method ===
           "POST"
         ) {
-
           return await handleAdminDataCreate(
             request,
             env,
             resource
           );
-
         }
-
       }
 
 
-      /* ---------------------------------------------
-         ADMIN DATA - UPDATE / DELETE
-      --------------------------------------------- */
-
+      /*
+       * ADMIN DATA
+       *
+       * UPDATE / DELETE
+       */
       const dataIdMatch =
         url.pathname.match(
           /^\/api\/admin\/data\/([^/]+)\/([^/]+)$/
         );
 
-
-      if (dataIdMatch) {
-
+      if (
+        dataIdMatch
+      ) {
         const resource =
           dataIdMatch[1];
 
-        const recordId =
+        const value =
           decodeURIComponent(
             dataIdMatch[2]
           );
-
 
         if (
           request.method ===
           "PUT"
         ) {
-
           return await handleAdminDataUpdate(
             request,
             env,
             resource,
-            recordId
+            value
           );
-
         }
-
 
         if (
           request.method ===
           "DELETE"
         ) {
-
           return await handleAdminDataDelete(
             request,
             env,
             resource,
-            recordId
+            value
           );
-
         }
-
       }
 
 
-      /* ---------------------------------------------
-         WEBSITE / PUBLIC FILES
-      --------------------------------------------- */
-
+      /*
+       * PUBLIC FILES / WEBSITE
+       */
       return env.ASSETS.fetch(
         request
       );
 
-
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       console.error(
         "Worker error:",
         error
       );
-
 
       return json(
         {
