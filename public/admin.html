@@ -1407,6 +1407,12 @@ button{
         </div>
 
         <div class="ranking-field full">
+          <label>Bild URL</label>
+          <input id="blacklistImageUrl" name="image_url" type="url" placeholder="https://...">
+          <small style="display:block;margin-top:6px;color:#666673;font-size:11px">Direkte Bild-URL. Den Datei-Upload bauen wir später über Cloudflare R2.</small>
+        </div>
+
+        <div class="ranking-field full">
           <label>Grund</label>
           <textarea id="blacklistReason" name="reason" rows="5" placeholder="Warum steht dieses Fahrzeug auf der Blacklist?"></textarea>
         </div>
@@ -2912,6 +2918,10 @@ function renderBlacklist(){
             </td>
 
             <td>
+              ${row.image_url ? '<img src="' + escapeHtml(String(row.image_url)) + '" alt="" style="width:72px;height:42px;object-fit:cover;border-radius:6px;border:1px solid #292936;display:block" onerror="this.style.display=\'none\'">' : '<span style="color:#666673">—</span>'}
+            </td>
+
+            <td>
               ${escapeHtml(String(row.reason || "—"))}
             </td>
 
@@ -2942,6 +2952,7 @@ function renderBlacklist(){
         <thead>
           <tr>
             <th>Fahrzeug</th>
+            <th>Bild</th>
             <th>Grund</th>
             <th>Status</th>
             <th>Eingetragen</th>
@@ -2986,6 +2997,7 @@ function openBlacklistModal(row=null){
       "Fahrzeug zur Blacklist hinzufügen";
 
     setBlacklistField("blacklistVehicleName","");
+    setBlacklistField("blacklistImageUrl","");
     setBlacklistField("blacklistReason","");
     setBlacklistField("blacklistStatus","active");
 
@@ -3079,8 +3091,15 @@ async function saveBlacklist(event){
   blacklistFormMessage.classList.remove("error");
 
   try{
+    const imageUrl =
+      document
+        .getElementById("blacklistImageUrl")
+        .value
+        .trim();
+
     const payload = {
       vehicle_name: vehicleName,
+      image_url: imageUrl,
       reason,
       status
     };
