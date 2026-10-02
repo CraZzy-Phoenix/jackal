@@ -16,7 +16,6 @@ const RESOURCES = {
   settings: "site_settings"
 };
 
-
 const RESOURCE_LABELS = {
   dashboard: "Dashboard",
   races: "Rennen",
@@ -30,7 +29,7 @@ const RESOURCE_LABELS = {
 
 
 /* =========================================================
-   JSON
+   JSON RESPONSE
 ========================================================= */
 
 function json(
@@ -63,8 +62,7 @@ function getCookie(
   name
 ) {
   const cookie =
-    request.headers.get("Cookie") ||
-    "";
+    request.headers.get("Cookie") || "";
 
   const escapedName =
     name.replace(
@@ -304,11 +302,15 @@ async function requireSuperadmin(
       env
     );
 
-  if (auth instanceof Response) {
+  if (
+    auth instanceof Response
+  ) {
     return auth;
   }
 
-  if (!auth.user.is_superadmin) {
+  if (
+    !auth.user.is_superadmin
+  ) {
     return json(
       {
         ok: false,
@@ -462,10 +464,14 @@ async function hashPassword(
 
   return {
     hash:
-      bytesToHex(derived),
+      bytesToHex(
+        derived
+      ),
 
     salt:
-      bytesToHex(salt)
+      bytesToHex(
+        salt
+      )
   };
 }
 
@@ -491,12 +497,12 @@ async function verifyPassword(
   }
 
 
-  /* -------------------------------------------------------
-     NEUES HEX FORMAT
-
-     Hash = 64 Zeichen
-     Salt = 32 Zeichen
-  ------------------------------------------------------- */
+  /*
+   * NEUES HEX-FORMAT
+   *
+   * Hash = 64 Zeichen
+   * Salt = 32 Zeichen
+   */
 
   if (
     storedHash.length === 64 &&
@@ -528,9 +534,9 @@ async function verifyPassword(
   }
 
 
-  /* -------------------------------------------------------
-     ALTES BASE64 FORMAT
-  ------------------------------------------------------- */
+  /*
+   * ALTES BASE64-FORMAT
+   */
 
   try {
     const derived =
@@ -611,10 +617,6 @@ async function handleLogin(
   }
 
 
-  /* -------------------------------------------------------
-     BENUTZER AUS D1
-  ------------------------------------------------------- */
-
   const user =
     await env.DB.prepare(`
       SELECT
@@ -628,7 +630,9 @@ async function handleLogin(
       WHERE username = ?
       LIMIT 1
     `)
-      .bind(username)
+      .bind(
+        username
+      )
       .first();
 
 
@@ -656,11 +660,7 @@ async function handleLogin(
   }
 
 
-  /* -------------------------------------------------------
-     PASSWORT PRÜFEN
-  ------------------------------------------------------- */
-
-  const result =
+  const passwordResult =
     await verifyPassword(
       password,
       user.password_hash,
@@ -668,7 +668,9 @@ async function handleLogin(
     );
 
 
-  if (!result.valid) {
+  if (
+    !passwordResult.valid
+  ) {
     return json(
       {
         ok: false,
@@ -680,11 +682,15 @@ async function handleLogin(
   }
 
 
-  /* -------------------------------------------------------
-     LEGACY PASSWORT AUTOMATISCH MIGRIEREN
-  ------------------------------------------------------- */
+  /*
+   * Altes Passwortformat automatisch
+   * beim ersten erfolgreichen Login
+   * in das neue Format umwandeln.
+   */
 
-  if (result.legacy) {
+  if (
+    passwordResult.legacy
+  ) {
     const upgraded =
       await hashPassword(
         password
@@ -712,10 +718,6 @@ async function handleLogin(
       .run();
   }
 
-
-  /* -------------------------------------------------------
-     SESSION
-  ------------------------------------------------------- */
 
   const sessionId =
     await createSession(
@@ -768,6 +770,7 @@ async function handleLogout(
       .run();
   }
 
+
   return json(
     {
       ok: true
@@ -798,7 +801,9 @@ async function handleMe(
       env
     );
 
-  if (auth instanceof Response) {
+  if (
+    auth instanceof Response
+  ) {
     return auth;
   }
 
@@ -914,7 +919,9 @@ async function handleAdminUsersGet(
       env
     );
 
-  if (auth instanceof Response) {
+  if (
+    auth instanceof Response
+  ) {
     return auth;
   }
 
@@ -970,13 +977,14 @@ async function handleAdminUsersGet(
 
   return json({
     ok: true,
-    users: result
+    users:
+      result
   });
 }
 
 
 /* =========================================================
-   ADMIN USERS - CREATE
+   ADMIN USER - CREATE
 ========================================================= */
 
 async function handleAdminUserCreate(
@@ -989,7 +997,9 @@ async function handleAdminUserCreate(
       env
     );
 
-  if (auth instanceof Response) {
+  if (
+    auth instanceof Response
+  ) {
     return auth;
   }
 
@@ -1094,7 +1104,6 @@ async function handleAdminUserCreate(
   const userId =
     crypto.randomUUID();
 
-
   const now =
     Math.floor(
       Date.now() / 1000
@@ -1159,7 +1168,7 @@ async function handleAdminUserCreate(
 
 
 /* =========================================================
-   ADMIN USERS - DELETE
+   ADMIN USER - DELETE
 ========================================================= */
 
 async function handleAdminUserDelete(
@@ -1173,7 +1182,9 @@ async function handleAdminUserDelete(
       env
     );
 
-  if (auth instanceof Response) {
+  if (
+    auth instanceof Response
+  ) {
     return auth;
   }
 
@@ -1257,7 +1268,7 @@ async function handleAdminUserDelete(
 
 
 /* =========================================================
-   ADMIN USERS - PERMISSIONS
+   ADMIN USER - PERMISSIONS
 ========================================================= */
 
 async function handleAdminPermissionsUpdate(
@@ -1271,7 +1282,9 @@ async function handleAdminPermissionsUpdate(
       env
     );
 
-  if (auth instanceof Response) {
+  if (
+    auth instanceof Response
+  ) {
     return auth;
   }
 
@@ -1345,6 +1358,9 @@ async function handleAdminPermissionsUpdate(
     );
 
 
+  /*
+   * Alte Rechte vollständig löschen
+   */
   await env.DB.prepare(`
     DELETE FROM admin_permissions
     WHERE user_id = ?
@@ -1355,8 +1371,12 @@ async function handleAdminPermissionsUpdate(
     .run();
 
 
+  /*
+   * Neue Rechte speichern
+   */
   for (
-    const permission of permissions
+    const permission
+    of permissions
   ) {
 
     const resource =
@@ -1394,6 +1414,7 @@ async function handleAdminPermissionsUpdate(
         crypto.randomUUID(),
         userId,
         resource,
+
         permission?.can_view
           ? 1
           : 0,
@@ -1438,7 +1459,9 @@ async function handleAdminPasswordReset(
       env
     );
 
-  if (auth instanceof Response) {
+  if (
+    auth instanceof Response
+  ) {
     return auth;
   }
 
@@ -1529,7 +1552,7 @@ async function handleAdminPasswordReset(
 
 
   /*
-   * Alle Sessions des Benutzers löschen.
+   * Alte Sessions beenden.
    */
   await env.DB.prepare(`
     DELETE FROM admin_sessions
@@ -1550,7 +1573,7 @@ async function handleAdminPasswordReset(
 
 
 /* =========================================================
-   SCHEMA
+   TABLE SCHEMA
 ========================================================= */
 
 async function getTableSchema(
@@ -1570,6 +1593,9 @@ function getIdentityColumn(
     schema.results || [];
 
 
+  /*
+   * Primärschlüssel bevorzugen
+   */
   const primary =
     columns.filter(
       column =>
@@ -1586,13 +1612,15 @@ function getIdentityColumn(
   }
 
 
+  /*
+   * Fallback auf "id"
+   */
   return (
     columns.find(
       column =>
         column.name ===
         "id"
-    ) ||
-    null
+    ) || null
   );
 }
 
@@ -1630,6 +1658,7 @@ async function handleAdminSchema(
       resource,
       "view"
     );
+
 
   if (
     auth instanceof Response
@@ -1702,6 +1731,7 @@ async function requirePermission(
       env
     );
 
+
   if (
     auth instanceof Response
   ) {
@@ -1710,7 +1740,7 @@ async function requirePermission(
 
 
   /*
-   * Superadmins dürfen alles.
+   * Superadmin darf alles.
    */
   if (
     auth.user.is_superadmin
@@ -1720,7 +1750,8 @@ async function requirePermission(
 
 
   /*
-   * Dashboard nur anzeigen.
+   * Dashboard darf grundsätzlich
+   * angezeigt werden.
    */
   if (
     resource ===
@@ -1767,13 +1798,15 @@ async function requirePermission(
       .first();
 
 
-  const field =
+  const permissionField =
     `can_${action}`;
 
 
   if (
     Number(
-      permission?.[field] || 0
+      permission?.[
+        permissionField
+      ] || 0
     ) !== 1
   ) {
     return json(
@@ -1808,6 +1841,7 @@ async function handleAdminDataGet(
       "view"
     );
 
+
   if (
     auth instanceof Response
   ) {
@@ -1841,7 +1875,9 @@ async function handleAdminDataGet(
 
   return json({
     ok: true,
+
     resource,
+
     rows:
       result.results || []
   });
@@ -1864,6 +1900,7 @@ async function handleAdminDataCreate(
       resource,
       "create"
     );
+
 
   if (
     auth instanceof Response
@@ -1899,6 +1936,18 @@ async function handleAdminDataCreate(
 
   const columns =
     schema.results || [];
+
+
+  if (!columns.length) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Tabelle wurde nicht gefunden."
+      },
+      404
+    );
+  }
 
 
   let body;
@@ -1938,14 +1987,23 @@ async function handleAdminDataCreate(
   const data = {};
 
 
+  /*
+   * Nur tatsächlich vorhandene Spalten
+   * übernehmen.
+   */
   for (
     const column of
       columns
   ) {
+
     const name =
       column.name;
 
 
+    /*
+     * Zeitfelder werden unten
+     * automatisch gesetzt.
+     */
     if (
       name ===
         "created_at" ||
@@ -1969,7 +2027,15 @@ async function handleAdminDataCreate(
 
 
   /*
-   * Automatische ID
+   * AUTOMATISCHE ID
+   *
+   * Wichtig:
+   * D1 verwendet bei uns TEXT-IDs.
+   *
+   * Deshalb wird eine UUID erzeugt,
+   * sobald die Tabelle eine id-Spalte
+   * besitzt und keine ID vom Frontend
+   * geliefert wurde.
    */
   const identity =
     getIdentityColumn(
@@ -1986,11 +2052,33 @@ async function handleAdminDataCreate(
       "id"
     )
   ) {
-    data.id =
-      crypto.randomUUID();
+
+    const identityType =
+      String(
+        identity.type || ""
+      ).toUpperCase();
+
+
+    if (
+      identityType.includes(
+        "TEXT"
+      ) ||
+      identityType.includes(
+        "CHAR"
+      ) ||
+      identityType.includes(
+        "CLOB"
+      )
+    ) {
+      data.id =
+        crypto.randomUUID();
+    }
   }
 
 
+  /*
+   * Zeitstempel
+   */
   const now =
     Math.floor(
       Date.now() / 1000
@@ -2028,6 +2116,7 @@ async function handleAdminDataCreate(
     const column of
       columns
   ) {
+
     const present =
       Object.prototype.hasOwnProperty.call(
         data,
@@ -2039,11 +2128,14 @@ async function handleAdminDataCreate(
       Number(
         column.notnull
       ) === 1 &&
+
       Number(
         column.pk
       ) === 0 &&
+
       column.dflt_value ===
         null &&
+
       !present
     ) {
       return json(
@@ -2076,18 +2168,18 @@ async function handleAdminDataCreate(
   }
 
 
-  const placeholders =
-    keys
-      .map(
-        () => "?"
-      )
-      .join(", ");
-
-
   const columnList =
     keys
       .map(
         quoteIdentifier
+      )
+      .join(", ");
+
+
+  const placeholders =
+    keys
+      .map(
+        () => "?"
       )
       .join(", ");
 
@@ -2114,7 +2206,8 @@ async function handleAdminDataCreate(
   return json(
     {
       ok: true,
-      row: data
+      row:
+        data
     },
     201
   );
@@ -2138,6 +2231,7 @@ async function handleAdminDataUpdate(
       resource,
       "edit"
     );
+
 
   if (
     auth instanceof Response
@@ -2169,6 +2263,10 @@ async function handleAdminDataUpdate(
       env,
       table
     );
+
+
+  const columns =
+    schema.results || [];
 
 
   const identity =
@@ -2206,12 +2304,9 @@ async function handleAdminDataUpdate(
   }
 
 
-  const allowedColumns =
+  const allowed =
     new Set(
-      (
-        schema.results ||
-        []
-      ).map(
+      columns.map(
         column =>
           column.name
       )
@@ -2231,7 +2326,7 @@ async function handleAdminDataUpdate(
   ) {
 
     if (
-      !allowedColumns.has(
+      !allowed.has(
         key
       )
     ) {
@@ -2239,6 +2334,9 @@ async function handleAdminDataUpdate(
     }
 
 
+    /*
+     * Primärschlüssel nicht verändern.
+     */
     if (
       key ===
       identity.name
@@ -2247,9 +2345,22 @@ async function handleAdminDataUpdate(
     }
 
 
+    /*
+     * created_at niemals überschreiben.
+     */
     if (
       key ===
-        "created_at" ||
+        "created_at"
+    ) {
+      continue;
+    }
+
+
+    /*
+     * updated_at wird automatisch
+     * gesetzt.
+     */
+    if (
       key ===
         "updated_at"
     ) {
@@ -2263,7 +2374,7 @@ async function handleAdminDataUpdate(
 
 
   if (
-    allowedColumns.has(
+    allowed.has(
       "updated_at"
     )
   ) {
@@ -2303,16 +2414,22 @@ async function handleAdminDataUpdate(
       .join(", ");
 
 
+  const values =
+    keys.map(
+      key =>
+        data[key]
+    );
+
+
   await env.DB.prepare(`
     UPDATE ${quoteIdentifier(table)}
     SET ${setList}
-    WHERE ${quoteIdentifier(identity.name)} = ?
+    WHERE ${quoteIdentifier(
+      identity.name
+    )} = ?
   `)
     .bind(
-      ...keys.map(
-        key =>
-          data[key]
-      ),
+      ...values,
       recordId
     )
     .run();
@@ -2341,6 +2458,7 @@ async function handleAdminDataDelete(
       resource,
       "delete"
     );
+
 
   if (
     auth instanceof Response
@@ -2394,7 +2512,9 @@ async function handleAdminDataDelete(
 
   await env.DB.prepare(`
     DELETE FROM ${quoteIdentifier(table)}
-    WHERE ${quoteIdentifier(identity.name)} = ?
+    WHERE ${quoteIdentifier(
+      identity.name
+    )} = ?
   `)
     .bind(
       recordId
@@ -2573,7 +2693,7 @@ export default {
 
 
       /* ---------------------------------------------
-         ADMIN USERS - PASSWORD
+         ADMIN USERS - PASSWORD RESET
       --------------------------------------------- */
 
       const passwordMatch =
@@ -2623,7 +2743,7 @@ export default {
 
 
       /* ---------------------------------------------
-         ADMIN DATA GET / CREATE
+         ADMIN DATA - GET / CREATE
       --------------------------------------------- */
 
       const dataMatch =
@@ -2669,7 +2789,7 @@ export default {
 
 
       /* ---------------------------------------------
-         ADMIN DATA UPDATE / DELETE
+         ADMIN DATA - UPDATE / DELETE
       --------------------------------------------- */
 
       const dataIdMatch =
@@ -2722,7 +2842,7 @@ export default {
 
 
       /* ---------------------------------------------
-         WEBSITE ASSETS
+         WEBSITE / PUBLIC FILES
       --------------------------------------------- */
 
       return env.ASSETS.fetch(
@@ -2746,9 +2866,6 @@ export default {
         },
         500
       );
-
     }
-
   }
-
 };
