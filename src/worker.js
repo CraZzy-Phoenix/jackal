@@ -1,6 +1,11 @@
 const SESSION_DAYS = 7;
 const SESSION_SECONDS = SESSION_DAYS * 24 * 60 * 60;
 
+
+/* =========================================================
+   RESSOURCEN
+========================================================= */
+
 const RESOURCES = {
   races: "races",
   drivers: "drivers",
@@ -10,6 +15,7 @@ const RESOURCES = {
   gallery: "gallery",
   settings: "site_settings"
 };
+
 
 const RESOURCE_LABELS = {
   dashboard: "Dashboard",
@@ -22,30 +28,69 @@ const RESOURCE_LABELS = {
   settings: "Einstellungen"
 };
 
-function json(data, status = 200, extraHeaders = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-      ...extraHeaders
+
+/* =========================================================
+   JSON
+========================================================= */
+
+function json(
+  data,
+  status = 200,
+  extraHeaders = {}
+) {
+  return new Response(
+    JSON.stringify(data),
+    {
+      status,
+      headers: {
+        "Content-Type":
+          "application/json; charset=utf-8",
+        "Cache-Control":
+          "no-store",
+        ...extraHeaders
+      }
     }
-  });
-}
-
-function getCookie(request, name) {
-  const cookie = request.headers.get("Cookie") || "";
-  const match = cookie.match(
-    new RegExp(
-      "(?:^|;\\s*)" +
-        name.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") +
-        "=([^;]*)"
-    )
   );
-  return match ? decodeURIComponent(match[1]) : null;
 }
 
-function sessionCookie(value, maxAge = SESSION_SECONDS) {
+
+/* =========================================================
+   COOKIE
+========================================================= */
+
+function getCookie(
+  request,
+  name
+) {
+  const cookie =
+    request.headers.get("Cookie") ||
+    "";
+
+  const escapedName =
+    name.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+  const match =
+    cookie.match(
+      new RegExp(
+        "(?:^|;\\s*)" +
+        escapedName +
+        "=([^;]*)"
+      )
+    );
+
+  return match
+    ? decodeURIComponent(match[1])
+    : null;
+}
+
+
+function sessionCookie(
+  value,
+  maxAge = SESSION_SECONDS
+) {
   return [
     `jackal_admin_session=${encodeURIComponent(value)}`,
     "Path=/",
@@ -56,80 +101,219 @@ function sessionCookie(value, maxAge = SESSION_SECONDS) {
   ].join("; ");
 }
 
-async function createSession(env, username) {
-  const sessionId = crypto.randomUUID();
-  const now = Math.floor(Date.now() / 1000);
-  const expiresAt = now + SESSION_SECONDS;
+
+/* =========================================================
+   SESSION
+========================================================= */
+
+async function createSession(
+  env,
+  username
+) {
+  const sessionId =
+    crypto.randomUUID();
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const expiresAt =
+    now + SESSION_SECONDS;
 
   await env.DB.prepare(`
-    INSERT INTO admin_sessions (id, username, expires_at, created_at)
+    INSERT INTO admin_sessions (
+      id,
+      username,
+      expires_at,
+      created_at
+    )
     VALUES (?, ?, ?, ?)
-  `).bind(sessionId, username, expiresAt, now).run();
+  `)
+    .bind(
+      sessionId,
+      username,
+      expiresAt,
+      now
+    )
+    .run();
 
   return sessionId;
 }
 
-async function getSession(request, env) {
-  const sessionId = getCookie(request, "jackal_admin_session");
-  if (!sessionId) return null;
 
-  const now = Math.floor(Date.now() / 1000);
-  const row = await env.DB.prepare(`
-    SELECT id, username, expires_at
-    FROM admin_sessions
-    WHERE id = ? AND expires_at > ?
-    LIMIT 1
-  `).bind(sessionId, now).first();
+async function getSession(
+  request,
+  env
+) {
+  const sessionId =
+    getCookie(
+      request,
+      "jackal_admin_session"
+    );
+
+  if (!sessionId) {
+    return null;
+  }
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const row =
+    await env.DB.prepare(`
+      SELECT
+        id,
+        username,
+        expires_at
+      FROM admin_sessions
+      WHERE id = ?
+        AND expires_at > ?
+      LIMIT 1
+    `)
+      .bind(
+        sessionId,
+        now
+      )
+      .first();
 
   return row || null;
 }
 
-async function getAdminUserByUsername(env, username) {
+
+/* =========================================================
+   ADMIN USER
+========================================================= */
+
+async function getAdminUserByUsername(
+  env,
+  username
+) {
   return await env.DB.prepare(`
-    SELECT id, username, active, is_superadmin, created_at, updated_at
+    SELECT
+      id,
+      username,
+      active,
+      is_superadmin,
+      created_at,
+      updated_at
     FROM admin_users
     WHERE username = ?
     LIMIT 1
-  `).bind(username).first();
+  `)
+    .bind(username)
+    .first();
 }
 
-async function requireSession(request, env) {
-  const session = await getSession(request, env);
-  if (!session) return json({ ok: false, error: "Nicht angemeldet." }, 401);
 
-  const user = await getAdminUserByUsername(env, session.username);
-  if (!user || !user.active) {
-    return json({ ok: false, error: "Benutzerkonto ist nicht aktiv." }, 403);
-  }
-
-  return { session, user };
-}
-
-async function requirePermission(request, env, resource, action) {
-  const auth = await requireSession(request, env);
-  if (auth instanceof Response) return auth;
-
-  if (auth.user.is_superadmin) return auth;
-
-  if (resource === "dashboard" && action === "view") return auth;
-
-  const permission = await env.DB.prepare(`
-    SELECT can_view, can_create, can_edit, can_delete
-    FROM admin_permissions
-    WHERE user_id = ? AND resource = ?
+async function getAdminUserById(
+  env,
+  userId
+) {
+  return await env.DB.prepare(`
+    SELECT
+      id,
+      username,
+      password_hash,
+      password_salt,
+      active,
+      is_superadmin,
+      created_at,
+      updated_at
+    FROM admin_users
+    WHERE id = ?
     LIMIT 1
-  `).bind(auth.user.id, resource).first();
+  `)
+    .bind(userId)
+    .first();
+}
 
-  const allowed = Boolean(
-    permission &&
-    Number(permission[`can_${action}`]) === 1
-  );
 
-  if (!allowed) {
+/* =========================================================
+   SESSION CHECK
+========================================================= */
+
+async function requireSession(
+  request,
+  env
+) {
+  const session =
+    await getSession(
+      request,
+      env
+    );
+
+  if (!session) {
     return json(
       {
         ok: false,
-        error: "Keine Berechtigung für diesen Bereich."
+        error:
+          "Nicht angemeldet."
+      },
+      401
+    );
+  }
+
+  const user =
+    await getAdminUserByUsername(
+      env,
+      session.username
+    );
+
+  if (!user) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Benutzerkonto wurde nicht gefunden."
+      },
+      403
+    );
+  }
+
+  if (!user.active) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Benutzerkonto ist deaktiviert."
+      },
+      403
+    );
+  }
+
+  return {
+    session,
+    user
+  };
+}
+
+
+/* =========================================================
+   SUPERADMIN CHECK
+========================================================= */
+
+async function requireSuperadmin(
+  request,
+  env
+) {
+  const auth =
+    await requireSession(
+      request,
+      env
+    );
+
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+  if (!auth.user.is_superadmin) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Keine Superadmin-Berechtigung."
       },
       403
     );
@@ -138,51 +322,104 @@ async function requirePermission(request, env, resource, action) {
   return auth;
 }
 
-function bytesToHex(bytes) {
+
+/* =========================================================
+   PASSWORD HASHING
+========================================================= */
+
+function bytesToHex(
+  bytes
+) {
   return Array.from(bytes)
-    .map(b => b.toString(16).padStart(2, "0"))
+    .map(
+      byte =>
+        byte
+          .toString(16)
+          .padStart(2, "0")
+    )
     .join("");
 }
 
-function hexToBytes(hex) {
-  const bytes = new Uint8Array(hex.length / 2);
 
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(
-      hex.substr(i * 2, 2),
-      16
+function hexToBytes(
+  hex
+) {
+  const bytes =
+    new Uint8Array(
+      hex.length / 2
     );
+
+  for (
+    let i = 0;
+    i < bytes.length;
+    i++
+  ) {
+    bytes[i] =
+      parseInt(
+        hex.substr(
+          i * 2,
+          2
+        ),
+        16
+      );
   }
 
   return bytes;
 }
 
-function base64ToBytes(value) {
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
 
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+function base64ToBytes(
+  value
+) {
+  const binary =
+    atob(value);
+
+  const bytes =
+    new Uint8Array(
+      binary.length
+    );
+
+  for (
+    let i = 0;
+    i < binary.length;
+    i++
+  ) {
+    bytes[i] =
+      binary.charCodeAt(i);
   }
 
   return bytes;
 }
 
-function bytesToBase64(bytes) {
+
+function bytesToBase64(
+  bytes
+) {
   let binary = "";
 
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+  for (
+    const byte of bytes
+  ) {
+    binary +=
+      String.fromCharCode(
+        byte
+      );
   }
 
   return btoa(binary);
 }
 
-async function derivePasswordHash(password, salt) {
+
+async function derivePasswordHash(
+  password,
+  salt
+) {
   const keyMaterial =
     await crypto.subtle.importKey(
       "raw",
-      new TextEncoder().encode(password),
+      new TextEncoder().encode(
+        password
+      ),
       {
         name: "PBKDF2"
       },
@@ -205,15 +442,17 @@ async function derivePasswordHash(password, salt) {
   return new Uint8Array(bits);
 }
 
+
 async function hashPassword(
   password,
   saltHex = null
 ) {
-  const salt = saltHex
-    ? hexToBytes(saltHex)
-    : crypto.getRandomValues(
-        new Uint8Array(16)
-      );
+  const salt =
+    saltHex
+      ? hexToBytes(saltHex)
+      : crypto.getRandomValues(
+          new Uint8Array(16)
+        );
 
   const derived =
     await derivePasswordHash(
@@ -230,6 +469,12 @@ async function hashPassword(
   };
 }
 
+
+/* =========================================================
+   PASSWORD VERIFY
+   Neues + altes Format
+========================================================= */
+
 async function verifyPassword(
   password,
   storedHash,
@@ -245,12 +490,14 @@ async function verifyPassword(
     };
   }
 
-  /*
-   * NEUES FORMAT
-   *
-   * Hash = 64 Hex-Zeichen
-   * Salt = 32 Hex-Zeichen
-   */
+
+  /* -------------------------------------------------------
+     NEUES HEX FORMAT
+
+     Hash = 64 Zeichen
+     Salt = 32 Zeichen
+  ------------------------------------------------------- */
+
   if (
     storedHash.length === 64 &&
     storedSalt.length === 32 &&
@@ -264,34 +511,41 @@ async function verifyPassword(
     const derived =
       await derivePasswordHash(
         password,
-        hexToBytes(storedSalt)
+        hexToBytes(
+          storedSalt
+        )
       );
 
     return {
       valid:
-        bytesToHex(derived).toLowerCase() ===
+        bytesToHex(
+          derived
+        ).toLowerCase() ===
         storedHash.toLowerCase(),
 
       legacy: false
     };
   }
 
-  /*
-   * ALTES FORMAT
-   *
-   * Frühe Benutzer wurden mit
-   * Base64 Hash + Base64 Salt gespeichert.
-   */
+
+  /* -------------------------------------------------------
+     ALTES BASE64 FORMAT
+  ------------------------------------------------------- */
+
   try {
     const derived =
       await derivePasswordHash(
         password,
-        base64ToBytes(storedSalt)
+        base64ToBytes(
+          storedSalt
+        )
       );
 
     return {
       valid:
-        bytesToBase64(derived) ===
+        bytesToBase64(
+          derived
+        ) ===
         storedHash,
 
       legacy: true
@@ -304,6 +558,11 @@ async function verifyPassword(
     };
   }
 }
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
 
 async function handleLogin(
   request,
@@ -325,6 +584,7 @@ async function handleLogin(
     );
   }
 
+
   const username =
     String(
       body?.username || ""
@@ -334,6 +594,7 @@ async function handleLogin(
     String(
       body?.password || ""
     );
+
 
   if (
     !username ||
@@ -349,9 +610,11 @@ async function handleLogin(
     );
   }
 
-  /*
-   * Benutzer aus admin_users laden
-   */
+
+  /* -------------------------------------------------------
+     BENUTZER AUS D1
+  ------------------------------------------------------- */
+
   const user =
     await env.DB.prepare(`
       SELECT
@@ -368,6 +631,7 @@ async function handleLogin(
       .bind(username)
       .first();
 
+
   if (!user) {
     return json(
       {
@@ -378,6 +642,7 @@ async function handleLogin(
       401
     );
   }
+
 
   if (!user.active) {
     return json(
@@ -390,16 +655,20 @@ async function handleLogin(
     );
   }
 
-  const passwordResult =
+
+  /* -------------------------------------------------------
+     PASSWORT PRÜFEN
+  ------------------------------------------------------- */
+
+  const result =
     await verifyPassword(
       password,
       user.password_hash,
       user.password_salt
     );
 
-  if (
-    !passwordResult.valid
-  ) {
+
+  if (!result.valid) {
     return json(
       {
         ok: false,
@@ -410,14 +679,12 @@ async function handleLogin(
     );
   }
 
-  /*
-   * Alten Passwortdatensatz
-   * automatisch auf das neue
-   * Format migrieren.
-   */
-  if (
-    passwordResult.legacy
-  ) {
+
+  /* -------------------------------------------------------
+     LEGACY PASSWORT AUTOMATISCH MIGRIEREN
+  ------------------------------------------------------- */
+
+  if (result.legacy) {
     const upgraded =
       await hashPassword(
         password
@@ -445,14 +712,17 @@ async function handleLogin(
       .run();
   }
 
-  /*
-   * Session erstellen
-   */
+
+  /* -------------------------------------------------------
+     SESSION
+  ------------------------------------------------------- */
+
   const sessionId =
     await createSession(
       env,
       user.username
     );
+
 
   return json(
     {
@@ -472,6 +742,11 @@ async function handleLogin(
   );
 }
 
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
 async function handleLogout(
   request,
   env
@@ -487,7 +762,9 @@ async function handleLogout(
       DELETE FROM admin_sessions
       WHERE id = ?
     `)
-      .bind(sessionId)
+      .bind(
+        sessionId
+      )
       .run();
   }
 
@@ -506,6 +783,11 @@ async function handleLogout(
   );
 }
 
+
+/* =========================================================
+   /API/ME
+========================================================= */
+
 async function handleMe(
   request,
   env
@@ -516,13 +798,13 @@ async function handleMe(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
 
+
   const permissions = {};
+
 
   for (
     const resource of
@@ -530,6 +812,7 @@ async function handleMe(
         RESOURCE_LABELS
       )
   ) {
+
     if (
       resource ===
       "dashboard"
@@ -545,6 +828,7 @@ async function handleMe(
 
       continue;
     }
+
 
     const row =
       await env.DB.prepare(`
@@ -563,6 +847,7 @@ async function handleMe(
           resource
         )
         .first();
+
 
     permissions[
       resource
@@ -597,6 +882,7 @@ async function handleMe(
           };
   }
 
+
   return json({
     ok: true,
 
@@ -613,6 +899,11 @@ async function handleMe(
   });
 }
 
+
+/* =========================================================
+   ADMIN USERS - LIST
+========================================================= */
+
 async function handleAdminUsersGet(
   request,
   env
@@ -623,11 +914,10 @@ async function handleAdminUsersGet(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
+
 
   const users =
     await env.DB.prepare(`
@@ -642,12 +932,15 @@ async function handleAdminUsersGet(
       ORDER BY username COLLATE NOCASE ASC
     `).all();
 
+
   const result =
     users.results || [];
+
 
   for (
     const user of result
   ) {
+
     const permissions =
       await env.DB.prepare(`
         SELECT
@@ -663,18 +956,28 @@ async function handleAdminUsersGet(
         WHERE user_id = ?
         ORDER BY resource ASC
       `)
-        .bind(user.id)
+        .bind(
+          user.id
+        )
         .all();
 
+
     user.permissions =
-      permissions.results || [];
+      permissions.results ||
+      [];
   }
+
 
   return json({
     ok: true,
     users: result
   });
 }
+
+
+/* =========================================================
+   ADMIN USERS - CREATE
+========================================================= */
 
 async function handleAdminUserCreate(
   request,
@@ -686,11 +989,10 @@ async function handleAdminUserCreate(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
+
 
   let body;
 
@@ -707,6 +1009,7 @@ async function handleAdminUserCreate(
       400
     );
   }
+
 
   const username =
     String(
@@ -728,6 +1031,7 @@ async function handleAdminUserCreate(
       ? 1
       : 0;
 
+
   if (
     username.length < 2
   ) {
@@ -740,6 +1044,7 @@ async function handleAdminUserCreate(
       400
     );
   }
+
 
   if (
     password.length < 8
@@ -754,6 +1059,7 @@ async function handleAdminUserCreate(
     );
   }
 
+
   const existing =
     await env.DB.prepare(`
       SELECT id
@@ -761,8 +1067,11 @@ async function handleAdminUserCreate(
       WHERE username = ?
       LIMIT 1
     `)
-      .bind(username)
+      .bind(
+        username
+      )
       .first();
+
 
   if (existing) {
     return json(
@@ -775,18 +1084,22 @@ async function handleAdminUserCreate(
     );
   }
 
+
   const passwordData =
     await hashPassword(
       password
     );
 
+
   const userId =
     crypto.randomUUID();
+
 
   const now =
     Math.floor(
       Date.now() / 1000
     );
+
 
   await env.DB.prepare(`
     INSERT INTO admin_users (
@@ -812,6 +1125,7 @@ async function handleAdminUserCreate(
       now
     )
     .run();
+
 
   return json(
     {
@@ -843,6 +1157,11 @@ async function handleAdminUserCreate(
   );
 }
 
+
+/* =========================================================
+   ADMIN USERS - DELETE
+========================================================= */
+
 async function handleAdminUserDelete(
   request,
   env,
@@ -854,11 +1173,10 @@ async function handleAdminUserDelete(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
+
 
   if (
     userId ===
@@ -874,6 +1192,7 @@ async function handleAdminUserDelete(
     );
   }
 
+
   const user =
     await env.DB.prepare(`
       SELECT
@@ -883,8 +1202,11 @@ async function handleAdminUserDelete(
       WHERE id = ?
       LIMIT 1
     `)
-      .bind(userId)
+      .bind(
+        userId
+      )
       .first();
+
 
   if (!user) {
     return json(
@@ -897,31 +1219,46 @@ async function handleAdminUserDelete(
     );
   }
 
+
   await env.DB.prepare(`
     DELETE FROM admin_permissions
     WHERE user_id = ?
   `)
-    .bind(userId)
+    .bind(
+      userId
+    )
     .run();
+
 
   await env.DB.prepare(`
     DELETE FROM admin_sessions
     WHERE username = ?
   `)
-    .bind(user.username)
+    .bind(
+      user.username
+    )
     .run();
+
 
   await env.DB.prepare(`
     DELETE FROM admin_users
     WHERE id = ?
   `)
-    .bind(userId)
+    .bind(
+      userId
+    )
     .run();
+
 
   return json({
     ok: true
   });
 }
+
+
+/* =========================================================
+   ADMIN USERS - PERMISSIONS
+========================================================= */
 
 async function handleAdminPermissionsUpdate(
   request,
@@ -934,11 +1271,10 @@ async function handleAdminPermissionsUpdate(
       env
     );
 
-  if (
-    auth instanceof Response
-  ) {
+  if (auth instanceof Response) {
     return auth;
   }
+
 
   const user =
     await env.DB.prepare(`
@@ -949,8 +1285,11 @@ async function handleAdminPermissionsUpdate(
       WHERE id = ?
       LIMIT 1
     `)
-      .bind(userId)
+      .bind(
+        userId
+      )
       .first();
+
 
   if (!user) {
     return json(
@@ -963,6 +1302,7 @@ async function handleAdminPermissionsUpdate(
     );
   }
 
+
   if (
     user.is_superadmin
   ) {
@@ -972,6 +1312,7 @@ async function handleAdminPermissionsUpdate(
         "Superadmins besitzen automatisch alle Rechte."
     });
   }
+
 
   let body;
 
@@ -989,6 +1330,7 @@ async function handleAdminPermissionsUpdate(
     );
   }
 
+
   const permissions =
     Array.isArray(
       body?.permissions
@@ -996,31 +1338,33 @@ async function handleAdminPermissionsUpdate(
       ? body.permissions
       : [];
 
+
   const now =
     Math.floor(
       Date.now() / 1000
     );
 
+
   await env.DB.prepare(`
     DELETE FROM admin_permissions
     WHERE user_id = ?
   `)
-    .bind(userId)
+    .bind(
+      userId
+    )
     .run();
 
+
   for (
-    const permission
-    of permissions
+    const permission of permissions
   ) {
+
     const resource =
       String(
         permission?.resource || ""
       ).trim();
 
-    /*
-     * Dashboard wird nicht als
-     * normale Berechtigung gespeichert.
-     */
+
     if (
       !RESOURCE_LABELS[
         resource
@@ -1030,6 +1374,7 @@ async function handleAdminPermissionsUpdate(
     ) {
       continue;
     }
+
 
     await env.DB.prepare(`
       INSERT INTO admin_permissions (
@@ -1052,34 +1397,171 @@ async function handleAdminPermissionsUpdate(
         permission?.can_view
           ? 1
           : 0,
+
         permission?.can_create
           ? 1
           : 0,
+
         permission?.can_edit
           ? 1
           : 0,
+
         permission?.can_delete
           ? 1
           : 0,
+
         now,
         now
       )
       .run();
   }
 
+
   return json({
     ok: true
   });
 }
+
+
+/* =========================================================
+   PASSWORD RESET
+========================================================= */
+
+async function handleAdminPasswordReset(
+  request,
+  env,
+  userId
+) {
+  const auth =
+    await requireSuperadmin(
+      request,
+      env
+    );
+
+  if (auth instanceof Response) {
+    return auth;
+  }
+
+
+  const user =
+    await getAdminUserById(
+      env,
+      userId
+    );
+
+
+  if (!user) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Benutzer nicht gefunden."
+      },
+      404
+    );
+  }
+
+
+  let body;
+
+  try {
+    body =
+      await request.json();
+  } catch {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige Anfrage."
+      },
+      400
+    );
+  }
+
+
+  const password =
+    String(
+      body?.password || ""
+    );
+
+
+  if (
+    password.length < 8
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Das Passwort muss mindestens 8 Zeichen lang sein."
+      },
+      400
+    );
+  }
+
+
+  const passwordData =
+    await hashPassword(
+      password
+    );
+
+
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+
+  await env.DB.prepare(`
+    UPDATE admin_users
+    SET
+      password_hash = ?,
+      password_salt = ?,
+      updated_at = ?
+    WHERE id = ?
+  `)
+    .bind(
+      passwordData.hash,
+      passwordData.salt,
+      now,
+      userId
+    )
+    .run();
+
+
+  /*
+   * Alle Sessions des Benutzers löschen.
+   */
+  await env.DB.prepare(`
+    DELETE FROM admin_sessions
+    WHERE username = ?
+  `)
+    .bind(
+      user.username
+    )
+    .run();
+
+
+  return json({
+    ok: true,
+    message:
+      "Passwort wurde erfolgreich zurückgesetzt."
+  });
+}
+
+
+/* =========================================================
+   SCHEMA
+========================================================= */
 
 async function getTableSchema(
   env,
   table
 ) {
   return await env.DB.prepare(
-    `PRAGMA table_info(${table})`
+    `PRAGMA table_info("${table}")`
   ).all();
 }
+
 
 function getIdentityColumn(
   schema
@@ -1087,11 +1569,15 @@ function getIdentityColumn(
   const columns =
     schema.results || [];
 
+
   const primary =
     columns.filter(
-      col =>
-        Number(col.pk) === 1
+      column =>
+        Number(
+          column.pk
+        ) === 1
     );
+
 
   if (
     primary.length === 1
@@ -1099,30 +1585,17 @@ function getIdentityColumn(
     return primary[0];
   }
 
-  const id =
+
+  return (
     columns.find(
-      col =>
-        col.name ===
+      column =>
+        column.name ===
         "id"
-    );
-
-  if (id) {
-    return id;
-  }
-
-  const key =
-    columns.find(
-      col =>
-        col.name ===
-        "key"
-    );
-
-  if (key) {
-    return key;
-  }
-
-  return null;
+    ) ||
+    null
+  );
 }
+
 
 function quoteIdentifier(
   value
@@ -1133,15 +1606,17 @@ function quoteIdentifier(
     )
   ) {
     throw new Error(
-      "Ungültiger Bezeichner."
+      "Ungültiger Datenbank-Bezeichner."
     );
   }
 
-  return `"${value.replaceAll(
-    '"',
-    '""'
-  )}"`;
+  return `"${value}"`;
 }
+
+
+/* =========================================================
+   ADMIN SCHEMA
+========================================================= */
 
 async function handleAdminSchema(
   request,
@@ -1162,8 +1637,12 @@ async function handleAdminSchema(
     return auth;
   }
 
+
   const table =
-    RESOURCES[resource];
+    RESOURCES[
+      resource
+    ];
+
 
   if (!table) {
     return json(
@@ -1176,36 +1655,13 @@ async function handleAdminSchema(
     );
   }
 
+
   const schema =
     await getTableSchema(
       env,
       table
     );
 
-  const columns =
-    (schema.results || [])
-      .map(
-        col => ({
-          name:
-            col.name,
-
-          type:
-            col.type,
-
-          notnull:
-            Number(
-              col.notnull
-            ),
-
-          default:
-            col.dflt_value,
-
-          pk:
-            Number(
-              col.pk
-            )
-        })
-      );
 
   return json({
     ok: true,
@@ -1224,132 +1680,120 @@ async function handleAdminSchema(
         schema
       )?.name || null,
 
-    columns
+    columns:
+      schema.results || []
   });
 }
 
-function sanitizeData(
-  data,
-  schemaColumns,
-  {
-    includeIdentity = true
-  } = {}
-) {
-  const out = {};
 
-  const allowed =
-    new Set(
-      schemaColumns.map(
-        col =>
-          col.name
-      )
+/* =========================================================
+   PERMISSION CHECK
+========================================================= */
+
+async function requirePermission(
+  request,
+  env,
+  resource,
+  action
+) {
+  const auth =
+    await requireSession(
+      request,
+      env
     );
 
   if (
-    !data ||
-    typeof data !==
-      "object" ||
-    Array.isArray(data)
+    auth instanceof Response
   ) {
-    throw new Error(
-      "Ungültige Daten."
+    return auth;
+  }
+
+
+  /*
+   * Superadmins dürfen alles.
+   */
+  if (
+    auth.user.is_superadmin
+  ) {
+    return auth;
+  }
+
+
+  /*
+   * Dashboard nur anzeigen.
+   */
+  if (
+    resource ===
+      "dashboard" &&
+    action ===
+      "view"
+  ) {
+    return auth;
+  }
+
+
+  if (
+    !RESOURCE_LABELS[
+      resource
+    ]
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Unbekannter Bereich."
+      },
+      404
     );
   }
 
-  for (
-    const [
-      key,
-      value
-    ] of Object.entries(data)
-  ) {
-    if (
-      !allowed.has(
-        key
+
+  const permission =
+    await env.DB.prepare(`
+      SELECT
+        can_view,
+        can_create,
+        can_edit,
+        can_delete
+      FROM admin_permissions
+      WHERE user_id = ?
+        AND resource = ?
+      LIMIT 1
+    `)
+      .bind(
+        auth.user.id,
+        resource
       )
-    ) {
-      continue;
-    }
+      .first();
 
-    if (
-      !includeIdentity &&
-      key === "id"
-    ) {
-      continue;
-    }
 
-    if (
-      [
-        "created_at",
-        "updated_at"
-      ].includes(key)
-    ) {
-      continue;
-    }
+  const field =
+    `can_${action}`;
 
-    out[key] = value;
-  }
-
-  return out;
-}
-
-function normalizeDbValue(
-  value,
-  column
-) {
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return null;
-  }
-
-  const type =
-    String(
-      column.type || ""
-    ).toUpperCase();
 
   if (
-    type.includes("INT")
+    Number(
+      permission?.[field] || 0
+    ) !== 1
   ) {
-    if (
-      typeof value ===
-      "boolean"
-    ) {
-      return value
-        ? 1
-        : 0;
-    }
-
-    if (
-      value === "true"
-    ) {
-      return 1;
-    }
-
-    if (
-      value === "false"
-    ) {
-      return 0;
-    }
-
-    if (
-      value === ""
-    ) {
-      return null;
-    }
-
-    const number =
-      Number(value);
-
-    return Number.isFinite(
-      number
-    )
-      ? number
-      : value;
+    return json(
+      {
+        ok: false,
+        error:
+          "Keine Berechtigung für diesen Bereich."
+      },
+      403
+    );
   }
 
-  return String(value);
+
+  return auth;
 }
+
+
+/* =========================================================
+   ADMIN DATA - GET
+========================================================= */
 
 async function handleAdminDataGet(
   request,
@@ -1370,8 +1814,12 @@ async function handleAdminDataGet(
     return auth;
   }
 
+
   const table =
-    RESOURCES[resource];
+    RESOURCES[
+      resource
+    ];
+
 
   if (!table) {
     return json(
@@ -1384,10 +1832,12 @@ async function handleAdminDataGet(
     );
   }
 
+
   const result =
     await env.DB.prepare(
       `SELECT * FROM ${quoteIdentifier(table)}`
     ).all();
+
 
   return json({
     ok: true,
@@ -1396,6 +1846,11 @@ async function handleAdminDataGet(
       result.results || []
   });
 }
+
+
+/* =========================================================
+   ADMIN DATA - CREATE
+========================================================= */
 
 async function handleAdminDataCreate(
   request,
@@ -1416,8 +1871,12 @@ async function handleAdminDataCreate(
     return auth;
   }
 
+
   const table =
-    RESOURCES[resource];
+    RESOURCES[
+      resource
+    ];
+
 
   if (!table) {
     return json(
@@ -1430,25 +1889,17 @@ async function handleAdminDataCreate(
     );
   }
 
+
   const schema =
     await getTableSchema(
       env,
       table
     );
 
+
   const columns =
     schema.results || [];
 
-  if (!columns.length) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Tabelle nicht gefunden."
-      },
-      404
-    );
-  }
 
   let body;
 
@@ -1466,102 +1917,152 @@ async function handleAdminDataCreate(
     );
   }
 
-  const data =
-    sanitizeData(
-      body,
-      columns,
-      {
-        includeIdentity:
-          true
-      }
-    );
 
+  if (
+    !body ||
+    typeof body !==
+      "object" ||
+    Array.isArray(body)
+  ) {
+    return json(
+      {
+        ok: false,
+        error:
+          "Ungültige Daten."
+      },
+      400
+    );
+  }
+
+
+  const data = {};
+
+
+  for (
+    const column of
+      columns
+  ) {
+    const name =
+      column.name;
+
+
+    if (
+      name ===
+        "created_at" ||
+      name ===
+        "updated_at"
+    ) {
+      continue;
+    }
+
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        body,
+        name
+      )
+    ) {
+      data[name] =
+        body[name];
+    }
+  }
+
+
+  /*
+   * Automatische ID
+   */
   const identity =
     getIdentityColumn(
       schema
     );
 
-  /*
-   * Falls die ID TEXT ist
-   * und nicht mitgegeben wurde,
-   * automatisch UUID erzeugen.
-   */
+
   if (
     identity &&
-    identity.name === "id" &&
-    !("id" in data) &&
-    String(
-      identity.type || ""
+    identity.name ===
+      "id" &&
+    !Object.prototype.hasOwnProperty.call(
+      data,
+      "id"
     )
-      .toUpperCase()
-      .includes("CHAR")
   ) {
     data.id =
       crypto.randomUUID();
   }
+
 
   const now =
     Math.floor(
       Date.now() / 1000
     );
 
+
   if (
     columns.some(
-      c =>
-        c.name ===
+      column =>
+        column.name ===
         "created_at"
-    ) &&
-    data.created_at ===
-      undefined
+    )
   ) {
     data.created_at =
       now;
   }
 
+
   if (
     columns.some(
-      c =>
-        c.name ===
+      column =>
+        column.name ===
         "updated_at"
-    ) &&
-    data.updated_at ===
-      undefined
+    )
   ) {
     data.updated_at =
       now;
   }
 
+
   /*
-   * Pflichtfelder prüfen
+   * Pflichtfelder prüfen.
    */
   for (
-    const col of columns
+    const column of
+      columns
   ) {
+    const present =
+      Object.prototype.hasOwnProperty.call(
+        data,
+        column.name
+      );
+
+
     if (
-      data[col.name] ===
-        undefined &&
       Number(
-        col.notnull
+        column.notnull
       ) === 1 &&
-      col.dflt_value ===
-        null &&
       Number(
-        col.pk
-      ) === 0
+        column.pk
+      ) === 0 &&
+      column.dflt_value ===
+        null &&
+      !present
     ) {
       return json(
         {
           ok: false,
           error:
-            `Pflichtfeld fehlt: ${col.name}`
+            `Pflichtfeld fehlt: ${column.name}`
         },
         400
       );
     }
   }
 
+
   const keys =
-    Object.keys(data);
+    Object.keys(
+      data
+    );
+
 
   if (!keys.length) {
     return json(
@@ -1574,18 +2075,6 @@ async function handleAdminDataCreate(
     );
   }
 
-  const values =
-    keys.map(
-      key =>
-        normalizeDbValue(
-          data[key],
-          columns.find(
-            c =>
-              c.name ===
-              key
-          )
-        )
-    );
 
   const placeholders =
     keys
@@ -1594,16 +2083,25 @@ async function handleAdminDataCreate(
       )
       .join(", ");
 
-  const quotedKeys =
+
+  const columnList =
     keys
       .map(
         quoteIdentifier
       )
       .join(", ");
 
+
+  const values =
+    keys.map(
+      key =>
+        data[key]
+    );
+
+
   await env.DB.prepare(`
     INSERT INTO ${quoteIdentifier(table)}
-      (${quotedKeys})
+      (${columnList})
     VALUES
       (${placeholders})
   `)
@@ -1611,6 +2109,7 @@ async function handleAdminDataCreate(
       ...values
     )
     .run();
+
 
   return json(
     {
@@ -1621,11 +2120,16 @@ async function handleAdminDataCreate(
   );
 }
 
+
+/* =========================================================
+   ADMIN DATA - UPDATE
+========================================================= */
+
 async function handleAdminDataUpdate(
   request,
   env,
   resource,
-  value
+  recordId
 ) {
   const auth =
     await requirePermission(
@@ -1641,8 +2145,12 @@ async function handleAdminDataUpdate(
     return auth;
   }
 
+
   const table =
-    RESOURCES[resource];
+    RESOURCES[
+      resource
+    ];
+
 
   if (!table) {
     return json(
@@ -1655,30 +2163,31 @@ async function handleAdminDataUpdate(
     );
   }
 
+
   const schema =
     await getTableSchema(
       env,
       table
     );
 
-  const columns =
-    schema.results || [];
 
   const identity =
     getIdentityColumn(
       schema
     );
 
+
   if (!identity) {
     return json(
       {
         ok: false,
         error:
-          "Diese Tabelle besitzt keinen eindeutigen Identifikator und kann deshalb nicht bearbeitet werden."
+          "Diese Tabelle besitzt keinen eindeutigen Identifikator."
       },
       400
     );
   }
+
 
   let body;
 
@@ -1696,28 +2205,66 @@ async function handleAdminDataUpdate(
     );
   }
 
-  const data =
-    sanitizeData(
-      body,
-      columns,
-      {
-        includeIdentity:
-          true
-      }
+
+  const allowedColumns =
+    new Set(
+      (
+        schema.results ||
+        []
+      ).map(
+        column =>
+          column.name
+      )
     );
 
-  /*
-   * Primärschlüssel nie bearbeiten.
-   */
-  delete data[
-    identity.name
-  ];
+
+  const data = {};
+
+
+  for (
+    const [
+      key,
+      value
+    ] of Object.entries(
+      body || {}
+    )
+  ) {
+
+    if (
+      !allowedColumns.has(
+        key
+      )
+    ) {
+      continue;
+    }
+
+
+    if (
+      key ===
+      identity.name
+    ) {
+      continue;
+    }
+
+
+    if (
+      key ===
+        "created_at" ||
+      key ===
+        "updated_at"
+    ) {
+      continue;
+    }
+
+
+    data[key] =
+      value;
+  }
+
 
   if (
-    columns.some(
-      c =>
-        c.name ===
-        "updated_at"
+    allowedColumns.has(
+      "updated_at"
     )
   ) {
     data.updated_at =
@@ -1726,8 +2273,12 @@ async function handleAdminDataUpdate(
       );
   }
 
+
   const keys =
-    Object.keys(data);
+    Object.keys(
+      data
+    );
+
 
   if (!keys.length) {
     return json(
@@ -1740,7 +2291,8 @@ async function handleAdminDataUpdate(
     );
   }
 
-  const sets =
+
+  const setList =
     keys
       .map(
         key =>
@@ -1750,68 +2302,37 @@ async function handleAdminDataUpdate(
       )
       .join(", ");
 
-  const values =
-    keys.map(
-      key =>
-        normalizeDbValue(
-          data[key],
-          columns.find(
-            c =>
-              c.name ===
-              key
-          )
-        )
-    );
 
-  const identityColumn =
-    quoteIdentifier(
-      identity.name
-    );
+  await env.DB.prepare(`
+    UPDATE ${quoteIdentifier(table)}
+    SET ${setList}
+    WHERE ${quoteIdentifier(identity.name)} = ?
+  `)
+    .bind(
+      ...keys.map(
+        key =>
+          data[key]
+      ),
+      recordId
+    )
+    .run();
 
-  const identityValue =
-    normalizeDbValue(
-      value,
-      identity
-    );
-
-  const result =
-    await env.DB.prepare(`
-      UPDATE ${quoteIdentifier(table)}
-      SET ${sets}
-      WHERE ${identityColumn} = ?
-    `)
-      .bind(
-        ...values,
-        identityValue
-      )
-      .run();
-
-  if (
-    !result.success ||
-    Number(
-      result.meta?.changes || 0
-    ) === 0
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Datensatz wurde nicht gefunden oder nicht geändert."
-      },
-      404
-    );
-  }
 
   return json({
     ok: true
   });
 }
 
+
+/* =========================================================
+   ADMIN DATA - DELETE
+========================================================= */
+
 async function handleAdminDataDelete(
   request,
   env,
   resource,
-  value
+  recordId
 ) {
   const auth =
     await requirePermission(
@@ -1827,8 +2348,12 @@ async function handleAdminDataDelete(
     return auth;
   }
 
+
   const table =
-    RESOURCES[resource];
+    RESOURCES[
+      resource
+    ];
+
 
   if (!table) {
     return json(
@@ -1841,59 +2366,41 @@ async function handleAdminDataDelete(
     );
   }
 
+
   const schema =
     await getTableSchema(
       env,
       table
     );
 
+
   const identity =
     getIdentityColumn(
       schema
     );
+
 
   if (!identity) {
     return json(
       {
         ok: false,
         error:
-          "Diese Tabelle besitzt keinen eindeutigen Identifikator und kann deshalb nicht gelöscht werden."
+          "Diese Tabelle besitzt keinen eindeutigen Identifikator."
       },
       400
     );
   }
 
-  const identityValue =
-    normalizeDbValue(
-      value,
-      identity
-    );
 
-  const result =
-    await env.DB.prepare(`
-      DELETE FROM ${quoteIdentifier(table)}
-      WHERE ${quoteIdentifier(identity.name)} = ?
-    `)
-      .bind(
-        identityValue
-      )
-      .run();
+  await env.DB.prepare(`
+    DELETE FROM ${quoteIdentifier(table)}
+    WHERE ${quoteIdentifier(identity.name)} = ?
+  `)
+    .bind(
+      recordId
+    )
+    .run();
 
-  if (
-    !result.success ||
-    Number(
-      result.meta?.changes || 0
-    ) === 0
-  ) {
-    return json(
-      {
-        ok: false,
-        error:
-          "Datensatz wurde nicht gefunden."
-      },
-      404
-    );
-  }
 
   return json({
     ok: true
@@ -1906,12 +2413,17 @@ async function handleAdminDataDelete(
 ========================================================= */
 
 export default {
+
   async fetch(
     request,
     env
   ) {
+
     const url =
-      new URL(request.url);
+      new URL(
+        request.url
+      );
+
 
     try {
 
@@ -1925,10 +2437,12 @@ export default {
         request.method ===
           "POST"
       ) {
+
         return await handleLogin(
           request,
           env
         );
+
       }
 
 
@@ -1942,10 +2456,12 @@ export default {
         request.method ===
           "POST"
       ) {
+
         return await handleLogout(
           request,
           env
         );
+
       }
 
 
@@ -1959,15 +2475,17 @@ export default {
         request.method ===
           "GET"
       ) {
+
         return await handleMe(
           request,
           env
         );
+
       }
 
 
       /* ---------------------------------------------
-         ADMIN USERS - LIST
+         ADMIN USERS - GET
       --------------------------------------------- */
 
       if (
@@ -1976,10 +2494,12 @@ export default {
         request.method ===
           "GET"
       ) {
+
         return await handleAdminUsersGet(
           request,
           env
         );
+
       }
 
 
@@ -1993,32 +2513,12 @@ export default {
         request.method ===
           "POST"
       ) {
+
         return await handleAdminUserCreate(
           request,
           env
         );
-      }
 
-
-      /* ---------------------------------------------
-         ADMIN USERS - PERMISSIONS
-      --------------------------------------------- */
-
-      const permissionMatch =
-        url.pathname.match(
-          /^\/api\/admin\/users\/([^/]+)\/permissions$/
-        );
-
-      if (
-        permissionMatch &&
-        request.method ===
-          "PUT"
-      ) {
-        return await handleAdminPermissionsUpdate(
-          request,
-          env,
-          permissionMatch[1]
-        );
       }
 
 
@@ -2031,16 +2531,69 @@ export default {
           /^\/api\/admin\/users\/([^/]+)$/
         );
 
+
       if (
         userDeleteMatch &&
         request.method ===
           "DELETE"
       ) {
+
         return await handleAdminUserDelete(
           request,
           env,
           userDeleteMatch[1]
         );
+
+      }
+
+
+      /* ---------------------------------------------
+         ADMIN USERS - PERMISSIONS
+      --------------------------------------------- */
+
+      const permissionsMatch =
+        url.pathname.match(
+          /^\/api\/admin\/users\/([^/]+)\/permissions$/
+        );
+
+
+      if (
+        permissionsMatch &&
+        request.method ===
+          "PUT"
+      ) {
+
+        return await handleAdminPermissionsUpdate(
+          request,
+          env,
+          permissionsMatch[1]
+        );
+
+      }
+
+
+      /* ---------------------------------------------
+         ADMIN USERS - PASSWORD
+      --------------------------------------------- */
+
+      const passwordMatch =
+        url.pathname.match(
+          /^\/api\/admin\/users\/([^/]+)\/password$/
+        );
+
+
+      if (
+        passwordMatch &&
+        request.method ===
+          "POST"
+      ) {
+
+        return await handleAdminPasswordReset(
+          request,
+          env,
+          passwordMatch[1]
+        );
+
       }
 
 
@@ -2053,21 +2606,24 @@ export default {
           /^\/api\/admin\/schema\/([^/]+)$/
         );
 
+
       if (
         schemaMatch &&
         request.method ===
           "GET"
       ) {
+
         return await handleAdminSchema(
           request,
           env,
           schemaMatch[1]
         );
+
       }
 
 
       /* ---------------------------------------------
-         ADMIN DATA - GET / CREATE
+         ADMIN DATA GET / CREATE
       --------------------------------------------- */
 
       const dataMatch =
@@ -2075,37 +2631,45 @@ export default {
           /^\/api\/admin\/data\/([^/]+)$/
         );
 
+
       if (dataMatch) {
 
         const resource =
           dataMatch[1];
 
+
         if (
           request.method ===
           "GET"
         ) {
+
           return await handleAdminDataGet(
             request,
             env,
             resource
           );
+
         }
+
 
         if (
           request.method ===
           "POST"
         ) {
+
           return await handleAdminDataCreate(
             request,
             env,
             resource
           );
+
         }
+
       }
 
 
       /* ---------------------------------------------
-         ADMIN DATA - UPDATE / DELETE
+         ADMIN DATA UPDATE / DELETE
       --------------------------------------------- */
 
       const dataIdMatch =
@@ -2113,49 +2677,58 @@ export default {
           /^\/api\/admin\/data\/([^/]+)\/([^/]+)$/
         );
 
+
       if (dataIdMatch) {
 
         const resource =
           dataIdMatch[1];
 
-        const value =
+        const recordId =
           decodeURIComponent(
             dataIdMatch[2]
           );
+
 
         if (
           request.method ===
           "PUT"
         ) {
+
           return await handleAdminDataUpdate(
             request,
             env,
             resource,
-            value
+            recordId
           );
+
         }
+
 
         if (
           request.method ===
           "DELETE"
         ) {
+
           return await handleAdminDataDelete(
             request,
             env,
             resource,
-            value
+            recordId
           );
+
         }
+
       }
 
 
       /* ---------------------------------------------
-         STATIC WEBSITE
+         WEBSITE ASSETS
       --------------------------------------------- */
 
       return env.ASSETS.fetch(
         request
       );
+
 
     } catch (error) {
 
@@ -2163,6 +2736,7 @@ export default {
         "Worker error:",
         error
       );
+
 
       return json(
         {
@@ -2172,6 +2746,9 @@ export default {
         },
         500
       );
+
     }
+
   }
+
 };
