@@ -925,26 +925,13 @@
       font-size: 21px;
     }
 
-    .blacklist-card .image-wrap {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      overflow: hidden;
-      border-radius: 10px;
-      margin-bottom: 14px;
-      background: #11111a;
-      border: 1px solid rgba(255,255,255,.08);
-    }
-
-    .blacklist-card .image-wrap img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
 
     .blacklist-card .reason {
+
       color: #aaa;
+
       margin-top: 10px;
+
       font-size: 14px;
     }
 
@@ -956,6 +943,36 @@
       margin-top: 15px;
 
       font-size: 11px;
+    }
+
+
+    .blacklist-image {
+
+      width: 100%;
+
+      height: 210px;
+
+      border-radius: 8px;
+
+      overflow: hidden;
+
+      margin-bottom: 20px;
+
+      background: #080510;
+
+    }
+
+
+    .blacklist-image img {
+
+      width: 100%;
+
+      height: 100%;
+
+      object-fit: cover;
+
+      display: block;
+
     }
 
 
@@ -1567,7 +1584,7 @@
       <div class="page-title">
 
         <h1>
-          VEHICLE BLACKLIST
+          BLACKLIST
         </h1>
 
         <p>
@@ -1754,65 +1771,81 @@
 
 
     /* =====================================================
-       DATEN AUS GOOGLE SHEETS LADEN
+       ÖFFENTLICHE DATEN AUS CLOUDFLARE D1 LADEN
     ===================================================== */
 
     async function loadWebsite() {
 
-      /* CLOUDFARE / STATIC TESTDATEN
-       * Diese Daten ersetzen vorübergehend Google Sheets.
-       * Im nächsten Schritt hängen wir hier die Cloudflare-Datenbank an.
-       */
-      websiteData = {
-        website: {
-          WebsiteName: "JACKAL RACING LEAGUE",
-          Slogan: "WE ARE JACKAL. WE ARE RACING.",
-          HeroImage: "banner.png",
-          Logo: "JACKAL",
-          Instagram: "#",
-          Discord: "#",
-          YouTube: "#",
-          X: "#",
-          Version: "1.0"
-        },
-        race: {
-          title: "JACKAL NIGHT RUN",
-          subtitle: "NEXT RACE",
-          city: "LOS SANTOS",
-          location: "SANDY SHORES AIRFIELD",
-          date: "07.10.2026",
-          time: "22:00",
-          image: ""
-        },
-        news: [
-          { date: "28.09.2026", title: "RACEWARS RECAP", text: "Danke an alle, die beim letzten Event dabei waren!", image: "", category: "EVENT" },
-          { date: "25.09.2026", title: "NEUE RANGLISTE ONLINE", text: "Die aktuelle Saison-Rangliste ist jetzt verfügbar.", image: "", category: "RANGLISTE" },
-          { date: "20.09.2026", title: "JACKAL MERCH", text: "Neue Designs sind ab sofort verfügbar!", image: "", category: "NEWS" }
-        ],
-        drivers: [
-          { name: "APEX", number: "#01", vehicle: "WENNY ISSI SPORT", points: 428, wins: 5, image: "" }
-        ],
-        ranking: [
-          { place: 1, driver: "APEX", points: 428, wins: 5, vehicle: "WENNY ISSI SPORT" }
-        ],
-        blacklist: [],
-        gallery: []
-      };
-
       try {
-        const response = await fetch("/api/public/blacklist", {
-          credentials: "same-origin",
-          cache: "no-store"
-        });
-        const data = await response.json().catch(() => ({}));
-        if (response.ok && data.ok && Array.isArray(data.blacklist)) {
-          websiteData.blacklist = data.blacklist;
+
+        const response =
+          await fetch("/api/public/data", {
+            method: "GET",
+            headers: {
+              "Accept": "application/json"
+            },
+            cache: "no-store"
+          });
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            `Public API Fehler: ${response.status}`
+          );
+
         }
+
+
+        const data = await response.json();
+
+
+        if (!data || data.ok !== true) {
+
+          throw new Error(
+            data && data.error
+              ? data.error
+              : "Ungültige Public-API-Antwort."
+          );
+
+        }
+
+
+        websiteData = {
+          ...data,
+          races: Array.isArray(data.races) ? data.races : [],
+          drivers: Array.isArray(data.drivers) ? data.drivers : [],
+          ranking: Array.isArray(data.ranking) ? data.ranking : [],
+          news: Array.isArray(data.news) ? data.news : [],
+          blacklist: Array.isArray(data.blacklist) ? data.blacklist : [],
+          gallery: Array.isArray(data.gallery) ? data.gallery : []
+        };
+
+
+        console.log("JACKAL Public Data geladen:", websiteData);
+
+        renderWebsite();
+
       } catch (error) {
-        /* Fallback auf lokale Daten. */
+
+        console.error(
+          "Fehler beim Laden der JACKAL Public Data:",
+          error
+        );
+
+        websiteData = {
+          races: [],
+          drivers: [],
+          ranking: [],
+          news: [],
+          blacklist: [],
+          gallery: []
+        };
+
+        renderWebsite();
+
       }
 
-      renderWebsite();
     }
 
 
@@ -1918,83 +1951,48 @@
 
     function renderHomeRace() {
 
+      const races =
+        Array.isArray(websiteData.races)
+          ? websiteData.races
+          : [];
 
-      const race =
-        websiteData.race;
-
-
-      if (!race) {
+      if (!races.length) {
+        setText("homeRaceTitle", "KEIN RENNEN GEPLANT");
+        setText("homeRaceCity", "");
+        setText("homeRaceLocation", "");
+        setText("homeRaceDate", "");
+        setText("homeRaceTime", "");
+        resetCountdown();
         return;
       }
 
+      const now = new Date();
 
-      const title =
-        document.getElementById(
-          "homeRaceTitle"
+      const sorted = races
+        .slice()
+        .sort((a, b) =>
+          getDateTimeValue(a.date, a.time) -
+          getDateTimeValue(b.date, b.time)
         );
 
+      const nextRace =
+        sorted.find(race =>
+          getDateTimeValue(race.date, race.time) >= now.getTime()
+        ) || sorted[0];
 
-      const city =
-        document.getElementById(
-          "homeRaceCity"
-        );
-
-
-      const location =
-        document.getElementById(
-          "homeRaceLocation"
-        );
-
-
-      const date =
-        document.getElementById(
-          "homeRaceDate"
-        );
-
-
-      const time =
-        document.getElementById(
-          "homeRaceTime"
-        );
-
-
-      if (title) {
-        title.textContent =
-          race.title || "";
-      }
-
-
-      if (city) {
-        city.textContent =
-          race.city || "";
-      }
-
-
-      if (location) {
-        location.textContent =
-          race.location || "";
-      }
-
-
-      if (date) {
-        date.textContent =
-          race.date || "";
-      }
-
-
-      if (time) {
-        time.textContent =
-          race.time || "";
-      }
-
-
-      startCountdown(
-        race.date,
-        race.time
+      setText(
+        "homeRaceTitle",
+        nextRace.title || nextRace.name || "NÄCHSTES RENNEN"
       );
 
-    }
+      setText("homeRaceCity", nextRace.city || "");
+      setText("homeRaceLocation", nextRace.location || "");
+      setText("homeRaceDate", formatDate(nextRace.date));
+      setText("homeRaceTime", nextRace.time || "");
 
+      startCountdown(nextRace.date, nextRace.time);
+
+    }
 
 
     /* =====================================================
@@ -2004,190 +2002,165 @@
     let countdownInterval = null;
 
 
-    function startCountdown(
-      date,
-      time
-    ) {
+    function startCountdown(date, time) {
 
+      resetCountdown();
+
+      const targetValue = getDateTimeValue(date, time);
+
+      if (!targetValue) {
+        return;
+      }
+
+      const target = new Date(targetValue);
+
+      function update() {
+
+        const difference =
+          target.getTime() - new Date().getTime();
+
+        const days = document.getElementById("days");
+        const hours = document.getElementById("hours");
+        const minutes = document.getElementById("minutes");
+        const seconds = document.getElementById("seconds");
+
+        if (difference <= 0) {
+          if (days) days.textContent = "0";
+          if (hours) hours.textContent = "0";
+          if (minutes) minutes.textContent = "0";
+          if (seconds) seconds.textContent = "0";
+          return;
+        }
+
+        const d = Math.floor(difference / 86400000);
+        const h = Math.floor((difference % 86400000) / 3600000);
+        const m = Math.floor((difference % 3600000) / 60000);
+        const sec = Math.floor((difference % 60000) / 1000);
+
+        if (days) days.textContent = d;
+        if (hours) hours.textContent = h;
+        if (minutes) minutes.textContent = m;
+        if (seconds) seconds.textContent = sec;
+      }
+
+      update();
+      countdownInterval = setInterval(update, 1000);
+    }
+
+
+    function resetCountdown() {
 
       if (countdownInterval) {
-
-        clearInterval(
-          countdownInterval
-        );
-
+        clearInterval(countdownInterval);
+        countdownInterval = null;
       }
 
+      const ids = ["days", "hours", "minutes", "seconds"];
 
-      if (!date || !time) {
-        return;
+      ids.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = "--";
+      });
+
+    }
+
+
+    function getDateTimeValue(date, time = "00:00") {
+
+      if (!date) {
+        return 0;
       }
 
+      const rawDate = String(date).trim();
+      const rawTime = String(time || "00:00").trim();
+      const timeParts = rawTime.split(":");
+      const hour = Number(timeParts[0] || 0);
+      const minute = Number(timeParts[1] || 0);
+      let target = null;
 
-      const dateParts =
-        String(date).split(".");
-
-
-      if (dateParts.length !== 3) {
-        return;
-      }
-
-
-      const day =
-        Number(dateParts[0]);
-
-
-      const month =
-        Number(dateParts[1]) - 1;
-
-
-      const year =
-        Number(dateParts[2]);
-
-
-      const timeParts =
-        String(time).split(":");
-
-
-      const hour =
-        Number(timeParts[0] || 0);
-
-
-      const minute =
-        Number(timeParts[1] || 0);
-
-
-      const target =
-        new Date(
-          year,
-          month,
-          day,
+      if (/^\d{2}\.\d{2}\.\d{4}$/.test(rawDate)) {
+        const parts = rawDate.split(".");
+        target = new Date(
+          Number(parts[2]),
+          Number(parts[1]) - 1,
+          Number(parts[0]),
           hour,
           minute,
           0
         );
-
-
-      function update() {
-
-
-        const now =
-          new Date();
-
-
-        const difference =
-          target.getTime() -
-          now.getTime();
-
-
-        const days =
-          document.getElementById(
-            "days"
-          );
-
-
-        const hours =
-          document.getElementById(
-            "hours"
-          );
-
-
-        const minutes =
-          document.getElementById(
-            "minutes"
-          );
-
-
-        const seconds =
-          document.getElementById(
-            "seconds"
-          );
-
-
-        if (difference <= 0) {
-
-          if (days) {
-            days.textContent = "0";
-          }
-
-          if (hours) {
-            hours.textContent = "0";
-          }
-
-          if (minutes) {
-            minutes.textContent = "0";
-          }
-
-          if (seconds) {
-            seconds.textContent = "0";
-          }
-
-          return;
-
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+        const parts = rawDate.split("-");
+        target = new Date(
+          Number(parts[0]),
+          Number(parts[1]) - 1,
+          Number(parts[2]),
+          hour,
+          minute,
+          0
+        );
+      } else if (/^\d+$/.test(rawDate)) {
+        const numeric = Number(rawDate);
+        target = new Date(numeric < 100000000000 ? numeric * 1000 : numeric);
+      } else {
+        const parsed = new Date(
+          rawDate.includes("T") ? rawDate : `${rawDate}T${rawTime}`
+        );
+        if (!Number.isNaN(parsed.getTime())) {
+          target = parsed;
         }
-
-
-        const d =
-          Math.floor(
-            difference /
-            86400000
-          );
-
-
-        const h =
-          Math.floor(
-            (difference %
-              86400000) /
-            3600000
-          );
-
-
-        const m =
-          Math.floor(
-            (difference %
-              3600000) /
-            60000
-          );
-
-
-        const s =
-          Math.floor(
-            (difference %
-              60000) /
-            1000
-          );
-
-
-        if (days) {
-          days.textContent = d;
-        }
-
-        if (hours) {
-          hours.textContent = h;
-        }
-
-        if (minutes) {
-          minutes.textContent = m;
-        }
-
-        if (seconds) {
-          seconds.textContent = s;
-        }
-
       }
 
+      if (!target || Number.isNaN(target.getTime())) {
+        return 0;
+      }
 
-      update();
-
-
-      countdownInterval =
-        setInterval(
-          update,
-          1000
-        );
-
+      return target.getTime();
     }
 
+
+    function formatDate(value) {
+
+      if (value === null || value === undefined || value === "") {
+        return "";
+      }
+
+      const raw = String(value).trim();
+
+      if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) {
+        return raw;
+      }
+
+      let date = null;
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const parts = raw.split("-");
+        date = new Date(
+          Number(parts[0]),
+          Number(parts[1]) - 1,
+          Number(parts[2])
+        );
+      } else if (/^\d+$/.test(raw)) {
+        const numeric = Number(raw);
+        date = new Date(numeric < 100000000000 ? numeric * 1000 : numeric);
+      } else {
+        date = new Date(raw);
+      }
+
+      if (!date || Number.isNaN(date.getTime())) {
+        return raw;
+      }
+
+      return date.toLocaleDateString("de-DE");
+    }
+
+
+    function setText(id, value) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent =
+          value === null || value === undefined ? "" : String(value);
+      }
+    }
 
 
     /* =====================================================
@@ -2196,303 +2169,98 @@
 
     function renderNews() {
 
+      const featuredContainer = document.getElementById("featuredNews");
+      const container = document.getElementById("newsContainer");
 
-      const featuredContainer =
-        document.getElementById(
-          "featuredNews"
-        );
-
-
-      const container =
-        document.getElementById(
-          "newsContainer"
-        );
-
-
-      if (!featuredContainer ||
-          !container) {
-
-        console.error(
-          "News-Container nicht gefunden."
-        );
-
+      if (!featuredContainer || !container) {
         return;
-
       }
 
-
-      const news =
-        Array.isArray(
-          websiteData.news
-        )
-          ? websiteData.news
-          : [];
-
-
-      console.log(
-        "News:",
-        news
-      );
-
-
-      /* KEINE NEWS */
+      const news = Array.isArray(websiteData.news)
+        ? websiteData.news
+        : [];
 
       if (!news.length) {
-
         featuredContainer.innerHTML = "";
-
-
         container.innerHTML = `
-
           <div class="card empty">
-
             Aktuell sind keine News vorhanden.
-
           </div>
-
         `;
-
-
         return;
-
       }
 
+      const getTitle = item => item.title || "JACKAL NEWS";
+      const getText = item => item.text || item.content || "";
+      const getImage = item => item.image_url || item.image || "";
+      const getCategory = item => item.category || "NEWS";
+      const getDate = item => formatDate(item.date || item.created_at);
 
-      /* ===================================================
-         FEATURED NEWS
-      =================================================== */
-
-      const featured =
-        news[0];
-
-
-      let featuredImage;
-
-
-      if (featured.image) {
-
-        featuredImage = `
-
-          <img
-            src="${escapeHtml(
-              featured.image
-            )}"
-            alt="${escapeHtml(
-              featured.title ||
-              "Jackal News"
-            )}"
-          >
-
-        `;
-
-      } else {
-
-        featuredImage = `
-
-          <div class="news-placeholder">
-
-            JACKAL
-
-          </div>
-
-        `;
-
-      }
-
+      const featured = news[0];
+      const featuredImage = getImage(featured)
+        ? `<img src="${escapeHtml(getImage(featured))}" alt="${escapeHtml(getTitle(featured))}">`
+        : `<div class="news-placeholder">JACKAL</div>`;
 
       featuredContainer.innerHTML = `
-
         <article class="card news-featured">
-
-
           <div class="news-featured-image">
-
             ${featuredImage}
-
           </div>
-
-
           <div class="news-featured-content">
-
-
             <div class="news-category">
-
-              ${escapeHtml(
-                featured.category ||
-                "NEWS"
-              )}
-
+              ${escapeHtml(getCategory(featured))}
             </div>
-
-
             <h2>
-
-              ${escapeHtml(
-                featured.title ||
-                "JACKAL NEWS"
-              )}
-
+              ${escapeHtml(getTitle(featured))}
             </h2>
-
-
             <div class="news-featured-date">
-
-              ${escapeHtml(
-                featured.date ||
-                ""
-              )}
-
+              ${escapeHtml(getDate(featured))}
             </div>
-
-
             <div class="news-featured-text">
-
-              ${escapeHtml(
-                featured.text ||
-                ""
-              )}
-
+              ${escapeHtml(getText(featured))}
             </div>
-
-
             <div class="news-read-more">
-
               JACKAL RACING LEAGUE
-
             </div>
-
-
           </div>
-
-
         </article>
-
       `;
 
-
-      /* ===================================================
-         WEITERE NEWS
-      =================================================== */
-
-      const remaining =
-        news.slice(1);
-
+      const remaining = news.slice(1);
 
       if (!remaining.length) {
-
         container.innerHTML = "";
-
         return;
-
       }
 
+      container.innerHTML = remaining.map(item => {
+        const image = getImage(item)
+          ? `<img src="${escapeHtml(getImage(item))}" alt="${escapeHtml(getTitle(item))}">`
+          : `<div class="news-placeholder">JACKAL</div>`;
 
-      container.innerHTML =
-        remaining
-          .map(item => {
-
-
-            let image;
-
-
-            if (item.image) {
-
-              image = `
-
-                <img
-                  src="${escapeHtml(
-                    item.image
-                  )}"
-                  alt="${escapeHtml(
-                    item.title ||
-                    "Jackal News"
-                  )}"
-                >
-
-              `;
-
-            } else {
-
-              image = `
-
-                <div class="news-placeholder">
-
-                  JACKAL
-
-                </div>
-
-              `;
-
-            }
-
-
-            return `
-
-              <article class="card news-card">
-
-
-                <div class="news-card-image">
-
-                  ${image}
-
-                </div>
-
-
-                <div class="news-card-content">
-
-
-                  <div class="news-category">
-
-                    ${escapeHtml(
-                      item.category ||
-                      "NEWS"
-                    )}
-
-                  </div>
-
-
-                  <h2>
-
-                    ${escapeHtml(
-                      item.title ||
-                      "JACKAL NEWS"
-                    )}
-
-                  </h2>
-
-
-                  <div class="news-card-date">
-
-                    ${escapeHtml(
-                      item.date ||
-                      ""
-                    )}
-
-                  </div>
-
-
-                  <p>
-
-                    ${escapeHtml(
-                      item.text ||
-                      ""
-                    )}
-
-                  </p>
-
-
-                </div>
-
-
-              </article>
-
-            `;
-
-          })
-          .join("");
-
+        return `
+          <article class="card news-card">
+            <div class="news-card-image">
+              ${image}
+            </div>
+            <div class="news-card-content">
+              <div class="news-category">
+                ${escapeHtml(getCategory(item))}
+              </div>
+              <h2>
+                ${escapeHtml(getTitle(item))}
+              </h2>
+              <div class="news-card-date">
+                ${escapeHtml(getDate(item))}
+              </div>
+              <p>
+                ${escapeHtml(getText(item))}
+              </p>
+            </div>
+          </article>
+        `;
+      }).join("");
     }
-
 
 
     /* =====================================================
@@ -2501,115 +2269,53 @@
 
     function renderDrivers() {
 
-
-      const container =
-        document.getElementById(
-          "driversContainer"
-        );
-
-
-      const drivers =
-        Array.isArray(
-          websiteData.drivers
-        )
-          ? websiteData.drivers
-          : [];
-
+      const container = document.getElementById("driversContainer");
+      const drivers = Array.isArray(websiteData.drivers)
+        ? websiteData.drivers
+        : [];
 
       if (!drivers.length) {
-
         container.innerHTML = `
-
           <div class="card empty">
-
             Keine Fahrer vorhanden.
-
           </div>
-
         `;
-
         return;
-
       }
 
+      container.innerHTML = drivers.map(driver => {
+        const number =
+          driver.number === null ||
+          driver.number === undefined ||
+          driver.number === ""
+            ? ""
+            : `#${String(driver.number).padStart(2, "0")}`;
 
-      container.innerHTML =
-        drivers
-          .map(driver => `
-
-            <article class="card driver-card">
-
-
-              <div class="driver-number">
-
-                ${escapeHtml(
-                  driver.number || ""
-                )}
-
+        return `
+          <article class="card driver-card">
+            <div class="driver-number">
+              ${escapeHtml(number)}
+            </div>
+            <h2>
+              ${escapeHtml(driver.name || driver.nickname || "")}
+            </h2>
+            <div class="vehicle">
+              ${escapeHtml(driver.car || "")}
+            </div>
+            <div class="driver-stats">
+              <div class="driver-stat">
+                <strong>${Number(driver.points) || 0}</strong>
+                <small>Punkte</small>
               </div>
-
-
-              <h2>
-
-                ${escapeHtml(
-                  driver.name || ""
-                )}
-
-              </h2>
-
-
-              <div class="vehicle">
-
-                ${escapeHtml(
-                  driver.vehicle || ""
-                )}
-
+              <div class="driver-stat">
+                <strong>${Number(driver.wins) || 0}</strong>
+                <small>Siege</small>
               </div>
-
-
-              <div class="driver-stats">
-
-
-                <div class="driver-stat">
-
-                  <strong>
-
-                    ${driver.points || 0}
-
-                  </strong>
-
-                  <small>
-                    Punkte
-                  </small>
-
-                </div>
-
-
-                <div class="driver-stat">
-
-                  <strong>
-
-                    ${driver.wins || 0}
-
-                  </strong>
-
-                  <small>
-                    Siege
-                  </small>
-
-                </div>
-
-
-              </div>
-
-
-            </article>
-
-          `)
-          .join("");
-
+            </div>
+          </article>
+        `;
+      }).join("");
     }
-
 
 
     /* =====================================================
@@ -2618,97 +2324,42 @@
 
     function renderRanking() {
 
-
-      const container =
-        document.getElementById(
-          "rankingContainer"
-        );
-
-
-      const ranking =
-        Array.isArray(
-          websiteData.ranking
-        )
-          ? websiteData.ranking
-          : [];
-
+      const container = document.getElementById("rankingContainer");
+      const ranking = Array.isArray(websiteData.ranking)
+        ? websiteData.ranking
+        : [];
 
       if (!ranking.length) {
-
         container.innerHTML = `
-
           <tr>
-
-            <td
-              colspan="5"
-              class="empty">
-
+            <td colspan="5" class="empty">
               Keine Ranglistendaten vorhanden.
-
             </td>
-
           </tr>
-
         `;
-
         return;
-
       }
 
-
-      container.innerHTML =
-        ranking
-          .map(item => `
-
-            <tr>
-
-              <td class="place">
-
-                ${escapeHtml(
-                  item.place || ""
-                )}
-
-              </td>
-
-
-              <td>
-
-                ${escapeHtml(
-                  item.driver || ""
-                )}
-
-              </td>
-
-
-              <td>
-
-                ${item.points || 0}
-
-              </td>
-
-
-              <td>
-
-                ${item.wins || 0}
-
-              </td>
-
-
-              <td>
-
-                ${escapeHtml(
-                  item.vehicle || ""
-                )}
-
-              </td>
-
-            </tr>
-
-          `)
-          .join("");
-
+      container.innerHTML = ranking.map(item => `
+        <tr>
+          <td class="place">
+            ${escapeHtml(item.place || "")}
+          </td>
+          <td>
+            ${escapeHtml(item.name || item.nickname || "")}
+          </td>
+          <td>
+            ${Number(item.points) || 0}
+          </td>
+          <td>
+            ${Number(item.wins) || 0}
+          </td>
+          <td>
+            ${escapeHtml(item.car || "")}
+          </td>
+        </tr>
+      `).join("");
     }
-
 
 
     /* =====================================================
@@ -2717,90 +2368,44 @@
 
     function renderRaces() {
 
+      const container = document.getElementById("racesContainer");
+      const races = Array.isArray(websiteData.races)
+        ? websiteData.races
+        : [];
 
-      const container =
-        document.getElementById(
-          "racesContainer"
-        );
-
-
-      const race =
-        websiteData.race;
-
-
-      if (!race) {
-
+      if (!races.length) {
         container.innerHTML = `
-
           <div class="card empty">
-
             Keine Rennen vorhanden.
-
           </div>
-
         `;
-
         return;
-
       }
 
+      const sortedRaces = races.slice().sort((a, b) =>
+        getDateTimeValue(a.date, a.time) -
+        getDateTimeValue(b.date, b.time)
+      );
 
-      container.innerHTML = `
-
+      container.innerHTML = sortedRaces.map(race => `
         <div class="card race-card-list">
-
-
           <div>
-
             <h2>
-
-              ${escapeHtml(
-                race.title || ""
-              )}
-
+              ${escapeHtml(race.title || race.name || "RACE")}
             </h2>
-
-
             <div class="race-location">
-
-              ${escapeHtml(
-                race.city || ""
-              )}
-
-              ·
-
-              ${escapeHtml(
-                race.location || ""
-              )}
-
+              ${escapeHtml(race.city || "")}
+              ${race.city && race.location ? " · " : ""}
+              ${escapeHtml(race.location || "")}
             </div>
-
           </div>
-
-
           <div class="race-date">
-
-            ${escapeHtml(
-              race.date || ""
-            )}
-
-            <br>
-
-            ${escapeHtml(
-              race.time || ""
-            )}
-
-            UHR
-
+            ${escapeHtml(formatDate(race.date || race.created_at))}
+            ${race.time ? `<br>${escapeHtml(race.time)} UHR` : ""}
           </div>
-
-
         </div>
-
-      `;
-
+      `).join("");
     }
-
 
 
     /* =====================================================
@@ -2809,85 +2414,49 @@
 
     function renderBlacklist() {
 
-
-      const container =
-        document.getElementById(
-          "blacklistContainer"
-        );
-
-
-      const blacklist =
-        Array.isArray(
-          websiteData.blacklist
-        )
-          ? websiteData.blacklist
-          : [];
-
+      const container = document.getElementById("blacklistContainer");
+      const blacklist = Array.isArray(websiteData.blacklist)
+        ? websiteData.blacklist
+        : [];
 
       if (!blacklist.length) {
-
         container.innerHTML = `
-
           <div class="card empty">
-
-            Aktuell sind keine Fahrzeuge
-            auf der Blacklist.
-
+            Aktuell sind keine Fahrzeuge auf der Blacklist.
           </div>
-
         `;
-
         return;
-
       }
 
+      container.innerHTML = blacklist.map(item => {
+        const imageUrl = item.image_url || item.image || "";
+        const image = imageUrl
+          ? `
+            <div class="blacklist-image">
+              <img
+                src="${escapeHtml(imageUrl)}"
+                alt="${escapeHtml(item.vehicle_name || "Blacklist Fahrzeug")}"
+              >
+            </div>
+          `
+          : "";
 
-      container.innerHTML =
-        blacklist
-          .map(item => `
-
-            <article
-              class="card blacklist-card">
-
-
-              ${item.image_url ? '<div class="image-wrap"><img src="' + escapeHtml(item.image_url) + '" alt="' + escapeHtml(item.vehicle_name || "Blacklist") + '" loading="lazy" onerror="this.parentElement.style.display=\'none\'"></div>' : ""}
-
-              <h2>
-
-                ${escapeHtml(
-                  item.vehicle_name || ""
-                )}
-
-              </h2>
-
-
-              <div class="reason">
-
-                ${escapeHtml(
-                  item.reason || ""
-                )}
-
-              </div>
-
-
-              <div class="date">
-
-                Eingetragen:
-
-                ${escapeHtml(
-                  item.date || ""
-                )}
-
-              </div>
-
-
-            </article>
-
-          `)
-          .join("");
-
+        return `
+          <article class="card blacklist-card">
+            ${image}
+            <h2>
+              ${escapeHtml(item.vehicle_name || "Unbekanntes Fahrzeug")}
+            </h2>
+            <div class="reason">
+              ${escapeHtml(item.reason || "")}
+            </div>
+            <div class="date">
+              Eingetragen: ${escapeHtml(formatDate(item.created_at))}
+            </div>
+          </article>
+        `;
+      }).join("");
     }
-
 
 
     /* =====================================================
@@ -2896,88 +2465,44 @@
 
     function renderGallery() {
 
-
-      const container =
-        document.getElementById(
-          "galleryContainer"
-        );
-
-
-      const gallery =
-        Array.isArray(
-          websiteData.gallery
-        )
-          ? websiteData.gallery
-          : [];
-
+      const container = document.getElementById("galleryContainer");
+      const gallery = Array.isArray(websiteData.gallery)
+        ? websiteData.gallery
+        : [];
 
       if (!gallery.length) {
-
         container.innerHTML = `
-
           <div class="card empty">
-
             Noch keine Bilder in der Gallery.
-
           </div>
-
         `;
-
         return;
-
       }
 
+      container.innerHTML = gallery.map(item => {
+        const imageUrl = item.image_url || item.image || "";
+        const image = imageUrl
+          ? `<img
+              src="${escapeHtml(imageUrl)}"
+              alt="${escapeHtml(item.title || "Jackal Gallery")}"
+            >`
+          : `<div class="news-placeholder">JACKAL</div>`;
 
-      container.innerHTML =
-        gallery
-          .map(item => `
-
-            <article
-              class="card gallery-card">
-
-
-              <img
-                src="${escapeHtml(
-                  item.image || ""
-                )}"
-                alt="${escapeHtml(
-                  item.title ||
-                  "Jackal Gallery"
-                )}"
-              >
-
-
-              <div class="gallery-info">
-
-
-                <h3>
-
-                  ${escapeHtml(
-                    item.title || ""
-                  )}
-
-                </h3>
-
-
-                <p>
-
-                  ${escapeHtml(
-                    item.category || ""
-                  )}
-
-                </p>
-
-
-              </div>
-
-
-            </article>
-
-          `)
-          .join("");
-
+        return `
+          <article class="card gallery-card">
+            ${image}
+            <div class="gallery-info">
+              <h3>
+                ${escapeHtml(item.title || "")}
+              </h3>
+              <p>
+                ${escapeHtml(item.category || item.description || "")}
+              </p>
+            </div>
+          </article>
+        `;
+      }).join("");
     }
-
 
 
     /* =====================================================
