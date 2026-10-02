@@ -647,6 +647,44 @@ button{
 }
 
 /* =========================================================
+   R2 IMAGE UPLOAD
+========================================================= */
+.image-upload-box{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:12px;
+  border:1px dashed #34313f;
+  border-radius:10px;
+  background:#0c0c13;
+}
+.image-upload-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.image-upload-row input[type=file]{
+  width:100%;
+  color:#aaaab5;
+  font-size:12px;
+}
+.image-upload-note{
+  color:#686874;
+  font-size:10px;
+  line-height:1.5;
+}
+.image-upload-preview{
+  display:none;
+  width:100px;
+  height:60px;
+  object-fit:cover;
+  border:1px solid #292936;
+  border-radius:7px;
+  background:#08080d;
+}
+
+/* =========================================================
    RESPONSIVE
 ========================================================= */
 
@@ -1407,9 +1445,15 @@ button{
         </div>
 
         <div class="ranking-field full">
-          <label>Bild URL</label>
-          <input id="blacklistImageUrl" name="image_url" type="url" placeholder="https://...">
-          <small style="display:block;margin-top:6px;color:#666673;font-size:11px">Direkte Bild-URL. Den Datei-Upload bauen wir später über Cloudflare R2.</small>
+          <label>Bild</label>
+          <div class="image-upload-box">
+            <input id="blacklistImageUrl" name="image_url" type="text" placeholder="Bild-URL (optional)">
+            <div class="image-upload-row">
+              <input id="blacklistImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+            </div>
+            <img id="blacklistImagePreview" class="image-upload-preview" alt="Bildvorschau">
+            <div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Eine ausgewählte Datei wird automatisch in Cloudflare R2 hochgeladen.</div>
+          </div>
         </div>
 
         <div class="ranking-field full">
@@ -1497,8 +1541,15 @@ button{
         </div>
 
         <div class="ranking-field full">
-          <label>Bild URL</label>
-          <input id="rankingImageUrl" name="image_url" type="text" placeholder="Optional – später durch Upload ersetzbar">
+          <label>Bild</label>
+          <div class="image-upload-box">
+            <input id="rankingImageUrl" name="image_url" type="text" placeholder="Bild-URL (optional)">
+            <div class="image-upload-row">
+              <input id="rankingImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+            </div>
+            <img id="rankingImagePreview" class="image-upload-preview" alt="Bildvorschau">
+            <div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Eine ausgewählte Datei wird automatisch in Cloudflare R2 hochgeladen.</div>
+          </div>
         </div>
 
       </div>
@@ -2770,6 +2821,93 @@ async function deleteUser(
 
 
 /* =========================================================
+   R2 IMAGE HELPERS
+========================================================= */
+
+async function uploadImageFile(file, resource, action){
+  if(!file){
+    return null;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `/api/admin/media/upload?resource=${encodeURIComponent(resource)}&action=${encodeURIComponent(action)}`,
+    {
+      method:"POST",
+      credentials:"same-origin",
+      body:formData
+    }
+  );
+
+  const data = await response.json().catch(()=>({}));
+
+  if(!response.ok || !data.ok){
+    throw new Error(data.error || "Bild konnte nicht hochgeladen werden.");
+  }
+
+  return data;
+}
+
+async function deleteImageUrl(url, resource, action="edit"){
+  if(!url){
+    return;
+  }
+
+  try{
+    await fetch(
+      `/api/admin/media?resource=${encodeURIComponent(resource)}&action=${encodeURIComponent(action)}&url=${encodeURIComponent(url)}`,
+      {
+        method:"DELETE",
+        credentials:"same-origin"
+      }
+    );
+  }catch(error){
+    console.error("Bild konnte nicht aus R2 gelöscht werden:", error);
+  }
+}
+
+function getImageFileInput(form, resource){
+  if(!form) return null;
+  const candidates = ["__image_file", `${resource}_image_file`];
+  for(const name of candidates){
+    const input = form.elements.namedItem(name);
+    if(input && input.files && input.files[0]){
+      return input.files[0];
+    }
+  }
+  return null;
+}
+
+function imageColumnName(schema){
+  if(!schema?.columns) return null;
+  if(schema.columns.some(c=>c.name === "image_url")) return "image_url";
+  if(schema.columns.some(c=>c.name === "image")) return "image";
+  return null;
+}
+
+function setImagePreview(inputId, previewId){
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  if(!input || !preview) return;
+
+  input.addEventListener("change",()=>{
+    const file = input.files?.[0];
+    if(!file){
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+      return;
+    }
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  });
+}
+
+setImagePreview("blacklistImageFile","blacklistImagePreview");
+setImagePreview("rankingImageFile","rankingImagePreview");
+
+/* =========================================================
    BLACKLIST – EIGENE VERWALTUNG
 
    Echte D1-Struktur:
@@ -2998,6 +3136,10 @@ function openBlacklistModal(row=null){
 
     setBlacklistField("blacklistVehicleName","");
     setBlacklistField("blacklistImageUrl","");
+    const blacklistFile = document.getElementById("blacklistImageFile");
+    if(blacklistFile) blacklistFile.value = "";
+    const blacklistPreview = document.getElementById("blacklistImagePreview");
+    if(blacklistPreview){ blacklistPreview.removeAttribute("src"); blacklistPreview.style.display = "none"; }
     setBlacklistField("blacklistReason","");
     setBlacklistField("blacklistStatus","active");
 
@@ -3018,6 +3160,24 @@ function openBlacklistModal(row=null){
       "blacklistVehicleName",
       row.vehicle_name || ""
     );
+
+    setBlacklistField(
+      "blacklistImageUrl",
+      row.image_url || ""
+    );
+
+    const blacklistFile = document.getElementById("blacklistImageFile");
+    if(blacklistFile) blacklistFile.value = "";
+    const blacklistPreview = document.getElementById("blacklistImagePreview");
+    if(blacklistPreview){
+      if(row.image_url){
+        blacklistPreview.src = row.image_url;
+        blacklistPreview.style.display = "block";
+      }else{
+        blacklistPreview.removeAttribute("src");
+        blacklistPreview.style.display = "none";
+      }
+    }
 
     setBlacklistField(
       "blacklistReason",
@@ -3097,9 +3257,20 @@ async function saveBlacklist(event){
         .value
         .trim();
 
+    let uploadedImage = null;
+    const blacklistFile = document.getElementById("blacklistImageFile")?.files?.[0] || null;
+
+    if(blacklistFile){
+      uploadedImage = await uploadImageFile(
+        blacklistFile,
+        "blacklist",
+        creating ? "create" : "edit"
+      );
+    }
+
     const payload = {
       vehicle_name: vehicleName,
-      image_url: imageUrl,
+      image_url: uploadedImage?.url || imageUrl,
       reason,
       status
     };
@@ -3139,10 +3310,18 @@ async function saveBlacklist(event){
         .catch(() => ({}));
 
     if(!response.ok || !data.ok){
+      if(uploadedImage?.url) await deleteImageUrl(uploadedImage.url, "blacklist", "edit");
       throw new Error(
         data.error ||
         "Blacklist-Eintrag konnte nicht gespeichert werden."
       );
+    }
+
+    if(!creating && uploadedImage?.url){
+      const oldUrl = crudRows.blacklist?.find(x=>String(x.id)===String(blacklistEditingId))?.image_url || "";
+      if(oldUrl && oldUrl !== uploadedImage.url){
+        await deleteImageUrl(oldUrl, "blacklist", "edit");
+      }
     }
 
     closeBlacklistModal();
@@ -3586,6 +3765,10 @@ function openRankingModal(row=null){
     setRankingField("rankingWins",0);
     setRankingField("rankingStatus","Aktive");
     setRankingField("rankingImageUrl","");
+    const rankingFile = document.getElementById("rankingImageFile");
+    if(rankingFile) rankingFile.value = "";
+    const rankingPreview = document.getElementById("rankingImagePreview");
+    if(rankingPreview){ rankingPreview.removeAttribute("src"); rankingPreview.style.display = "none"; }
 
   }else{
     if(!hasPermission("drivers","edit")){
@@ -3648,6 +3831,19 @@ function openRankingModal(row=null){
       "rankingImageUrl",
       row.image_url || ""
     );
+
+    const rankingFile = document.getElementById("rankingImageFile");
+    if(rankingFile) rankingFile.value = "";
+    const rankingPreview = document.getElementById("rankingImagePreview");
+    if(rankingPreview){
+      if(row.image_url){
+        rankingPreview.src = row.image_url;
+        rankingPreview.style.display = "block";
+      }else{
+        rankingPreview.removeAttribute("src");
+        rankingPreview.style.display = "none";
+      }
+    }
   }
 
   rankingFormMessage.textContent = "";
@@ -3687,6 +3883,22 @@ async function saveRankingDriver(event){
     return;
   }
 
+  const imageUrl =
+    document.getElementById("rankingImageUrl")?.value.trim() || "";
+
+  const rankingFile =
+    document.getElementById("rankingImageFile")?.files?.[0] || null;
+
+  let uploadedImage = null;
+
+  if(rankingFile){
+    uploadedImage = await uploadImageFile(
+      rankingFile,
+      "drivers",
+      rankingEditingId === null ? "create" : "edit"
+    );
+  }
+
   const payload = {
     name,
     nickname:
@@ -3716,7 +3928,7 @@ async function saveRankingDriver(event){
     status:
       document.getElementById("rankingStatus")?.value || "Aktive",
     image_url:
-      document.getElementById("rankingImageUrl")?.value.trim() || ""
+      uploadedImage?.url || imageUrl
   };
 
   const saveButton =
@@ -3778,10 +3990,18 @@ async function saveRankingDriver(event){
       !response.ok ||
       !result.ok
     ){
+      if(uploadedImage?.url) await deleteImageUrl(uploadedImage.url, "drivers", "edit");
       throw new Error(
         result.error ||
         "Fahrer konnte nicht gespeichert werden."
       );
+    }
+
+    if(editing && uploadedImage?.url){
+      const oldUrl = crudRows.drivers?.find(x=>String(x.id)===String(rankingEditingId))?.image_url || "";
+      if(oldUrl && oldUrl !== uploadedImage.url){
+        await deleteImageUrl(oldUrl, "drivers", "edit");
+      }
     }
 
     closeRankingModal();
@@ -4742,6 +4962,13 @@ async function openCrudModal(resource,row=null){
       return `<div class="crud-checkbox"><input type="checkbox" name="${escapeHtml(col.name)}" ${checked?"checked":""}><span>${escapeHtml(label)}</span></div>`;
     }
 
+    if(col.name === "image_url" || col.name === "image"){
+      const preview = value
+        ? `<img class="image-upload-preview" style="display:block" src="${escapeHtml(String(value))}" alt="Bild" onerror="this.style.display='none'">`
+        : `<img class="image-upload-preview" alt="Bildvorschau">`;
+      return `<div class="crud-field full"><label>${escapeHtml(label)}</label><div class="image-upload-box"><input type="text" name="${escapeHtml(col.name)}" value="${escapeHtml(String(value))}" placeholder="Bild-URL (optional)"><div class="image-upload-row"><input type="file" name="__image_file" accept="image/jpeg,image/png,image/webp,image/gif"></div>${preview}<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Die Datei wird beim Speichern automatisch in R2 hochgeladen.</div></div></div>`;
+    }
+
     const textarea=/description|content|text|reason|message/i.test(col.name)||String(col.type||"").toUpperCase().includes("TEXT")&&String(value).length>80;
 
     if(textarea){
@@ -4763,9 +4990,11 @@ async function saveCrudForm(event){
   event.preventDefault();
   if(!crudEditing) return;
 
+  const form=event.currentTarget;
+  delete form.dataset.uploadedImageUrl;
+
   const {resource,row}=crudEditing;
   const schema=crudSchemas[resource];
-  const form=event.currentTarget;
   const message=document.getElementById("crudFormMessage");
   const button=document.getElementById("crudModalSave");
   const data={};
@@ -4790,6 +5019,24 @@ async function saveCrudForm(event){
       if(!el)return;
       data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
     });
+
+    const imageCol = imageColumnName(schema);
+    const imageFile = form.elements.namedItem("__image_file")?.files?.[0] || null;
+    if(imageCol && imageFile){
+      try{
+        const uploaded = await uploadImageFile(
+          imageFile,
+          resource,
+          row !== null ? "edit" : "create"
+        );
+        data[imageCol] = uploaded.url;
+        form.dataset.uploadedImageUrl = uploaded.url;
+      }catch(error){
+        message.textContent=error.message || "Bild konnte nicht hochgeladen werden.";
+        message.classList.add("error");
+        return;
+      }
+    }
   }
 
   button.disabled=true;
@@ -4816,11 +5063,22 @@ async function saveCrudForm(event){
     const d=await r.json().catch(()=>({}));
 
     if(!r.ok||!d.ok){
+      const uploadedUrl = form.dataset.uploadedImageUrl || "";
+      if(uploadedUrl) await deleteImageUrl(uploadedUrl, resource, "edit");
       throw new Error(d.error||"Speichern fehlgeschlagen.");
     }
 
+    const uploadedUrl = form.dataset.uploadedImageUrl || "";
+    if(row !== null && uploadedUrl){
+      const imageCol = imageColumnName(schema);
+      const oldUrl = imageCol ? String(row?.[imageCol] || "") : "";
+      if(oldUrl && oldUrl !== uploadedUrl){
+        await deleteImageUrl(oldUrl, resource, "edit");
+      }
+    }
+
     closeCrudModal();
-    showToast(row?"Rennergebnis geändert.":"Rennergebnis gespeichert.");
+    showToast(row?"Datensatz geändert.":"Datensatz gespeichert.");
     await loadCrudResource(resource);
 
   }catch(error){
@@ -4863,6 +5121,22 @@ document.getElementById("crudForm").addEventListener("submit",saveCrudForm);
 document.getElementById("crudModalClose").addEventListener("click",closeCrudModal);
 document.getElementById("crudModalCancel").addEventListener("click",closeCrudModal);
 document.getElementById("crudModal").addEventListener("click",event=>{if(event.target===document.getElementById("crudModal"))closeCrudModal();});
+
+document.addEventListener("change",event=>{
+  const input=event.target.closest('input[type="file"][name="__image_file"]');
+  if(!input) return;
+  const box=input.closest(".image-upload-box");
+  const preview=box?.querySelector(".image-upload-preview");
+  const file=input.files?.[0];
+  if(!preview) return;
+  if(file){
+    preview.src=URL.createObjectURL(file);
+    preview.style.display="block";
+  }else{
+    preview.removeAttribute("src");
+    preview.style.display="none";
+  }
+});
 
 /* =========================================================
    HTML ESCAPE
