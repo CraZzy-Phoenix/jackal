@@ -741,7 +741,35 @@ button{
 .crud-checkbox input{width:16px;height:16px;accent-color:#8d5cff}
 .crud-checkbox span{color:#bbb;font-size:12px}
 .modal-wide{width:min(1050px,100%)}
+
+.ranking-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ranking-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}
+.ranking-hint{color:#5f5f6b;font-size:11px;text-align:right}
+.ranking-table-wrap{width:100%;overflow:auto;border:1px solid #22222e;border-radius:12px}
+.ranking-table{width:100%;border-collapse:collapse;min-width:860px}
+.ranking-table th,.ranking-table td{padding:13px 14px;border-bottom:1px solid #22222e;text-align:left;vertical-align:middle}
+.ranking-table th{color:#777784;background:#0b0b11;font-size:10px;letter-spacing:.8px;text-transform:uppercase}
+.ranking-table td{color:#d8d8df;font-size:12px}
+.ranking-table tr:last-child td{border-bottom:0}
+.ranking-table tr:hover td{background:#11111a}
+.ranking-place{font-size:15px;font-weight:800;color:#c6a6ff;min-width:40px}
+.ranking-driver{font-weight:700;color:#fff}
+.ranking-number{color:#8d8d98}
+.ranking-points{font-weight:800;color:#c7a8ff}
+.ranking-actions{display:flex;gap:7px;justify-content:flex-end}
+.ranking-status{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.ranking-status.active{color:#75e29b;background:rgba(70,180,105,.08);border:1px solid rgba(95,220,140,.2)}
+.ranking-status.inactive{color:#ff8888;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.2)}
+.ranking-modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.ranking-modal-grid .full{grid-column:1/-1}
+.ranking-field label{display:block;margin-bottom:7px;color:#aaaab5;font-size:11px;text-transform:uppercase;letter-spacing:.8px}
+.ranking-field input,.ranking-field select{width:100%;border:1px solid #292936;border-radius:9px;padding:11px 12px;outline:none;color:#fff;background:#101018}
+.ranking-field input:focus,.ranking-field select:focus{border-color:#8d5cff}
+.ranking-checkbox{display:flex;align-items:center;gap:9px;min-height:43px;padding:0 12px;border:1px solid #292936;border-radius:9px;background:#101018}
+.ranking-checkbox input{width:16px;height:16px;accent-color:#8d5cff}
+.ranking-checkbox span{color:#bbb;font-size:12px}
 @media(max-width:700px){.crud-form{grid-template-columns:1fr}.crud-form .full{grid-column:auto}}
+@media(max-width:700px){.ranking-table-wrap{min-width:0}.ranking-toolbar{align-items:flex-start;flex-direction:column}.ranking-hint{text-align:left}.ranking-modal-grid{grid-template-columns:1fr}.ranking-modal-grid .full{grid-column:auto}}
 
 </style>
 </head>
@@ -836,7 +864,7 @@ button{
         Fahrer
       </button>
 
-      <button data-page="results">
+      <button data-page="ranking">
         Rangliste
       </button>
 
@@ -990,14 +1018,25 @@ button{
   </div>
 </section>
 
-<section id="page-results" class="page crud-page" data-resource="results">
+<section id="page-ranking" class="page">
   <div class="card">
     <div class="card-header">
-      <div><h2>Rangliste verwalten</h2><span>Rennergebnisse verwalten und daraus die Rangliste aufbauen</span></div>
-      <button class="action-button crud-create-button" data-resource="results">+ Rennergebnis eintragen</button>
+      <div>
+        <h2>Rangliste verwalten</h2>
+        <span>Die Rangliste wird dauerhaft über die Fahrer geführt. Platzierungen werden automatisch nach Punkten und Siegen berechnet.</span>
+      </div>
+      <div class="ranking-header-actions">
+        <button id="rankingRefresh" class="user-button">↻ Aktualisieren</button>
+        <button id="rankingNewDriver" class="action-button">+ Neuer Fahrer</button>
+      </div>
     </div>
-    <div class="crud-toolbar"><div class="crud-info" id="crud-info-results">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="results">↻ Aktualisieren</button></div>
-    <div id="crud-table-results"></div>
+
+    <div class="ranking-toolbar">
+      <div id="rankingInfo" class="crud-info">Rangliste wird geladen...</div>
+      <div class="ranking-hint">Neuer Fahrer = neuer Eintrag in der Rangliste. Bestehende Fahrer werden hier nur noch bearbeitet.</div>
+    </div>
+
+    <div id="rankingTable"></div>
   </div>
 </section>
 
@@ -1336,6 +1375,75 @@ button{
 </div>
 
 <!-- =========================================================
+     RANKING / DRIVER MODAL
+========================================================= -->
+
+<div id="rankingModal" class="modal-backdrop hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div>
+        <h2 id="rankingModalTitle">Neuen Fahrer hinzufügen</h2>
+        <p>Dieser Eintrag ist Teil der dauerhaften JACKAL-Rangliste.</p>
+      </div>
+      <button id="rankingModalClose" class="modal-close" type="button">×</button>
+    </div>
+
+    <form id="rankingForm">
+      <div class="ranking-modal-grid">
+
+        <div class="ranking-field">
+          <label>Fahrername</label>
+          <input id="rankingName" name="name" type="text" required placeholder="z. B. APEX">
+        </div>
+
+        <div class="ranking-field">
+          <label>Startnummer</label>
+          <input id="rankingNumber" name="number" type="text" placeholder="#01">
+        </div>
+
+        <div class="ranking-field">
+          <label>Team</label>
+          <input id="rankingTeam" name="team" type="text" placeholder="Optional">
+        </div>
+
+        <div class="ranking-field">
+          <label>Fahrzeug</label>
+          <input id="rankingVehicle" name="vehicle" type="text" placeholder="z. B. WENNY ISSI SPORT">
+        </div>
+
+        <div class="ranking-field">
+          <label>Punkte</label>
+          <input id="rankingPoints" name="points" type="number" min="0" value="0">
+        </div>
+
+        <div class="ranking-field">
+          <label>Siege</label>
+          <input id="rankingWins" name="wins" type="number" min="0" value="0">
+        </div>
+
+        <div class="ranking-field full">
+          <label>Bild URL</label>
+          <input id="rankingImage" name="image" type="text" placeholder="Optional – Upload-System kommt danach">
+        </div>
+
+        <div class="ranking-checkbox full">
+          <input id="rankingActive" name="active" type="checkbox" checked>
+          <span>Fahrer ist aktiv und soll öffentlich in der Rangliste erscheinen</span>
+        </div>
+
+      </div>
+
+      <div id="rankingFormMessage" class="user-message"></div>
+
+      <div class="modal-actions">
+        <button id="rankingCancel" class="secondary-button" type="button">Abbrechen</button>
+        <button id="rankingSave" class="primary-button small" type="submit">Speichern</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =========================================================
      PERMISSIONS MODAL
 ========================================================= -->
 
@@ -1480,7 +1588,6 @@ let crudEditing = null;
 const CRUD_RESOURCES = [
   { key:"races" },
   { key:"drivers" },
-  { key:"results" },
   { key:"news" },
   { key:"blacklist" },
   { key:"gallery" },
@@ -1494,7 +1601,7 @@ function hasPermission(resource, action){
 
 function applyPermissionsToNavigation(){
   menuButtons.forEach(button => {
-    const resource = button.dataset.page;
+    const resource = button.dataset.page === "ranking" ? "drivers" : button.dataset.page;
     const allowed = resource === "dashboard" || hasPermission(resource,"view");
     button.classList.toggle("hidden", !allowed);
   });
@@ -1504,6 +1611,11 @@ function applyPermissionsToNavigation(){
       button.classList.toggle("hidden", !hasPermission(resource,"create"));
     });
   });
+
+  const rankingCreate = document.getElementById("rankingNewDriver");
+  if(rankingCreate){
+    rankingCreate.classList.toggle("hidden", !hasPermission("drivers","create"));
+  }
 }
 
 async function loadCurrentUser(){
@@ -1702,7 +1814,7 @@ const titles = {
   dashboard:"Dashboard",
   races:"Rennen",
   drivers:"Fahrer",
-  results:"Rangliste",
+  ranking:"Rangliste",
   news:"News",
   blacklist:"Fahrzeug-Blacklist",
   gallery:"Gallery",
@@ -1737,7 +1849,9 @@ menuButtons.forEach(
         const page =
           button.dataset.page;
 
-        if(page !== "dashboard" && !hasPermission(page, "view")){
+        const permissionResource = page === "ranking" ? "drivers" : page;
+
+        if(page !== "dashboard" && !hasPermission(permissionResource, "view")){
           showToast("Keine Berechtigung für diesen Bereich.", true);
           return;
         }
@@ -1781,6 +1895,12 @@ menuButtons.forEach(
         if(page === "settings"){
 
           loadUsers();
+
+        }
+
+        if(page === "ranking"){
+
+          loadRanking();
 
         }
 
@@ -2572,6 +2692,414 @@ async function deleteUser(
 
 
 /* =========================================================
+   RANGLISTE – FAHRER ALS DAUERHAFTER STAMMBESTAND
+========================================================= */
+
+let rankingEditingId = null;
+let rankingFieldMap = null;
+
+const rankingModal =
+  document.getElementById("rankingModal");
+
+const rankingForm =
+  document.getElementById("rankingForm");
+
+const rankingModalTitle =
+  document.getElementById("rankingModalTitle");
+
+const rankingFormMessage =
+  document.getElementById("rankingFormMessage");
+
+function firstExistingColumn(schema, candidates){
+  const names = new Set(
+    (schema?.columns || []).map(c => c.name)
+  );
+  return candidates.find(name => names.has(name)) || null;
+}
+
+function buildRankingFieldMap(){
+  const schema = crudSchemas.drivers;
+
+  if(!schema) return null;
+
+  rankingFieldMap = {
+    id: schema.identity,
+    name: firstExistingColumn(schema, ["name","driver_name","username"]),
+    number: firstExistingColumn(schema, ["number","start_number","startnummer"]),
+    nickname: firstExistingColumn(schema, ["nickname","nick","spitzname"]),
+    team: firstExistingColumn(schema, ["team"]),
+    vehicle: firstExistingColumn(schema, ["vehicle","car","fahrzeug"]),
+    points: firstExistingColumn(schema, ["points"]),
+    wins: firstExistingColumn(schema, ["wins","victories","siege"]),
+    image: firstExistingColumn(schema, ["image","photo","avatar","bild"]),
+    active: firstExistingColumn(schema, ["active","enabled","is_active"])
+  };
+
+  return rankingFieldMap;
+}
+
+function rankingValue(row, key, fallback=""){
+  const column = rankingFieldMap?.[key];
+  if(!column) return fallback;
+  return row?.[column] ?? fallback;
+}
+
+function rankingNumber(value){
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function rankingActiveValue(value){
+  return Number(value) === 1 || value === true || String(value).toLowerCase() === "true" || String(value).toUpperCase() === "JA" || String(value).toLowerCase() === "active";
+}
+
+function rankingStatusValue(active){
+  if(!rankingFieldMap?.active) return 1;
+  const column = (crudSchemas.drivers.columns || []).find(c => c.name === rankingFieldMap.active);
+  const type = String(column?.type || "").toUpperCase();
+  return type.includes("INT") ? (active ? 1 : 0) : (active ? "JA" : "NEIN");
+}
+
+function rankingSortedRows(){
+  const rows = [...(crudRows.drivers || [])];
+
+  return rows.sort((a,b) => {
+    const pointsA = rankingNumber(rankingValue(a,"points",0));
+    const pointsB = rankingNumber(rankingValue(b,"points",0));
+    if(pointsB !== pointsA) return pointsB - pointsA;
+
+    const winsA = rankingNumber(rankingValue(a,"wins",0));
+    const winsB = rankingNumber(rankingValue(b,"wins",0));
+    if(winsB !== winsA) return winsB - winsA;
+
+    const nameA = String(rankingValue(a,"name","")).toLocaleLowerCase("de");
+    const nameB = String(rankingValue(b,"name","")).toLocaleLowerCase("de");
+    return nameA.localeCompare(nameB, "de");
+  });
+}
+
+async function loadRanking(){
+  const info = document.getElementById("rankingInfo");
+  const container = document.getElementById("rankingTable");
+  if(!info || !container) return;
+
+  if(!hasPermission("drivers","view")){
+    info.textContent = "Keine Berechtigung";
+    container.innerHTML = `<div class="empty">Du hast keine Berechtigung, die Rangliste zu sehen.</div>`;
+    return;
+  }
+
+  info.textContent = "Rangliste wird geladen...";
+  container.innerHTML = `<div class="empty">Daten werden geladen...</div>`;
+
+  try{
+    await loadCrudResource("drivers");
+    buildRankingFieldMap();
+    renderRankingTable();
+  }catch(error){
+    info.textContent = "Fehler";
+    container.innerHTML = `<div class="empty">${escapeHtml(error.message || "Rangliste konnte nicht geladen werden.")}</div>`;
+  }
+}
+
+function renderRankingTable(){
+  const info = document.getElementById("rankingInfo");
+  const container = document.getElementById("rankingTable");
+  if(!info || !container) return;
+
+  buildRankingFieldMap();
+
+  const rows = rankingSortedRows();
+  info.textContent = rows.length === 1 ? "1 Fahrer in der Rangliste" : `${rows.length} Fahrer in der Rangliste`;
+
+  if(!rows.length){
+    container.innerHTML = `
+      <div class="empty">
+        Noch keine Fahrer in der Rangliste vorhanden.<br>
+        <span style="display:inline-block;margin-top:8px">Füge den ersten Fahrer über „+ Neuer Fahrer“ hinzu.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const body = rows.map((row,index) => {
+    const id = rankingFieldMap?.id ? row[rankingFieldMap.id] : "";
+    const name = rankingValue(row,"name","Unbekannter Fahrer");
+    const number = rankingValue(row,"number","—");
+    const team = rankingValue(row,"team","");
+    const vehicle = rankingValue(row,"vehicle","—");
+    const points = rankingNumber(rankingValue(row,"points",0));
+    const wins = rankingNumber(rankingValue(row,"wins",0));
+    const active = rankingActiveValue(rankingValue(row,"active",1));
+
+    const edit = hasPermission("drivers","edit") && id
+      ? `<button class="crud-button ranking-edit" data-id="${escapeHtml(String(id))}">Bearbeiten</button>`
+      : "";
+
+    const del = hasPermission("drivers","delete") && id
+      ? `<button class="crud-button danger ranking-delete" data-id="${escapeHtml(String(id))}">Löschen</button>`
+      : "";
+
+    return `
+      <tr>
+        <td><span class="ranking-place">${index + 1}</span></td>
+        <td>
+          <div class="ranking-driver">${escapeHtml(String(name))}</div>
+          ${team ? `<div style="margin-top:4px;color:#686874;font-size:10px">${escapeHtml(String(team))}</div>` : ""}
+        </td>
+        <td><span class="ranking-number">${escapeHtml(String(number))}</span></td>
+        <td>${escapeHtml(String(vehicle))}</td>
+        <td><span class="ranking-points">${points}</span></td>
+        <td>${wins}</td>
+        <td>
+          <span class="ranking-status ${active ? "active" : "inactive"}">
+            ${active ? "Aktiv" : "Inaktiv"}
+          </span>
+        </td>
+        <td>
+          <div class="ranking-actions">
+            ${edit}
+            ${del}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    <div class="ranking-table-wrap">
+      <table class="ranking-table">
+        <thead>
+          <tr>
+            <th>Platz</th>
+            <th>Fahrer</th>
+            <th>Startnummer</th>
+            <th>Fahrzeug</th>
+            <th>Punkte</th>
+            <th>Siege</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function rankingSetField(id, value){
+  const el = document.getElementById(id);
+  if(el) el.value = value == null ? "" : String(value);
+}
+
+function openRankingModal(row=null){
+  if(row === null){
+    if(!hasPermission("drivers","create")){
+      showToast("Keine Berechtigung zum Erstellen eines Fahrers.", true);
+      return;
+    }
+
+    rankingEditingId = null;
+    rankingModalTitle.textContent = "Neuen Fahrer hinzufügen";
+    rankingSetField("rankingName", "");
+    rankingSetField("rankingNumber", "");
+    rankingSetField("rankingTeam", "");
+    rankingSetField("rankingVehicle", "");
+    rankingSetField("rankingPoints", 0);
+    rankingSetField("rankingWins", 0);
+    rankingSetField("rankingImage", "");
+    const active = document.getElementById("rankingActive");
+    if(active) active.checked = true;
+  }else{
+    if(!hasPermission("drivers","edit")){
+      showToast("Keine Berechtigung zum Bearbeiten eines Fahrers.", true);
+      return;
+    }
+
+    rankingEditingId = rankingFieldMap?.id ? row[rankingFieldMap.id] : null;
+    rankingModalTitle.textContent = "Fahrer bearbeiten";
+    rankingSetField("rankingName", rankingValue(row,"name",""));
+    rankingSetField("rankingNumber", rankingValue(row,"number",""));
+    rankingSetField("rankingTeam", rankingValue(row,"team",""));
+    rankingSetField("rankingVehicle", rankingValue(row,"vehicle",""));
+    rankingSetField("rankingPoints", rankingNumber(rankingValue(row,"points",0)));
+    rankingSetField("rankingWins", rankingNumber(rankingValue(row,"wins",0)));
+    rankingSetField("rankingImage", rankingValue(row,"image",""));
+
+    const active = document.getElementById("rankingActive");
+    if(active) active.checked = rankingActiveValue(rankingValue(row,"active",1));
+  }
+
+  rankingFormMessage.textContent = "";
+  rankingFormMessage.classList.remove("error");
+  rankingModal.classList.remove("hidden");
+}
+
+function closeRankingModal(){
+  rankingEditingId = null;
+  rankingModal.classList.add("hidden");
+}
+
+async function saveRankingDriver(event){
+  event.preventDefault();
+
+  buildRankingFieldMap();
+
+  if(!rankingFieldMap?.name){
+    rankingFormMessage.textContent = "Die Fahrer-Tabelle besitzt keine erkannte Namensspalte.";
+    rankingFormMessage.classList.add("error");
+    return;
+  }
+
+  const editing = rankingEditingId !== null;
+  const requiredAction = editing ? "edit" : "create";
+
+  if(!hasPermission("drivers", requiredAction)){
+    rankingFormMessage.textContent = "Keine Berechtigung für diese Aktion.";
+    rankingFormMessage.classList.add("error");
+    return;
+  }
+
+  const data = {};
+
+  const name = document.getElementById("rankingName")?.value.trim() || "";
+  const number = document.getElementById("rankingNumber")?.value.trim() || "";
+  const team = document.getElementById("rankingTeam")?.value.trim() || "";
+  const vehicle = document.getElementById("rankingVehicle")?.value.trim() || "";
+  const points = document.getElementById("rankingPoints")?.value || "0";
+  const wins = document.getElementById("rankingWins")?.value || "0";
+  const image = document.getElementById("rankingImage")?.value.trim() || "";
+  const activeChecked = document.getElementById("rankingActive")?.checked ?? true;
+
+  if(!name){
+    rankingFormMessage.textContent = "Bitte einen Fahrernamen eingeben.";
+    rankingFormMessage.classList.add("error");
+    return;
+  }
+
+  data[rankingFieldMap.name] = name;
+  if(rankingFieldMap.number) data[rankingFieldMap.number] = number;
+  if(rankingFieldMap.nickname) data[rankingFieldMap.nickname] = "";
+  if(rankingFieldMap.team) data[rankingFieldMap.team] = team;
+  if(rankingFieldMap.vehicle) data[rankingFieldMap.vehicle] = vehicle;
+  if(rankingFieldMap.points) data[rankingFieldMap.points] = Math.max(0, Number(points) || 0);
+  if(rankingFieldMap.wins) data[rankingFieldMap.wins] = Math.max(0, Number(wins) || 0);
+  if(rankingFieldMap.image) data[rankingFieldMap.image] = image;
+  if(rankingFieldMap.active) data[rankingFieldMap.active] = rankingStatusValue(activeChecked);
+
+  const saveButton = document.getElementById("rankingSave");
+  saveButton.disabled = true;
+  saveButton.textContent = "Wird gespeichert...";
+  rankingFormMessage.textContent = "";
+  rankingFormMessage.classList.remove("error");
+
+  try{
+    let url = "/api/admin/data/drivers";
+    let method = "POST";
+
+    if(editing){
+      method = "PUT";
+      url += "/" + encodeURIComponent(String(rankingEditingId));
+    }
+
+    const response = await fetch(url, {
+      method,
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if(!response.ok || !result.ok){
+      throw new Error(result.error || "Fahrer konnte nicht gespeichert werden.");
+    }
+
+    closeRankingModal();
+    showToast(editing ? "Fahrer wurde geändert." : "Fahrer wurde zur Rangliste hinzugefügt.");
+    await loadRanking();
+
+  }catch(error){
+    rankingFormMessage.textContent = error.message || "Speichern fehlgeschlagen.";
+    rankingFormMessage.classList.add("error");
+  }finally{
+    saveButton.disabled = false;
+    saveButton.textContent = "Speichern";
+  }
+}
+
+async function deleteRankingDriver(id){
+  if(!hasPermission("drivers","delete")){
+    showToast("Keine Berechtigung zum Löschen eines Fahrers.", true);
+    return;
+  }
+
+  const row = (crudRows.drivers || []).find(item =>
+    String(item[rankingFieldMap?.id]) === String(id)
+  );
+
+  const name = row ? rankingValue(row,"name","diesem Fahrer") : "diesem Fahrer";
+
+  if(!confirm(`Soll ${name} wirklich aus der Rangliste entfernt werden?`)) return;
+
+  try{
+    const response = await fetch(
+      "/api/admin/data/drivers/" + encodeURIComponent(String(id)),
+      {
+        method: "DELETE",
+        credentials: "same-origin"
+      }
+    );
+
+    const result = await response.json().catch(() => ({}));
+
+    if(!response.ok || !result.ok){
+      throw new Error(result.error || "Fahrer konnte nicht gelöscht werden.");
+    }
+
+    showToast("Fahrer wurde aus der Rangliste entfernt.");
+    await loadRanking();
+
+  }catch(error){
+    showToast(error.message || "Löschen fehlgeschlagen.", true);
+  }
+}
+
+/* Ranking events */
+document.getElementById("rankingNewDriver")?.addEventListener("click", () => {
+  buildRankingFieldMap();
+  openRankingModal();
+});
+
+document.getElementById("rankingRefresh")?.addEventListener("click", loadRanking);
+
+document.getElementById("rankingForm")?.addEventListener("submit", saveRankingDriver);
+document.getElementById("rankingModalClose")?.addEventListener("click", closeRankingModal);
+document.getElementById("rankingCancel")?.addEventListener("click", closeRankingModal);
+document.getElementById("rankingModal")?.addEventListener("click", event => {
+  if(event.target === document.getElementById("rankingModal")) closeRankingModal();
+});
+
+document.getElementById("rankingTable")?.addEventListener("click", event => {
+  const edit = event.target.closest(".ranking-edit");
+  if(edit){
+    const id = edit.dataset.id;
+    const row = (crudRows.drivers || []).find(item =>
+      String(item[rankingFieldMap?.id]) === String(id)
+    );
+    if(row) openRankingModal(row);
+    return;
+  }
+
+  const del = event.target.closest(".ranking-delete");
+  if(del){
+    deleteRankingDriver(del.dataset.id);
+  }
+});
+
+/* =========================================================
    PERMISSIONS
 ========================================================= */
 
@@ -2589,12 +3117,7 @@ const permissionResources = [
 
   {
     key:"drivers",
-    label:"Fahrer"
-  },
-
-  {
-    key:"results",
-    label:"Rangliste"
+    label:"Fahrer / Rangliste"
   },
 
   {
