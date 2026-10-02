@@ -993,7 +993,7 @@ button{
 <section id="page-results" class="page crud-page" data-resource="results">
   <div class="card">
     <div class="card-header">
-      <div><h2>Rangliste verwalten</h2><span>Rennergebnisse und Punkte verwalten</span></div>
+      <div><h2>Rangliste verwalten</h2><span>Rennergebnisse verwalten und daraus die Rangliste aufbauen</span></div>
       <button class="action-button crud-create-button" data-resource="results">+ Rennergebnis eintragen</button>
     </div>
     <div class="crud-toolbar"><div class="crud-info" id="crud-info-results">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="results">↻ Aktualisieren</button></div>
@@ -3080,6 +3080,7 @@ async function loadCrudResource(resource){
     const d = await r.json().catch(()=>({}));
     if(!r.ok || !d.ok) throw new Error(d.error || "Daten konnten nicht geladen werden.");
     crudRows[resource]=Array.isArray(d.rows)?d.rows:[];
+    if(resource === "results") await ensureResultLookups();
     renderCrudTable(resource);
   }catch(error){
     info.textContent="Fehler";
@@ -3087,7 +3088,113 @@ async function loadCrudResource(resource){
   }
 }
 
+async function ensureResultLookups(){
+  if(!crudSchemas.races || !crudRows.races){
+    await loadCrudResource("races");
+  }
+
+  if(!crudSchemas.drivers || !crudRows.drivers){
+    await loadCrudResource("drivers");
+  }
+}
+
+function findRaceById(id){
+  return (crudRows.races || []).find(
+    row => String(row[crudSchemas.races?.identity]) === String(id)
+  );
+}
+
+function findDriverById(id){
+  return (crudRows.drivers || []).find(
+    row => String(row[crudSchemas.drivers?.identity]) === String(id)
+  );
+}
+
+function resultRaceLabel(race){
+  if(!race) return "Unbekanntes Rennen";
+  const name = race.name || race.title || race.titel || "Rennen";
+  const date = race.date || race.datum || "";
+  return date ? `${name} – ${date}` : name;
+}
+
+function resultDriverLabel(driver){
+  if(!driver) return "Unbekannter Fahrer";
+  const name = driver.name || driver.username || driver.driver_name || "Fahrer";
+  const number = driver.number || driver.start_number || driver.startnummer || "";
+  return number ? `${name} – ${number}` : name;
+}
+
+function resultVehicleValue(driver){
+  if(!driver) return "";
+  return String(
+    driver.vehicle ||
+    driver.car ||
+    driver.fahrzeug ||
+    ""
+  );
+}
+
+function renderResultTable(){
+  const resource = "results";
+  const rows = crudRows[resource] || [];
+  const info = document.getElementById("crud-info-results");
+  const container = document.getElementById("crud-table-results");
+  if(!info || !container) return;
+
+  info.textContent = `${rows.length} Rennergebnis${rows.length===1?"":"se"}`;
+
+  if(!rows.length){
+    container.innerHTML = `<div class="empty">Noch keine Rennergebnisse vorhanden.</div>`;
+    return;
+  }
+
+  const body = rows.map(row => {
+    const identity = crudSchemas.results?.identity;
+    const id = identity ? row[identity] : "";
+    const race = findRaceById(row.race_id);
+    const driver = findDriverById(row.driver_id);
+    const vehicle = row.vehicle || row.car || resultVehicleValue(driver) || "—";
+    const bestLap = row.best_lap || row.bestlap || "—";
+    const dnf = Number(row.dnf) === 1 ? "Ja" : "Nein";
+
+    const edit = hasPermission(resource,"edit") && identity
+      ? `<button class="crud-button crud-edit" data-resource="${resource}" data-id="${escapeHtml(String(id))}">Bearbeiten</button>`
+      : "";
+
+    const del = hasPermission(resource,"delete") && identity
+      ? `<button class="crud-button danger crud-delete" data-resource="${resource}" data-id="${escapeHtml(String(id))}">Löschen</button>`
+      : "";
+
+    return `<tr>
+      <td>${escapeHtml(resultRaceLabel(race))}</td>
+      <td>${escapeHtml(resultDriverLabel(driver))}</td>
+      <td>${escapeHtml(String(row.position ?? "—"))}</td>
+      <td>${escapeHtml(String(row.points ?? "—"))}</td>
+      <td>${escapeHtml(String(vehicle))}</td>
+      <td>${escapeHtml(String(bestLap))}</td>
+      <td>${escapeHtml(dnf)}</td>
+      <td><div class="crud-actions">${edit}${del}</div></td>
+    </tr>`;
+  }).join("");
+
+  container.innerHTML = `<div class="crud-table-wrap"><table class="crud-table"><thead><tr>
+    <th>Rennen</th>
+    <th>Fahrer</th>
+    <th>Platz</th>
+    <th>Punkte</th>
+    <th>Fahrzeug</th>
+    <th>Beste Runde</th>
+    <th>DNF</th>
+    <th>Aktionen</th>
+  </tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
 function renderCrudTable(resource){
+  if(resource === "results"){
+    renderResultTable();
+    return;
+  }
+
   const schema=crudSchemas[resource];
   const rows=crudRows[resource]||[];
   const info=document.getElementById(`crud-info-${resource}`);
@@ -3114,42 +3221,141 @@ function renderCrudTable(resource){
   container.innerHTML=`<div class="crud-table-wrap"><table class="crud-table"><thead><tr>${head}<th>Aktionen</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
-function openCrudModal(resource,row=null){
-  if(row===null&&!hasPermission(resource,"create")){showToast("Keine Berechtigung zum Erstellen.",true);return;}
-  if(row!==null&&!hasPermission(resource,"edit")){showToast("Keine Berechtigung zum Bearbeiten.",true);return;}
+async function openCrudModal(resource,row=null){
+  if(row===null&&!hasPermission(resource,"create")){
+    showToast("Keine Berechtigung zum Erstellen.",true);
+    return;
+  }
+
+  if(row!==null&&!hasPermission(resource,"edit")){
+    showToast("Keine Berechtigung zum Bearbeiten.",true);
+    return;
+  }
+
   const schema=crudSchemas[resource];
-  if(!schema){loadCrudResource(resource).then(()=>openCrudModal(resource,row));return;}
+
+  if(!schema){
+    await loadCrudResource(resource);
+    return openCrudModal(resource,row);
+  }
 
   crudEditing={resource,row};
   const modal=document.getElementById("crudModal");
   const body=document.getElementById("crudFormBody");
-  document.getElementById("crudModalTitle").textContent=row?"Datensatz bearbeiten":"Datensatz erstellen";
-  document.getElementById("crudModalSubtitle").textContent=`${schema.label||resource}`;
+
+  document.getElementById("crudModalTitle").textContent =
+    resource === "results"
+      ? (row ? "Rennergebnis bearbeiten" : "Rennergebnis eintragen")
+      : (row ? "Datensatz bearbeiten" : "Datensatz erstellen");
+
+  document.getElementById("crudModalSubtitle").textContent =
+    resource === "results" ? "Rangliste" : `${schema.label||resource}`;
+
   document.getElementById("crudFormMessage").textContent="";
   document.getElementById("crudFormMessage").classList.remove("error");
+
+  if(resource === "results"){
+    await ensureResultLookups();
+
+    const races = crudRows.races || [];
+    const drivers = crudRows.drivers || [];
+    const vehicle = row?.vehicle || row?.car || resultVehicleValue(findDriverById(row?.driver_id));
+
+    body.innerHTML = `
+      <div class="crud-field full">
+        <label>Rennen</label>
+        <select name="race_id" required>
+          <option value="">Bitte Rennen auswählen</option>
+          ${races.map(r=>{
+            const id=crudSchemas.races?.identity ? r[crudSchemas.races.identity] : "";
+            return `<option value="${escapeHtml(String(id))}" ${String(row?.race_id ?? "")===String(id)?"selected":""}>${escapeHtml(resultRaceLabel(r))}</option>`;
+          }).join("")}
+        </select>
+      </div>
+
+      <div class="crud-field full">
+        <label>Fahrer</label>
+        <select name="driver_id" required>
+          <option value="">Bitte Fahrer auswählen</option>
+          ${drivers.map(d=>{
+            const id=crudSchemas.drivers?.identity ? d[crudSchemas.drivers.identity] : "";
+            return `<option value="${escapeHtml(String(id))}" ${String(row?.driver_id ?? "")===String(id)?"selected":""}>${escapeHtml(resultDriverLabel(d))}</option>`;
+          }).join("")}
+        </select>
+      </div>
+
+      <div class="crud-field">
+        <label>Platzierung</label>
+        <input type="number" min="1" name="position" value="${escapeHtml(String(row?.position ?? ""))}" required>
+      </div>
+
+      <div class="crud-field">
+        <label>Punkte</label>
+        <input type="number" min="0" name="points" value="${escapeHtml(String(row?.points ?? ""))}" required>
+      </div>
+
+      <div class="crud-field">
+        <label>Fahrzeug</label>
+        <input type="text" name="vehicle" value="${escapeHtml(String(vehicle || ""))}" placeholder="Vom Fahrer übernehmen oder Rennen-Fahrzeug eintragen">
+      </div>
+
+      <div class="crud-field">
+        <label>Beste Runde</label>
+        <input type="text" name="best_lap" value="${escapeHtml(String(row?.best_lap ?? row?.bestlap ?? ""))}" placeholder="z. B. 01:32.450">
+      </div>
+
+      <div class="crud-checkbox">
+        <input type="checkbox" name="dnf" ${Number(row?.dnf)===1?"checked":""}>
+        <span>DNF – Rennen nicht beendet</span>
+      </div>
+    `;
+
+    const driverSelect = body.querySelector('select[name="driver_id"]');
+    const vehicleInput = body.querySelector('input[name="vehicle"]');
+
+    driverSelect.addEventListener("change",()=>{
+      const driver=findDriverById(driverSelect.value);
+      const current=vehicleInput.value.trim();
+      if(!current){
+        vehicleInput.value=resultVehicleValue(driver);
+      }
+    });
+
+    modal.classList.remove("hidden");
+    return;
+  }
 
   body.innerHTML=visibleColumns(schema).map(col=>{
     const value=row?.[col.name]??"";
     const label=prettyColumn(col.name);
     const required=Number(col.notnull)===1&&col.default===null?"required":"";
+
     if(isBooleanColumn(col)){
       const checked=Number(value)===1||value===true||value==="1";
       return `<div class="crud-checkbox"><input type="checkbox" name="${escapeHtml(col.name)}" ${checked?"checked":""}><span>${escapeHtml(label)}</span></div>`;
     }
+
     const textarea=/description|content|text|reason|message/i.test(col.name)||String(col.type||"").toUpperCase().includes("TEXT")&&String(value).length>80;
+
     if(textarea){
       return `<div class="crud-field full"><label>${escapeHtml(label)}</label><textarea rows="5" name="${escapeHtml(col.name)}" ${required}>${escapeHtml(String(value))}</textarea></div>`;
     }
+
     return `<div class="crud-field"><label>${escapeHtml(label)}</label><input type="${inputType(col)}" name="${escapeHtml(col.name)}" value="${escapeHtml(String(value))}" ${required}></div>`;
   }).join("");
+
   modal.classList.remove("hidden");
 }
 
-function closeCrudModal(){crudEditing=null;document.getElementById("crudModal").classList.add("hidden");}
+function closeCrudModal(){
+  crudEditing=null;
+  document.getElementById("crudModal").classList.add("hidden");
+}
 
 async function saveCrudForm(event){
   event.preventDefault();
   if(!crudEditing) return;
+
   const {resource,row}=crudEditing;
   const schema=crudSchemas[resource];
   const form=event.currentTarget;
@@ -3157,23 +3363,66 @@ async function saveCrudForm(event){
   const button=document.getElementById("crudModalSave");
   const data={};
 
-  visibleColumns(schema).forEach(col=>{
-    const el=form.elements.namedItem(col.name);
-    if(!el)return;
-    data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
-  });
+  if(resource === "results"){
+    data.race_id=form.elements.namedItem("race_id")?.value || "";
+    data.driver_id=form.elements.namedItem("driver_id")?.value || "";
+    data.position=form.elements.namedItem("position")?.value || "";
+    data.points=form.elements.namedItem("points")?.value || "";
+    data.best_lap=form.elements.namedItem("best_lap")?.value || "";
+    data.dnf=form.elements.namedItem("dnf")?.checked ? 1 : 0;
 
-  button.disabled=true;button.textContent="Wird gespeichert...";message.textContent="";
+    /* Nur mitsenden, wenn die D1-Tabelle die Spalte besitzt. */
+    if(schema.columns?.some(c=>c.name === "vehicle")){
+      data.vehicle=form.elements.namedItem("vehicle")?.value || "";
+    } else if(schema.columns?.some(c=>c.name === "car")){
+      data.car=form.elements.namedItem("vehicle")?.value || "";
+    }
+  } else {
+    visibleColumns(schema).forEach(col=>{
+      const el=form.elements.namedItem(col.name);
+      if(!el)return;
+      data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
+    });
+  }
+
+  button.disabled=true;
+  button.textContent="Wird gespeichert...";
+  message.textContent="";
+  message.classList.remove("error");
+
   try{
     let url=`/api/admin/data/${encodeURIComponent(resource)}`;
     let method="POST";
-    if(row!==null){method="PUT";url+=`/${encodeURIComponent(String(row[schema.identity]))}`;}
-    const r=await fetch(url,{method,credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+
+    if(row!==null){
+      method="PUT";
+      url+=`/${encodeURIComponent(String(row[schema.identity]))}`;
+    }
+
+    const r=await fetch(url,{
+      method,
+      credentials:"same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(data)
+    });
+
     const d=await r.json().catch(()=>({}));
-    if(!r.ok||!d.ok)throw new Error(d.error||"Speichern fehlgeschlagen.");
-    closeCrudModal();showToast(row?"Änderungen gespeichert.":"Datensatz erstellt.");await loadCrudResource(resource);
-  }catch(error){message.textContent=error.message||"Speichern fehlgeschlagen.";message.classList.add("error");}
-  finally{button.disabled=false;button.textContent="Speichern";}
+
+    if(!r.ok||!d.ok){
+      throw new Error(d.error||"Speichern fehlgeschlagen.");
+    }
+
+    closeCrudModal();
+    showToast(row?"Rennergebnis geändert.":"Rennergebnis gespeichert.");
+    await loadCrudResource(resource);
+
+  }catch(error){
+    message.textContent=error.message||"Speichern fehlgeschlagen.";
+    message.classList.add("error");
+  }finally{
+    button.disabled=false;
+    button.textContent="Speichern";
+  }
 }
 
 async function deleteCrudRow(resource,id){
