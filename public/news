@@ -1,209 +1,1433 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>JACKAL · NEWS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#020208;--panel:#070916;--panel2:#0b0d1c;--line:#4813a1;--line2:#2b164e;
-  --purple:#a83dff;--purple2:#cf7cff;--cyan:#27d9ff;--pink:#ff41cf;--red:#ff4058;
-  --text:#f5f1fb;--muted:#aaa2b8;--head:'Saira Condensed',Arial,sans-serif;--body:'Rajdhani',Arial,sans-serif;--brush:'Permanent Marker',cursive;
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>News – Jackal Racing League</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+/* =========================================================
+   JACKAL RACING LEAGUE
+   ========================================================= */
+
+:root {
+  --bg: #07060d;
+  --bg-2: #0d0b18;
+  --card: #110e1f;
+  --card-2: #171329;
+  --line: #2a2342;
+  --line-glow: #4b2f8a;
+  --purple: #4e18ae;      /* Hauptfarbe */
+  --purple-2: #b266ff;    /* Neon-Lila für Text & Akzente */
+  --purple-3: #dcbcff;
+  --neon: #a855ff;        /* Leuchtfarbe */
+  --text: #f2eefc;
+  --muted: #a49cbc;
+  --radius: 10px;
+
+  --f-brush: 'Permanent Marker', cursive;
+  --f-head: 'Saira Condensed', 'Arial Narrow', sans-serif;
+  --f-body: 'Rajdhani', 'Segoe UI', sans-serif;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--text);font-family:var(--body)}
-body{min-height:100vh;overflow-x:hidden;background:radial-gradient(circle at 50% 12%,rgba(104,34,183,.13),transparent 33%),linear-gradient(180deg,#020208,#05040b 52%,#020208)}
-a{text-decoration:none;color:inherit}button,input{font:inherit}
 
-/* ===== HEADER ===== */
-.topbar{height:58px;display:flex;align-items:center;padding:0 6.7vw;background:#05050d;border-bottom:1px solid #311064;position:relative;z-index:20}
-.brand{display:flex;align-items:center;width:220px;flex:0 0 220px;height:58px}
-.brand img{width:154px;height:52px;object-fit:contain;object-position:left center;display:block;filter:drop-shadow(0 0 7px rgba(168,61,255,.25));}
-.brand:hover img{filter:drop-shadow(0 0 10px rgba(168,61,255,.42));}
-.nav{position:absolute;left:50%;transform:translateX(-50%);height:100%;display:flex;align-items:center;gap:31px;white-space:nowrap}
-.nav a{position:relative;height:100%;display:flex;align-items:center;padding:0 2px;color:#d5cedf;text-transform:uppercase;font:700 13px var(--head);letter-spacing:1px;line-height:1}
-.nav a.active{color:#fff}
-.nav a.active:after{content:"";position:absolute;left:-7px;right:-7px;bottom:0;height:3px;background:linear-gradient(90deg,#ad42ff,#ff42db);box-shadow:0 0 12px rgba(181,69,255,.9)}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ===== HERO ===== */
-.hero{height:214px;position:relative;overflow:hidden;border-bottom:1px solid #35116b}
-.hero-bg{position:absolute;inset:0;background:url('jackal-banner.png') center 42%/cover no-repeat}
-.hero-bg:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,3,10,.12),rgba(3,3,9,.04) 55%,rgba(2,2,8,.90) 100%)}
-.hero-content{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-top:2px}
-.hero-title{font:400 96px/.84 var(--brush);letter-spacing:-4px;color:#f9f6ff;transform:skew(-10deg) rotate(-2deg);text-transform:uppercase;text-shadow:5px 4px 0 #8e2df1,0 0 18px rgba(220,113,255,.86),0 0 36px rgba(126,28,255,.7)}
-.hero-sub{margin-top:11px;font:700 17px var(--head);letter-spacing:9px;color:#fff;text-transform:uppercase}
-.hero-claim{margin-top:3px;font:700 14px var(--head);font-style:italic;letter-spacing:1.7px;color:var(--purple2);text-transform:uppercase;text-shadow:0 0 10px rgba(210,88,255,.8)}
+html, body { background: var(--bg); }
 
-/* ===== CONTENT ===== */
-.main{width:min(1500px,calc(100% - 38px));margin:10px auto 0;padding-bottom:30px}
-.top-grid{display:grid;grid-template-columns:1.70fr 1.27fr 1fr;gap:10px}
-.bottom-grid{display:grid;grid-template-columns:1.16fr 1fr;gap:10px;margin-top:10px}
-.card{position:relative;overflow:hidden;background:linear-gradient(180deg,#08091a,#060711);border:1px solid var(--line);border-radius:7px;box-shadow:0 12px 30px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.025)}
+body {
+  color: var(--text);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.4;
+  background:
+    radial-gradient(1200px 500px at 50% 0%, rgba(168, 85, 255, .12), transparent 60%),
+    var(--bg);
+  min-height: 100vh;
+}
 
-/* ===== COMMON HEAD ===== */
-.card-head{display:flex;align-items:center;gap:12px;padding:10px 14px 9px;border-bottom:1px solid #25133f;background:linear-gradient(90deg,rgba(137,33,255,.12),transparent 52%)}
-.head-icon{width:38px;height:38px;flex:0 0 38px;color:var(--purple2);filter:drop-shadow(0 0 8px rgba(185,81,255,.9))}
-.head-icon svg{width:100%;height:100%;fill:currentColor}
-.head-title{font:800 30px/1 var(--head);font-style:italic;letter-spacing:.3px;text-transform:uppercase}
-.head-sub{display:block;margin-top:2px;font:700 16px/1 var(--head);letter-spacing:1.3px;text-transform:uppercase;color:var(--cyan)}
-.head-right{margin-left:auto;text-align:right}
-.head-right .date{font:700 14px var(--head);color:#d8d1e4;text-transform:uppercase}
-.head-right .meta{margin-top:2px;display:flex;align-items:center;justify-content:flex-end;gap:6px;color:#cfc6dc;font:600 12px var(--head);text-transform:uppercase}
-.head-right svg{width:16px;height:16px;fill:var(--purple2)}
+a { color: inherit; text-decoration: none; }
 
-/* ===== RANKING ===== */
-.ranking{min-height:406px}
-.ranking-table-wrap{padding:0 8px 11px;overflow:hidden}
-.ranking-table{width:100%;border-collapse:separate;border-spacing:0 2px;font-size:14px}
-.ranking-table th{padding:5px 7px;color:#b8afc4;font:700 11px var(--head);letter-spacing:.7px;text-transform:uppercase;white-space:nowrap;text-align:left}
-.ranking-table td{padding:3px 7px;background:rgba(255,255,255,.035);white-space:nowrap;font-size:14px}
-.ranking-table tr td:first-child{border-radius:3px 0 0 3px}.ranking-table tr td:last-child{border-radius:0 3px 3px 0}
-.ranking-table tbody tr:hover td{background:rgba(147,36,255,.18)}
-.pos{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:4px;font:800 15px var(--head)}
-.pos-1{background:linear-gradient(180deg,#ffc72e,#cf9114);color:#241600}.pos-2{background:linear-gradient(180deg,#e4e7f5,#8893b0);color:#131522}.pos-3{background:linear-gradient(180deg,#ff8d40,#bd531a);color:#240a00}
-.driver{font:800 17px var(--head);text-transform:uppercase}.driver-line{display:flex;align-items:center;gap:8px}.driver-dot{width:19px;height:19px;border-radius:50%;display:inline-grid;place-items:center;border:1px solid currentColor;color:var(--purple2);font:800 9px var(--head)}
-.team{font:800 14px var(--head);text-transform:uppercase}.jackal{color:#ff35bb}.nightshift{color:#4d82ff}.velocity{color:#ff4a42}.phantom{color:#8f8bff}
-.car{color:#ded8e7}.time{font:800 16px var(--head);font-variant-numeric:tabular-nums}.pts{font:800 16px var(--head);color:#f2c14e;text-align:right}
-.ranking-foot{padding:0 10px 11px}.outline-btn{height:37px;padding:0 15px;display:inline-flex;align-items:center;gap:12px;border:1px solid #b13fff;border-radius:5px;color:#fff;background:linear-gradient(180deg,#3e0d84,#23073e);box-shadow:0 0 16px rgba(165,49,255,.28);font:800 13px var(--head);letter-spacing:.5px;text-transform:uppercase}.outline-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+/* ---------- Image placeholder system ----------
+   Jede Bildfläche ist ein .img-slot. Solange die Datei in /images
+   fehlt, wird ein Platzhalter mit Dateinamen angezeigt. Sobald die
+   Datei existiert, erscheint automatisch das Bild.                  */
+.img-slot {
+  position: relative;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(135deg, rgba(168, 85, 255, .07) 0 12px, transparent 12px 24px),
+    linear-gradient(160deg, #1a1430, #0c0a16);
+}
+.img-slot::after {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  text-align: center;
+  font: 600 12px/1.2 var(--f-body);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(201, 164, 255, .55);
+  border: 1px dashed rgba(168, 85, 255, .35);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.img-slot img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+.img-slot.loaded { background: none; }
+.img-slot.loaded::after { display: none; }
+.img-slot.missing img { display: none; }
 
-/* ===== NEXT RACE ===== */
-.next{min-height:406px}
-.next-bg{position:absolute;inset:0;background:#080912 center/cover no-repeat}
-.next-bg:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,8,17,.96),rgba(7,8,17,.55) 38%,rgba(5,6,13,.25) 64%,rgba(5,5,11,.92)),linear-gradient(90deg,rgba(6,7,13,.88),transparent 55%)}
-.next-content{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;padding:10px 15px 11px}
-.next-title-row{display:flex;align-items:center;gap:10px;border-bottom:1px solid #321750;padding-bottom:9px}
-.flag-icon{width:44px;height:44px;color:var(--purple2);filter:drop-shadow(0 0 8px rgba(190,72,255,.8))}.flag-icon svg{width:100%;height:100%;fill:currentColor}
-.next-name{font:800 23px/1 var(--head);font-style:italic;text-transform:uppercase}
-.next-date{margin-left:auto;display:flex;align-items:center;gap:9px;color:#ded7e9;font:700 13px var(--head);text-transform:uppercase}.next-date svg{width:24px;height:24px;fill:var(--purple2)}
-.fact-list{display:grid;gap:11px;margin-top:13px;width:42%}.fact{display:flex;align-items:center;gap:11px;font:700 12px/1.05 var(--head);text-transform:uppercase}.fact svg{width:24px;height:24px;flex:0 0 24px;fill:var(--purple2);filter:drop-shadow(0 0 4px rgba(182,74,255,.65))}
-.track-wrap{position:absolute;right:18px;bottom:18px;width:53%;display:flex;justify-content:center;align-items:center}
-.track{width:100%;max-width:255px;filter:drop-shadow(0 0 8px rgba(197,82,255,.95)) drop-shadow(0 0 18px rgba(139,40,255,.72))}
-.track path,.track polyline{stroke:#db6cff;stroke-width:6;fill:none;stroke-linecap:round;stroke-linejoin:round}.track .finish{stroke:#fff}
-.next-foot{margin-top:auto;display:flex;justify-content:flex-end}.next-btn{height:34px;padding:0 12px}
+/* ---------- Topbar ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 56px;
+  padding: 0 40px;
+  background: rgba(8, 7, 14, .92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
 
-/* ===== CHANGES ===== */
-.changes{min-height:406px}.change-block{margin:0 9px 9px;padding:10px 11px;border:1px solid;border-radius:5px}.change-red{border-color:rgba(255,66,91,.48);background:linear-gradient(180deg,rgba(111,12,28,.56),rgba(31,7,14,.66))}.change-blue{border-color:rgba(42,187,255,.50);background:linear-gradient(180deg,rgba(12,42,91,.55),rgba(8,16,35,.72))}
-.change-head{display:flex;align-items:center;gap:8px}.change-head svg{width:27px;height:27px;fill:none;stroke-width:2}.change-red .change-head svg{stroke:#ff4861}.change-blue .change-head svg{stroke:#41d5ff}.change-head h3{font:800 18px/1 var(--head);font-style:italic;text-transform:uppercase}.change-head time{margin-left:auto;font:700 10px var(--head)}.change-red time{color:#ff6e7f}.change-blue time{color:#64deff}
-.change-list{list-style:none;display:grid;gap:5px;margin:10px 0 7px}.change-list li{padding-left:14px;position:relative;color:#d1cad6;font:600 11px/1.2 var(--body)}.change-list li:before{content:"";position:absolute;left:0;top:.42em;width:6px;height:6px;border-radius:50%;background:currentColor}.change-red .change-list li:before{color:#ff4d62}.change-blue .change-list li:before{color:#31d6ff}.change-link{font:800 10px var(--head);letter-spacing:1px;text-transform:uppercase}.change-red .change-link{color:#ff5e74}.change-blue .change-link{color:#45d9ff}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-slot { display: none; width: 110px; height: 40px; }
+.brand-slot.loaded { display: block; }
+.brand-slot.loaded img { object-fit: contain; }
+.brand-slot.loaded + .brand-text { display: none; }
+.brand-text {
+  font-family: var(--f-brush);
+  font-size: 30px;
+  text-transform: uppercase;
+  color: #fff;
+  transform: skew(-8deg);
+  text-shadow: 0 0 12px rgba(178, 102, 255, .8), 2px 2px 0 var(--purple);
+}
 
-/* ===== HEARTS ===== */
-.hearts{min-height:298px;display:grid;grid-template-columns:1.04fr .96fr}.heart-left{position:relative;overflow:hidden}.heart-image{position:absolute;inset:0;background:center/cover no-repeat url('images/champion-bg.jpg')}.heart-image:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,6,12,.08),rgba(5,6,12,.7) 72%),linear-gradient(0deg,rgba(4,4,10,.72),transparent 55%)}
-.heart-content{position:relative;z-index:2;padding:10px 14px}.heart-mark{width:46px;height:46px;color:#bd55ff;filter:drop-shadow(0 0 12px rgba(190,65,255,.8))}.heart-mark svg{width:100%;height:100%;fill:currentColor}.heart-title{font:800 31px/1 var(--head);font-style:italic;text-transform:uppercase;margin-top:-8px}.heart-sub{font:700 15px var(--head);letter-spacing:1px;color:var(--cyan);text-transform:uppercase;margin-top:2px}.winner{position:absolute;right:14px;bottom:15px;width:42%;text-align:left}.winner-name{font:800 25px/1 var(--head);text-transform:uppercase}.winner-team{color:#ff35c5;font:800 15px var(--head);letter-spacing:1px;text-transform:uppercase;margin-top:3px}.winner-copy{margin-top:12px;color:#d2cada;font:600 11px/1.35 var(--body);max-width:210px}
-.poll{border-left:1px solid #28143f;padding:10px 12px}.poll-head{font:800 20px/1 var(--head);font-style:italic;text-transform:uppercase;color:#d478ff;border-bottom:1px solid #32174f;padding-bottom:6px}.poll-q{margin-top:8px;font:700 12px var(--body)}.poll-list{margin-top:7px;display:grid;gap:4px}.poll-option{position:relative;display:flex;align-items:center;gap:8px;height:27px;padding:0 8px;border:1px solid #2f2140;border-radius:3px;background:rgba(7,7,18,.9);overflow:hidden;color:#d9d2df;font:600 11px var(--body)}.poll-option.active{border-color:#a84fff;box-shadow:0 0 9px rgba(167,66,255,.35)}.poll-radio{width:15px;height:15px;border:2px solid #b349ff;border-radius:50%;box-shadow:0 0 7px rgba(170,57,255,.5)}.poll-option.active .poll-radio{background:radial-gradient(circle,#b85aff 0 37%,transparent 40%)}.poll-pct{margin-left:auto}.poll-btn{margin-top:11px;width:185px;height:34px;display:flex;justify-content:center;align-items:center;border:1px solid #b441ff;border-radius:4px;background:linear-gradient(180deg,#6510c0,#2a074e);box-shadow:0 0 13px rgba(167,50,255,.45);font:800 11px var(--head);letter-spacing:.7px;text-transform:uppercase;color:#fff}
+.nav {
+  display: flex;
+  gap: 8px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.nav a {
+  position: relative;
+  padding: 18px 16px;
+  font-family: var(--f-body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #d9d3ec;
+  transition: color .2s;
+}
+.nav a:hover { color: #fff; }
+.nav a.active { color: #fff; }
+.nav a.active::after {
+  content: "";
+  position: absolute;
+  left: 10px; right: 10px; bottom: 4px;
+  height: 2px;
+  background: var(--purple-2);
+  box-shadow: 0 0 10px var(--purple), 0 0 2px #fff;
+}
 
-/* ===== LAPS ===== */
-.laps{min-height:298px}.lap-head{display:flex;align-items:center;gap:12px;padding:10px 14px 8px;border-bottom:1px solid #291741;background:linear-gradient(90deg,rgba(142,33,255,.11),transparent 55%)}.lap-icon{width:42px;height:42px;color:var(--purple2);filter:drop-shadow(0 0 8px rgba(192,75,255,.8))}.lap-icon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2}.lap-title{font:800 27px/1 var(--head);font-style:italic;text-transform:uppercase}.lap-sub{margin-top:2px;color:var(--cyan);font:700 14px var(--head);letter-spacing:.8px;text-transform:uppercase}.lap-filter{margin-left:auto;display:flex;align-items:center;height:35px;padding:0 11px;border:1px solid #ab41ff;border-radius:4px;background:#0b0b17;font:700 11px var(--head);text-transform:uppercase;color:#eee}.lap-filter:after{content:"⌄";margin-left:18px;color:#b550ff;font-size:17px}
-.laps-table{padding:3px 9px 8px;overflow:hidden}.laps-table table{width:100%;border-collapse:separate;border-spacing:0 2px}.laps-table th{padding:4px 6px;color:#b4acbf;font:700 10px var(--head);text-transform:uppercase;white-space:nowrap}.laps-table td{padding:3px 6px;background:rgba(255,255,255,.03);font:600 12px var(--body);white-space:nowrap}.laps-table tr td:first-child{border-radius:3px 0 0 3px}.laps-table tr td:last-child{border-radius:0 3px 3px 0}.lap-driver{font:800 15px var(--head);text-transform:uppercase}.lap-time{font:800 15px var(--head);font-variant-numeric:tabular-nums}.diff{font:800 13px var(--head)}.diff.pos{color:#ded8e6}.laps-foot{padding:0 9px 9px}.laps-btn{height:32px;padding:0 14px}
 
-/* ===== FOOTER ===== */
-.footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:8px 28px 18px;font:700 9px var(--head);letter-spacing:1.3px;text-transform:uppercase;color:#bfb6cb;border-top:1px solid #27153e}.footer-center{font:400 14px var(--brush);color:#c85aff;transform:skew(-8deg);text-shadow:0 0 10px rgba(196,79,255,.85);letter-spacing:.2px}.footer-right{text-align:right}
+.nav-toggle {
+  display: none;
+  margin-left: auto;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 8px;
+}
+.nav-toggle span {
+  display: block;
+  width: 24px; height: 2px;
+  margin: 5px 0;
+  background: #fff;
+}
 
-/* ===== MOBILE ===== */
-@media(max-width:1100px){.nav{gap:17px}.topbar{padding:0 20px}.brand{width:160px;flex-basis:160px}.top-grid{grid-template-columns:1fr}.bottom-grid{grid-template-columns:1fr}.main{width:min(860px,calc(100% - 24px))}.ranking,.next,.changes{min-height:0}}
-@media(max-width:700px){.hero{height:190px}.hero-title{font-size:67px}.hero-sub{font-size:12px;letter-spacing:5px}.nav{display:none}.topbar{justify-content:center}.brand{width:auto;flex:0 0 auto}.top-grid,.bottom-grid{gap:8px}.card-head{padding:9px 10px}.head-title{font-size:23px}.head-sub{font-size:13px}.feature{grid-template-columns:1fr}.facts{width:100%}.track-wrap{position:relative;right:auto;bottom:auto;margin:5px auto 0;width:85%}.heart{grid-template-columns:1fr}.poll{border-left:0;border-top:1px solid #28143f}.footer{grid-template-columns:1fr;gap:4px;text-align:center;padding:10px}.footer-right{text-align:center}}
-</style>
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  height: 320px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+.hero-bg { position: absolute; inset: 0; z-index: 1; }
+.hero-bg::after { border: 0; place-items: end center; padding-bottom: 18px; }
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(10, 6, 22, .15), rgba(7, 6, 13, .55) 75%),
+    linear-gradient(to bottom, transparent 70%, var(--bg));
+  pointer-events: none;
+}
+.hero-content {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-bottom: 30px;
+}
+.hero-logo-slot { display: none; width: min(420px, 80vw); height: 230px; background: none; }
+.hero-logo-slot::after { display: none; }
+.hero-logo-slot img { object-fit: contain; }
+.hero-logo-slot.loaded { display: block; }
+.hero-logo-slot.loaded ~ .hero-title,
+.hero-logo-slot.loaded ~ .hero-sub,
+.hero-logo-slot.loaded ~ .hero-claim { display: none; }
+
+.hero-title {
+  font-family: var(--f-brush);
+  font-weight: 400;
+  font-size: clamp(64px, 11vw, 140px);
+  line-height: .9;
+  text-transform: uppercase;
+  color: #ecebf2;
+  transform: skew(-10deg) rotate(-3deg);
+  text-shadow:
+    4px 4px 0 var(--purple),
+    0 0 30px rgba(168, 85, 255, .9),
+    0 0 60px rgba(168, 85, 255, .5);
+}
+.hero-sub {
+  margin-top: 6px;
+  font-family: var(--f-body);
+  font-weight: 600;
+  font-size: clamp(16px, 2.4vw, 24px);
+  letter-spacing: .45em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.hero-claim {
+  margin-top: 4px;
+  font-family: var(--f-head);
+  font-style: italic;
+  font-weight: 700;
+  font-size: clamp(13px, 1.6vw, 17px);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--purple-2);
+  text-shadow: 0 0 10px rgba(168, 85, 255, .7);
+}
+
+/* ---------- Grid ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+  max-width: 1240px;
+  margin: 6px auto 0;
+  padding: 0 18px 30px;
+  position: relative;
+  z-index: 5;
+}
+
+.card {
+  position: relative;
+  background: linear-gradient(180deg, var(--card-2), var(--card));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .03);
+}
+
+/* Card heads */
+.card-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+.card-head-band {
+  background: linear-gradient(100deg, rgba(168, 85, 255, .14), transparent 45%);
+  border-bottom: 1px solid var(--line);
+}
+.head-icon {
+  width: 26px; height: 26px;
+  flex-shrink: 0;
+  color: var(--purple-2);
+  filter: drop-shadow(0 0 6px rgba(168, 85, 255, .6));
+}
+.head-title {
+  font-family: var(--f-head);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1;
+}
+.head-title-lg { font-size: 24px; white-space: nowrap; }
+.head-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.head-chevron {
+  margin-left: auto;
+  display: flex;
+  color: var(--muted);
+  transition: color .2s, transform .2s;
+}
+.head-chevron svg { width: 20px; height: 20px; }
+.head-chevron { flex-shrink: 0; }
+.head-title-lg { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.head-chevron:hover { color: #fff; transform: translateX(3px); }
+
+/* ---------- Next Race ---------- */
+.next-race { min-height: 300px; }
+.next-race-bg { position: absolute; inset: 0; }
+.next-race-bg::after { border: 0; place-items: center end; padding-right: 15%; }
+.next-race-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(10, 8, 20, .97) 0%, rgba(10, 8, 20, .85) 32%, rgba(10, 8, 20, .1) 65%, transparent);
+  pointer-events: none;
+}
+.next-race-content {
+  position: relative;
+  z-index: 3;
+  padding: 18px 32px 26px;
+  max-width: 420px;
+}
+.brush {
+  font-family: var(--f-brush);
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 1;
+  transform: skew(-8deg);
+}
+.next-race h2.brush {
+  font-size: 40px;
+  color: #ecebf2;
+  text-shadow: 3px 3px 0 rgba(168, 85, 255, .55), 0 0 18px rgba(168, 85, 255, .35);
+}
+.brush-purple {
+  margin-top: 4px;
+  font-size: 24px;
+  color: var(--purple-2);
+  text-shadow: 0 0 14px rgba(168, 85, 255, .6);
+}
+
+.race-info { list-style: none; margin: 18px 0 22px; display: grid; gap: 12px; }
+.race-info li { display: flex; align-items: center; gap: 16px; }
+.race-info svg {
+  width: 26px; height: 26px;
+  flex-shrink: 0;
+  color: var(--purple-2);
+  fill: var(--purple-2);
+}
+.race-info svg[fill="none"] { fill: none; }
+.race-info strong {
+  display: block;
+  font-weight: 600;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.race-info small {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  min-width: 220px;
+  height: 48px;
+  padding: 0 14px 0 24px;
+  font-family: var(--f-head);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(180deg, #5c22c4 0%, var(--purple) 55%, #43149a 100%);
+  border: 1px solid #b266ff;
+  border-radius: 3px;
+  box-shadow:
+    0 0 18px rgba(168, 85, 255, .9),
+    0 0 40px rgba(168, 85, 255, .45),
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 0 0 1px rgba(255, 255, 255, .04);
+  transition: box-shadow .2s, filter .2s;
+}
+.btn:hover {
+  filter: brightness(1.12);
+  box-shadow:
+    0 0 24px rgba(178, 102, 255, .8),
+    0 0 50px rgba(168, 85, 255, .6),
+    inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+.btn-arrow { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ---------- Side stack ---------- */
+.side-stack { display: grid; gap: 12px; grid-template-rows: auto 1fr; }
+
+.countdown .card-head { padding-bottom: 8px; }
+.cd-boxes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 2px 14px 14px;
+}
+.cd-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 4px 8px;
+  background: linear-gradient(180deg, #1a1530, #120f22);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.cd-box span {
+  font-family: var(--f-head);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--purple-2);
+  text-shadow: 0 0 14px rgba(168, 85, 255, .6);
+  font-variant-numeric: tabular-nums;
+}
+.cd-box small {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #d4cde8;
+}
+
+.location { min-height: 130px; padding: 6px; }
+.location-img { position: absolute; inset: 6px; border-radius: 6px; }
+.location-img::after { place-items: end; padding: 12px 16px; }
+.location-text {
+  position: relative;
+  z-index: 2;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(10, 8, 20, .75), transparent);
+  border-radius: 6px 6px 0 0;
+}
+.location .head-title { font-size: 20px; }
+
+/* ---------- News ---------- */
+.news .card-head { padding: 10px 16px; }
+.link-all {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #e6e1f5;
+  transition: color .2s;
+}
+.link-all, .more { display: inline-flex; align-items: center; gap: 8px; }
+.arr { width: 15px; height: 15px; color: var(--purple-2); transition: transform .2s; }
+.link-all:hover .arr, .more:hover .arr { transform: translateX(3px); }
+.link-all:hover { color: var(--purple-3); }
+
+.news-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 12px 14px 14px;
+}
+.news-item {
+  background: #0e0c1a;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color .2s, transform .2s;
+}
+.news-item:hover { border-color: var(--line-glow); transform: translateY(-2px); }
+.news-img { aspect-ratio: 2 / 1; }
+.news-body { padding: 10px 10px 10px; display: flex; flex-direction: column; flex: 1; }
+.news-body time { font-size: 12px; font-weight: 600; color: var(--purple-2); }
+.news-body h3 {
+  margin-top: 2px;
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.news-body p { margin-top: 4px; font-size: 13px; font-weight: 500; color: #cfc8e2; flex: 1; }
+.more {
+  align-self: flex-start;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--purple-2);
+}
+.more:hover { color: var(--purple-3); }
+
+/* ---------- Champion ---------- */
+.champion { display: flex; flex-direction: column; }
+.champion .card-head {
+  background: linear-gradient(100deg, rgba(168, 85, 255, .14), transparent 55%);
+  border-bottom: 1px solid var(--line);
+}
+.champion-stage {
+  position: relative;
+  flex: 1;
+  min-height: 180px;
+  margin: 8px 8px 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.champion-bg { position: absolute; inset: 0; }
+.champion-bg::after { border: 0; place-items: end end; padding: 10px 14px; }
+.champion-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(10, 8, 20, .7), transparent 60%);
+  pointer-events: none;
+}
+.champion-info {
+  position: absolute;
+  z-index: 3;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.champion-avatar {
+  width: 72px;
+  height: 108px;
+  border: 1.5px solid #d4a640;
+  border-radius: 6px;
+  box-shadow: 0 0 16px rgba(212, 166, 64, .35);
+  background-color: #0b0a12;
+}
+.champion-avatar::after { font-size: 9px; border: 0; }
+.champion-stats { display: flex; flex-direction: column; }
+.champion-stats .rank {
+  font-family: var(--f-head);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+  color: #f2c14e;
+  text-shadow: 0 0 10px rgba(242, 193, 78, .45);
+}
+.champion-stats .name {
+  font-family: var(--f-head);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.champion-stats .pts {
+  font-family: var(--f-head);
+  font-weight: 600;
+  font-size: 19px;
+  text-transform: uppercase;
+}
+
+.champion-car {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px;
+  padding: 6px 6px 6px 12px;
+  background: #0e0c1a;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.champion-car small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.champion-car strong {
+  display: block;
+  font-weight: 700;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+.champion .head-title-lg { font-size: 22px; }
+.car-thumb { width: 104px; height: 54px; border-radius: 4px; flex-shrink: 0; }
+.car-thumb::after { font-size: 9px; }
+
+/* ---------- Footer ---------- */
+.footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 48px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #d4cde8;
+  border-top: 1px solid var(--line);
+  background: rgba(8, 7, 14, .6);
+}
+.footer-claim {
+  font-family: var(--f-brush);
+  font-size: 15px;
+  letter-spacing: .02em;
+  color: var(--purple-2);
+  transform: skew(-8deg);
+  text-shadow: 0 0 10px rgba(168, 85, 255, .8);
+}
+.footer > :last-child { text-align: right; }
+@media (max-width: 760px) {
+  .footer { grid-template-columns: 1fr; text-align: center; padding: 16px; gap: 6px; }
+  .footer > :last-child { text-align: center; }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .topbar { padding: 0 20px; }
+  .nav a { padding: 20px 10px; font-size: 13px; }
+}
+
+@media (max-width: 960px) {
+  .grid { grid-template-columns: 1fr; }
+  .nav-toggle { display: block; }
+    .nav {
+    position: absolute;
+    top: 56px; left: 0; right: 0;
+    transform: none;
+    flex-direction: column;
+    gap: 0;
+    background: rgba(8, 7, 14, .98);
+    border-bottom: 1px solid var(--line);
+    display: none;
+  }
+  .nav.open { display: flex; }
+  .nav a { padding: 14px 24px; }
+  .nav a.active::after { left: 0; right: auto; top: 10px; bottom: 10px; width: 3px; height: auto; }
+}
+
+@media (max-width: 640px) {
+  .topbar { padding: 0 16px; }
+  .hero { height: 260px; }
+  .grid { padding: 0 16px 24px; }
+  .next-race-content { padding: 20px; }
+  .next-race-fade { background: linear-gradient(90deg, rgba(10, 8, 20, .95), rgba(10, 8, 20, .7)); }
+  .next-race h2.brush { font-size: 36px; }
+  .news-list { grid-template-columns: 1fr; }
+  .cd-box span { font-size: 30px; }
+  .cd-box small { font-size: 10px; }
+  .btn { min-width: 0; width: 100%; }
+  .head-title-lg { font-size: 22px; }
+  .link-all { white-space: nowrap; font-size: 12px; }
+}
+
+/* =========================================================
+   NEWS-SEITE
+   ========================================================= */
+.hero-news { height: 230px; }
+.hero-news .hero-content { padding-bottom: 10px; }
+.news-title {
+  font-family: var(--f-brush);
+  font-weight: 400;
+  font-size: clamp(64px, 10vw, 128px);
+  line-height: .95;
+  text-transform: uppercase;
+  color: #b98cff;
+  background: linear-gradient(180deg, #f1e8ff 0%, #b98cff 45%, #7a3fe0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transform: skew(-12deg) rotate(-2deg);
+  filter: drop-shadow(0 0 18px rgba(168, 85, 255, .95)) drop-shadow(4px 4px 0 var(--purple));
+}
+.hero-news .hero-sub { margin-top: 10px; font-size: clamp(13px, 1.8vw, 18px); letter-spacing: .5em; }
+
+.grid-news {
+  display: grid;
+  grid-template-columns: 1.7fr 1.25fr 1fr;
+  gap: 14px;
+  max-width: 1500px;
+  margin: 6px auto 0;
+  padding: 0 18px 30px;
+  position: relative;
+  z-index: 5;
+}
+.row-2 {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.18fr 1fr;
+  gap: 14px;
+}
+
+/* Großer Kartenkopf mit Icon + zwei Zeilen */
+.big-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px 10px;
+}
+.big-icon {
+  width: 52px; height: 52px;
+  flex-shrink: 0;
+  color: var(--purple-2);
+  fill: var(--purple-2);
+  filter: drop-shadow(0 0 10px rgba(168, 85, 255, .9));
+}
+.big-icon[fill="none"] { fill: none; }
+.big-title {
+  font-family: var(--f-head);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.big-sub {
+  margin-top: 4px;
+  font-family: var(--f-head);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--purple-2);
+}
+.head-meta {
+  margin-left: auto;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 1.35;
+}
+.head-meta small { display: flex; align-items: center; gap: 6px; justify-content: flex-end; font-size: 13px; color: #d4cde8; }
+.head-meta svg { width: 16px; height: 16px; fill: var(--purple-2); }
+
+/* Tabellen */
+.table-wrap { padding: 0 10px; overflow-x: auto; }
+.tbl { width: 100%; border-collapse: separate; border-spacing: 0 2px; font-size: 15px; }
+.tbl th {
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  color: #d4cde8;
+  white-space: nowrap;
+}
+.tbl td {
+  padding: 5px 8px;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, .025);
+  font-weight: 500;
+}
+.tbl tr td:first-child { border-radius: 3px 0 0 3px; }
+.tbl tr td:last-child { border-radius: 0 3px 3px 0; }
+.tbl tbody tr:hover td { background: rgba(168, 85, 255, .18); }
+.tbl .driver { font-weight: 700; font-size: 16px; }
+.tbl .driver > span { display: inline-flex; align-items: center; gap: 10px; }
+.tbl .time { font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; }
+.tbl .pts { font-weight: 700; color: #f2c14e; text-align: right; }
+.tbl th.r, .tbl td.r { text-align: right; }
+
+.pos {
+  display: inline-grid;
+  place-items: center;
+  width: 22px; height: 22px;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 3px;
+  color: #fff;
+}
+.pos-1 { background: linear-gradient(180deg, #f6c84a, #c98d14); color: #241500; }
+.pos-2 { background: linear-gradient(180deg, #a6b2d6, #6a76a0); color: #10131f; }
+.pos-3 { background: linear-gradient(180deg, #f08a3c, #b4531a); color: #220c00; }
+
+/* Team-Logos (Platzhalter = Initiale in Teamfarbe) */
+.team-ico {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  vertical-align: middle;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, .06);
+}
+.team-ico::after {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  padding: 0;
+  font: 700 10px/1 var(--f-body);
+  letter-spacing: 0;
+  color: inherit;
+}
+.team-ico img { object-fit: contain; }
+.team { font-size: 14px; font-weight: 600; text-transform: uppercase; }
+.team > span { display: inline-flex; align-items: center; gap: 10px; }
+.t-jackal { color: #ff3d8b; }
+.t-nightshift { color: #4d86ff; }
+.t-velocity { color: #ff4040; }
+.t-phantom { color: #8f8cff; }
+
+.card-foot { padding: 12px 16px 16px; }
+
+/* Kleiner Button – gleicher Stil wie .btn */
+.btn-sm {
+  min-width: 0;
+  height: 34px;
+  gap: 10px;
+  padding: 0 12px 0 14px;
+  font-size: 15px;
+  background: linear-gradient(180deg, #2a1360, #1c0d42);
+  box-shadow: 0 0 12px rgba(168, 85, 255, .6), inset 0 1px 0 rgba(255, 255, 255, .1);
+}
+.btn-sm .btn-arrow { width: 15px; height: 15px; }
+.btn .btn-arrow.arrow-right { width: 18px; }
+
+/* Nächstes Rennen */
+.race-card { display: flex; flex-direction: column; }
+.race-card .img-slot.race-bg { position: absolute; inset: 0; }
+.race-card .race-bg::after { border: 0; place-items: center end; padding-right: 20px; }
+.race-fade {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(14, 11, 26, .97) 0%, rgba(14, 11, 26, .6) 30%, rgba(14, 11, 26, .2) 55%, rgba(14, 11, 26, .85) 100%),
+    linear-gradient(90deg, rgba(14, 11, 26, .85) 0%, transparent 55%);
+}
+.race-card > *:not(.race-bg):not(.race-fade) { position: relative; z-index: 3; }
+.race-sub {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 18px;
+  padding: 8px 0 10px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.race-name {
+  font-family: var(--f-head);
+  font-weight: 700;
+  font-size: 22px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.race-date {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+.race-date small { display: block; font-size: 12px; color: #d4cde8; }
+.race-date svg { width: 24px; height: 24px; color: var(--purple-2); }
+.race-body { flex: 1; display: flex; align-items: flex-end; padding: 18px; gap: 10px; min-height: 290px; }
+.race-facts { list-style: none; display: grid; gap: 12px; }
+.race-facts li { display: flex; align-items: center; gap: 14px; font-size: 14px; font-weight: 600; text-transform: uppercase; line-height: 1.15; }
+.race-facts svg { width: 24px; height: 24px; flex-shrink: 0; color: var(--purple-2); fill: var(--purple-2); }
+.race-facts svg[fill="none"] { fill: none; }
+.race-track { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.track-svg { width: 100%; max-width: 240px; filter: drop-shadow(0 0 6px #b06cff) drop-shadow(0 0 14px rgba(168, 85, 255, .9)); }
+
+/* Änderungen */
+.changes-list { display: grid; gap: 12px; padding: 0 10px 12px; }
+.change {
+  border-radius: 6px;
+  padding: 12px 14px 12px;
+  border: 1px solid;
+}
+.change-red { border-color: rgba(255, 64, 64, .35); background: linear-gradient(180deg, rgba(120, 18, 30, .45), rgba(40, 10, 20, .4)); }
+.change-blue { border-color: rgba(77, 134, 255, .35); background: linear-gradient(180deg, rgba(20, 40, 110, .45), rgba(10, 16, 40, .4)); }
+.change-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.change-head svg { width: 30px; height: 30px; flex-shrink: 0; }
+.change-red .change-head svg { color: #ff4040; }
+.change-blue .change-head svg { color: #4d86ff; }
+.change-head h3 { font-family: var(--f-head); font-weight: 700; font-size: 20px; text-transform: uppercase; }
+.change-head time { margin-left: auto; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.change-red time { color: #ff6b6b; }
+.change-blue time { color: #9fbfff; }
+.change ul { list-style: none; display: grid; gap: 6px; margin: 0 0 10px 6px; }
+.change li { position: relative; padding-left: 18px; font-size: 14px; font-weight: 500; color: #e6e1f5; }
+.change li::before {
+  content: ""; position: absolute; left: 0; top: .45em;
+  width: 7px; height: 7px; border-radius: 50%;
+  border: 2px solid currentColor;
+}
+.change-red li::before { color: #ff4040; }
+.change-blue li::before { color: #3fc4ff; background: #3fc4ff; border: 0; }
+.change-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-left: 6px;
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+}
+.change-red .change-link { color: #ff6b8b; }
+.change-blue .change-link { color: #6fa4ff; }
+.change-link .arr { color: inherit; }
+
+/* Sieger der Herzen */
+.hearts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 10px 10px 0; }
+.hearts-left { display: flex; flex-direction: column; }
+.hearts-left .big-head { padding-bottom: 8px; }
+.winner { position: relative; display: grid; grid-template-columns: 1.15fr 1fr; flex: 1; margin-left: 10px; }
+.winner-img { min-height: 220px; border-radius: 4px; }
+.winner-info { padding: 22px 6px 6px 16px; display: flex; flex-direction: column; }
+.winner-tag {
+  position: absolute;
+  top: 0; left: 46%;
+  padding: 3px 18px;
+  font-family: var(--f-head);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 16px;
+  text-transform: uppercase;
+  color: #1b1200;
+  background: linear-gradient(90deg, transparent 0, #f2c14e 10%, #ffd860 90%, transparent 100%);
+  transform: rotate(-6deg);
+  z-index: 3;
+}
+.winner-name { display: flex; align-items: center; gap: 10px; font-family: var(--f-head); font-weight: 600; font-size: 28px; line-height: 1.1; }
+.winner-name svg { width: 24px; height: 24px; color: #f2c14e; fill: #f2c14e; }
+.winner-team { display: flex; align-items: center; gap: 10px; font-family: var(--f-head); font-weight: 600; font-size: 19px; text-transform: uppercase; }
+.winner-quote { margin: 14px 0 16px; font-size: 14px; font-weight: 500; color: #e6e1f5; flex: 1; }
+.winner-info .btn { align-self: flex-start; }
+
+.poll {
+  display: flex; flex-direction: column;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(10, 8, 20, .5);
+  overflow: hidden;
+}
+.poll-head {
+  padding: 8px 14px;
+  font-family: var(--f-head);
+  font-weight: 700;
+  font-size: 18px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, rgba(168, 85, 255, .45), rgba(168, 85, 255, .1));
+  border-bottom: 1px solid var(--line);
+}
+.poll-q { padding: 8px 14px 6px; font-size: 14px; font-weight: 600; }
+.poll-list { list-style: none; display: grid; gap: 4px; padding: 0 8px; }
+.poll-opt {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  height: 26px;
+  padding: 0 12px;
+  font-size: 14px; font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.poll-opt input { position: absolute; opacity: 0; }
+.poll-opt .bar { position: absolute; inset: 0 auto 0 0; background: rgba(168, 85, 255, .28); transition: width .4s; }
+.poll-opt .radio {
+  position: relative; z-index: 1;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 1.5px solid #b266ff;
+  flex-shrink: 0;
+}
+.poll-opt .label, .poll-opt .pct { position: relative; z-index: 1; }
+.poll-opt .pct { margin-left: auto; }
+.poll-opt:has(input:checked) { border-color: #b266ff; box-shadow: 0 0 10px rgba(168, 85, 255, .6); }
+.poll-opt:has(input:checked) .radio { background: radial-gradient(circle, #b98cff 0 35%, transparent 40%); }
+.poll-opt:has(input:checked) .bar { background: rgba(168, 85, 255, .55); }
+.poll-foot { padding: 12px 14px 12px; }
+.poll-foot .btn { width: 210px; min-width: 0; height: 36px; justify-content: center; font-size: 16px; }
+.poll-thanks { display: none; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--purple-2); }
+.poll.voted .poll-thanks { display: block; }
+
+/* Rundenzeiten */
+.laps .big-head { align-items: center; }
+.laps .big-sub { font-size: 16px; }
+.select-wrap { position: relative; margin-left: auto; align-self: flex-start; }
+.select-wrap select {
+  appearance: none;
+  height: 36px;
+  padding: 0 40px 0 14px;
+  font: 600 14px var(--f-body);
+  text-transform: uppercase;
+  color: #fff;
+  background: #0e0c1a;
+  border: 1px solid #b266ff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.select-wrap svg { position: absolute; right: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--purple-2); pointer-events: none; }
+
+.btn, .change-head h3, .big-title, .race-name { white-space: nowrap; }
+
+/* Responsive News */
+@media (max-width: 1280px) {
+  .grid-news { grid-template-columns: 1fr 1fr; }
+  .bestlist { grid-column: 1 / -1; }
+  .row-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .grid-news { grid-template-columns: 1fr; }
+  .hearts { grid-template-columns: 1fr; padding: 0 10px 10px; }
+  .winner { margin-left: 0; }
+  .race-sub { flex-wrap: wrap; }
+  .race-date { margin-left: 0; padding-left: 0; border-left: 0; }
+}
+@media (max-width: 640px) {
+  .hero-news { height: 190px; }
+  .grid-news { padding: 0 16px 24px; }
+  .big-head { flex-wrap: wrap; gap: 12px; }
+  .big-icon { width: 40px; height: 40px; }
+  .big-title { font-size: 24px; }
+  .big-sub { font-size: 15px; }
+  .head-meta, .select-wrap { margin-left: 0; text-align: left; width: 100%; }
+  .select-wrap select { width: 100%; }
+  .head-meta small { justify-content: flex-start; }
+  .winner { grid-template-columns: 1fr; }
+  .race-body { flex-direction: column; align-items: stretch; }
+  .btn { white-space: nowrap; }
+}
+
+/* ---------- NEON-Lila ---------- */
+.nav a.active { color: #fff; text-shadow: 0 0 8px var(--neon), 0 0 18px var(--neon); }
+.nav a.active::after { background: #e9d4ff; box-shadow: 0 0 6px #fff, 0 0 12px var(--neon), 0 0 24px var(--neon), 0 0 40px var(--neon); }
+.nav a:hover { text-shadow: 0 0 10px var(--neon); }
+.card { border-color: rgba(168, 85, 255, .28); box-shadow: 0 10px 30px rgba(0, 0, 0, .45), 0 0 14px rgba(168, 85, 255, .08), inset 0 1px 0 rgba(255, 255, 255, .03); }
+.btn {
+  border-color: #c08cff;
+  box-shadow:
+    0 0 6px rgba(192, 140, 255, .9),
+    0 0 18px var(--neon),
+    0 0 42px rgba(168, 85, 255, .55),
+    inset 0 0 10px rgba(192, 140, 255, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .25);
+  text-shadow: 0 0 8px rgba(255, 255, 255, .6);
+}
+.btn:hover {
+  filter: brightness(1.15);
+  box-shadow:
+    0 0 8px #fff,
+    0 0 24px var(--neon),
+    0 0 60px rgba(168, 85, 255, .75),
+    inset 0 0 14px rgba(192, 140, 255, .5);
+}
+.brand-text { text-shadow: 0 0 8px var(--neon), 0 0 22px var(--neon), 2px 2px 0 var(--purple); }
+.hero-title { text-shadow: 4px 4px 0 var(--purple), 0 0 20px var(--neon), 0 0 50px var(--neon), 0 0 90px rgba(168, 85, 255, .6); }
+.hero-claim, .footer-claim, .brush-purple, .big-sub, .race-info svg, .head-icon, .big-icon,
+.cd-box span, .news-body time, .more, .arr, .dc-go, .chip-type, .rl-sub {
+  text-shadow: 0 0 6px rgba(168, 85, 255, .9), 0 0 16px rgba(168, 85, 255, .6);
+}
+.head-icon, .big-icon, .stat svg, .race-info svg, .race-facts svg { filter: drop-shadow(0 0 4px var(--neon)) drop-shadow(0 0 12px var(--neon)); }
+.cd-box { border-color: rgba(168, 85, 255, .35); box-shadow: inset 0 0 14px rgba(168, 85, 255, .12); }
+.cd-box span { text-shadow: 0 0 8px var(--neon), 0 0 22px var(--neon); }
+.news-title, .page-title { filter: drop-shadow(0 0 10px var(--neon)) drop-shadow(0 0 28px var(--neon)) drop-shadow(4px 4px 0 var(--purple)); }
+.rl-title { text-shadow: 3px 3px 0 var(--purple), 0 0 12px var(--neon), 0 0 30px var(--neon); }
+.track-svg { filter: drop-shadow(0 0 6px #d9b3ff) drop-shadow(0 0 16px var(--neon)) drop-shadow(0 0 30px var(--neon)); }
+.driver-card:hover, .bl-card:hover, .race-tile:hover, .g-tile:hover, .news-item:hover {
+  border-color: #c08cff;
+  box-shadow: 0 0 8px rgba(192, 140, 255, .7), 0 0 24px var(--neon), 0 0 50px rgba(168, 85, 255, .35);
+}
+.g-tab.active { border-color: #c08cff; box-shadow: 0 0 8px rgba(192, 140, 255, .9), 0 0 22px var(--neon), inset 0 0 10px rgba(192, 140, 255, .35); }
+.search input:focus, .filters select:focus, .select-wrap select:focus { border-color: #c08cff; box-shadow: 0 0 10px var(--neon); }
+  </style>
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="/"><img src="/images/logo-small.png" alt="JACKAL" onerror="this.onerror=null;this.src='/images/logo.png'"></a>
-  <nav class="nav">
-    <a href="/">HOME</a><a class="active" href="/news">NEWS</a><a href="/drivers">DRIVERS</a><a href="/rangliste">RANGLISTE</a><a href="/races">RACES</a><a href="/blacklist">BLACKLIST</a><a href="/gallery">GALLERY</a>
-  </nav>
-</header>
 
-<section class="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-content">
-    <h1 class="hero-title">NEWS</h1>
-    <div class="hero-sub">AKTUELLE NEUIGKEITEN</div>
-    <div class="hero-claim">WE ARE JACKAL. WE ARE RACING.</div>
-  </div>
-</section>
-
-<main class="main">
-  <div class="top-grid">
-    <section class="card ranking">
-      <div class="card-head">
-        <div class="head-icon"><svg viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 21h8M9 18h6"/></svg></div>
-        <div><div class="head-title">DIE BESTENLISTE</div><span class="head-sub">VOM LETZTEN RENNEN</span></div>
-        <div class="head-right"><div class="date" id="rankingDate">28. SEP 2026</div><div class="meta"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.4A2.4 2.4 0 1 1 12 6.6a2.4 2.4 0 0 1 0 4.8Z"/></svg><span id="rankingLocation">SANDY SHORES AIRFIELD</span></div></div>
+  <!-- ========== NAVIGATION ========== -->
+  <header class="topbar">
+    <a href="index.html" class="brand">
+      <div class="img-slot brand-slot" data-label="logo-small.png">
+        <img src="images/logo-small.png" alt="Jackal">
       </div>
-      <div class="ranking-table-wrap"><table class="ranking-table"><thead><tr><th>POS</th><th>FAHRER</th><th>TEAM</th><th>FAHRZEUG</th><th>ZEIT</th><th style="text-align:right">PKT</th></tr></thead><tbody id="rankingBody"></tbody></table></div>
-      <div class="ranking-foot"><a class="outline-btn" href="/rangliste">GESAMTE ERGEBNISSE ANZEIGEN <svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></div>
-    </section>
+      <span class="brand-text">Jackal</span>
+    </a>
 
-    <section class="card next">
-      <div class="next-bg" id="nextBg"></div>
-      <div class="next-content">
-        <div class="next-title-row"><div class="flag-icon"><svg viewBox="0 0 24 24"><path d="M5 21V3m0 1c4-3 7 3 13 0v9c-6 3-9-3-13 0"/></svg></div><div><div class="head-title">NÄCHSTES RENNEN</div></div><div class="next-date"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4" fill="none" stroke="currentColor" stroke-width="2"/></svg><div><div id="nextDate">12. OKT 2026</div><small id="nextDay">SAMSTAG, 20:00 UHR (MEZ)</small></div></div></div>
-        <div class="next-name" id="nextName">#016 – NIGHT CIRCUIT</div>
-        <div class="fact-list">
-          <div class="fact"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg><span id="nextLoc">VINEWOOD CIRCUIT<br>LOS SANTOS</span></div>
-          <div class="fact"><svg viewBox="0 0 24 24"><path d="M7 20l5-7 5 7M12 13V3m0 0-3 3m3-3 3 3" fill="none" stroke="currentColor" stroke-width="2"/></svg><span id="nextType">STREET RACE</span></div>
-          <div class="fact"><svg viewBox="0 0 24 24"><path d="M5 10h14M8 5h8M8 15h8M10 20h4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2"/></svg><span id="nextRounds">18 RUNDEN / 21,4 KM</span></div>
-          <div class="fact"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9A9 9 0 0 1 12 3Z"/></svg><span>NACHT / KLAR</span></div>
-          <div class="fact"><svg viewBox="0 0 24 24"><path d="M3 15h14l4 4H7l-4-4Zm4-5h9l2 5H5l2-5Zm2-4h4v4H9V6Z"/></svg><span>SPORTWAGEN</span></div>
-          <div class="fact"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8l8 8" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>KEINE AUSNAHMEN</span></div>
+    <button class="nav-toggle" aria-label="Menü öffnen">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="news.html" class="active">News</a>
+      <a href="drivers.html">Drivers</a>
+      <a href="rangliste.html">Rangliste</a>
+      <a href="races.html">Races</a>
+      <a href="blacklist.html">Blacklist</a>
+      <a href="gallery.html">Gallery</a>
+    </nav>
+
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero hero-news">
+    <div class="img-slot hero-bg" data-label="JACKAL Banner">
+      <img src="jackal-banner.png" alt="">
+    </div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1 class="news-title">News</h1>
+      <p class="hero-sub">Aktuelle Neuigkeiten</p>
+      <p class="hero-claim">We are Jackal. We are racing.</p>
+    </div>
+  </section>
+
+  <!-- ========== NEWS GRID ========== -->
+  <main class="grid-news">
+
+    <!-- DIE BESTENLISTE -->
+    <section class="card bestlist">
+      <div class="big-head">
+        <svg class="big-icon" viewBox="0 0 24 24"><path d="M6 2h12v2h4v3a5 5 0 0 1-4.6 5A6 6 0 0 1 13 15.9V18h3v4H8v-4h3v-2.1A6 6 0 0 1 6.6 12 5 5 0 0 1 2 7V4h4V2Zm0 4H4v1a3 3 0 0 0 2 2.8V6Zm12 0v3.8A3 3 0 0 0 20 7V6h-2Z"/></svg>
+        <div>
+          <h2 class="big-title">Die Bestenliste</h2>
+          <p class="big-sub">Vom letzten Rennen</p>
         </div>
-        <div class="track-wrap"><svg class="track" viewBox="0 0 260 190"><path d="M34 20C80 8 115 24 115 51c0 28-31 24-49 43-16 17 7 37 31 27 22-9 19-35 53-40 31-5 56 11 69 33"/><path d="M55 80c27 3 44 18 41 34-3 16-25 28-42 23"/><path d="M218 116h22" class="finish"/></svg></div>
-        <div class="next-foot"><a class="outline-btn next-btn" href="/races">EVENT DETAILS ANZEIGEN <svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></div>
+        <div class="head-meta">
+          28. Sep 2026
+          <small><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>Sandy Shores Airfield</small>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead>
+            <tr><th>Pos</th><th>Fahrer</th><th>Team</th><th>Fahrzeug</th><th>Zeit</th><th class="r">Pkt</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="pos pos-1">1</span></td><td class="driver"><span><span class="img-slot team-ico t-jackal" data-label="J"><img src="images/team-jackal.png" alt=""></span>Apex</span></td><td class="team t-jackal"><span><span class="img-slot team-ico t-jackal" data-label="J"><img src="images/team-jackal.png" alt=""></span>Team Jackal</span></td><td>Wenny Issi Sport</td><td class="time">03:12.451</td><td class="pts">25</td></tr>
+            <tr><td><span class="pos pos-2">2</span></td><td class="driver"><span><span class="img-slot team-ico t-nightshift" data-label="N"><img src="images/team-nightshift.png" alt=""></span>Shadow</span></td><td class="team t-nightshift"><span><span class="img-slot team-ico t-nightshift" data-label="N"><img src="images/team-nightshift.png" alt=""></span>Team Nightshift</span></td><td>Karin Sultan RS</td><td class="time">03:14.882</td><td class="pts">18</td></tr>
+            <tr><td><span class="pos pos-3">3</span></td><td class="driver"><span><span class="img-slot team-ico t-jackal" data-label="J"><img src="images/team-jackal.png" alt=""></span>Nova</span></td><td class="team t-jackal"><span><span class="img-slot team-ico t-jackal" data-label="J"><img src="images/team-jackal.png" alt=""></span>Team Jackal</span></td><td>Annis Elegy Retro</td><td class="time">03:15.209</td><td class="pts">15</td></tr>
+            <tr><td><span class="pos">4</span></td><td class="driver"><span><span class="img-slot team-ico t-velocity" data-label="V"><img src="images/team-velocity.png" alt=""></span>Blaze</span></td><td class="team t-velocity"><span><span class="img-slot team-ico t-velocity" data-label="V"><img src="images/team-velocity.png" alt=""></span>Team Velocity</span></td><td>Bravado Banshee</td><td class="time">03:16.114</td><td class="pts">12</td></tr>
+            <tr><td><span class="pos">5</span></td><td class="driver"><span><span class="img-slot team-ico t-nightshift" data-label="N"><img src="images/team-nightshift.png" alt=""></span>Onyx</span></td><td class="team t-nightshift"><span><span class="img-slot team-ico t-nightshift" data-label="N"><img src="images/team-nightshift.png" alt=""></span>Team Nightshift</span></td><td>Übermacht Sentinel</td><td class="time">03:17.001</td><td class="pts">10</td></tr>
+            <tr><td><span class="pos">6</span></td><td class="driver"><span><span class="img-slot team-ico t-jackal" data-label="J"><img src="images/team-jackal.png" alt=""></span>Raven</span></td><td class="team t-jackal"><span><span class="img-slot team-ico t-jackal" data-label="J"><img src="images/team-jackal.png" alt=""></span>Team Jackal</span></td><td>Dinka Jester RR</td><td class="time">03:17.556</td><td class="pts">8</td></tr>
+            <tr><td><span class="pos">7</span></td><td class="driver"><span><span class="img-slot team-ico t-velocity" data-label="V"><img src="images/team-velocity.png" alt=""></span>Lexi</span></td><td class="team t-velocity"><span><span class="img-slot team-ico t-velocity" data-label="V"><img src="images/team-velocity.png" alt=""></span>Team Velocity</span></td><td>Maibatsu EVO X</td><td class="time">03:18.334</td><td class="pts">6</td></tr>
+            <tr><td><span class="pos">8</span></td><td class="driver"><span><span class="img-slot team-ico t-phantom" data-label="P"><img src="images/team-phantom.png" alt=""></span>Zero</span></td><td class="team t-phantom"><span><span class="img-slot team-ico t-phantom" data-label="P"><img src="images/team-phantom.png" alt=""></span>Team Phantom</span></td><td>Vapid Dominator GT</td><td class="time">03:18.901</td><td class="pts">4</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-foot">
+        <a href="#" class="btn">Gesamte Ergebnisse anzeigen <svg class="btn-arrow arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
       </div>
     </section>
 
+    <!-- NÄCHSTES RENNEN -->
+    <section class="card race-card">
+      <div class="img-slot race-bg" data-label="race-bg.jpg">
+        <img src="images/race-bg.jpg" alt="">
+      </div>
+      <div class="race-fade"></div>
+
+      <div class="big-head">
+        <svg class="big-icon" viewBox="0 0 24 24"><path d="M4 2h2v1.2c3-1.4 5.5-.4 8 .6 2 .8 4 1.5 6-.1V14c-2.6 1.8-5 1-7.3.1-2.2-.8-4.4-1.6-6.7-.4V22H4V2Zm2 3.4v2.5c1.3-.5 2.6-.5 4-.2V5.2c-1.4-.3-2.7-.3-4 .2Zm4 2.3v2.6c1.4.3 2.7.8 4 1.3V9c-1.3-.5-2.6-1-4-1.3Zm4 1.3v2.6c1.4.5 2.7.8 4 .5V7.9c-1.3.4-2.6.1-4-.4V9Zm-8 1.6v2.6c1.3-.5 2.6-.6 4-.3v-2.6c-1.4-.3-2.7-.2-4 .3Zm4-2.9V5.2c1.4.3 2.7.8 4 1.3v2.6c-1.3-.5-2.6-1-4-1.4Z"/></svg>
+        <h2 class="big-title">Nächstes Rennen</h2>
+      </div>
+
+      <div class="race-sub">
+        <span class="race-name">#016 – Night Circuit</span>
+        <div class="race-date">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <div>12. Okt 2026<small>Samstag, 20:00 Uhr (MEZ)</small></div>
+        </div>
+      </div>
+
+      <div class="race-body">
+        <ul class="race-facts">
+          <li><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg><span>Vinewood Circuit<br>Los Santos</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M11 7 6 17M13 7l5 10M7 19h10"/></svg><span>Street Race</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="M3 20 9 9l3 5 3-3 6 9H3Z"/></svg><span>18 Runden / 21,4 km</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="M14.5 2A9 9 0 1 0 22 14.5 7 7 0 0 1 14.5 2Z"/></svg><span>Nacht / Klar</span></li>
+          <li><svg viewBox="0 0 24 24"><path d="M5 11 7 6h10l2 5h1a1 1 0 0 1 1 1v5h-2v2h-3v-2H8v2H5v-2H3v-5a1 1 0 0 1 1-1h1Zm2.2 0h9.6l-1.2-3H8.4l-1.2 3ZM6.5 15a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm11 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg><span>Sportwagen</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg><span>Keine Ausnahmen</span></li>
+        </ul>
+        <div class="race-track">
+          <svg class="track-svg" viewBox="0 0 240 150" fill="none">
+            <path d="M40 92c-8-10-4-22 8-28l40-22c10-6 22-6 30 2l10 10c6 6 4 14-2 20l-6 6c-4 5-2 12 4 14l40 10c10 3 16 12 14 22l-4 10c-3 7-11 10-18 7l-94-30c-8-3-16-12-22-21Z" stroke="#e8d6ff" stroke-width="5" stroke-linejoin="round"/>
+            <path d="M40 92c-8-10-4-22 8-28l40-22c10-6 22-6 30 2l10 10c6 6 4 14-2 20l-6 6c-4 5-2 12 4 14l40 10c10 3 16 12 14 22l-4 10c-3 7-11 10-18 7l-94-30c-8-3-16-12-22-21Z" stroke="#b06cff" stroke-width="2" stroke-linejoin="round"/>
+            <g transform="translate(182 120) rotate(-15)">
+              <rect width="18" height="12" fill="#fff"/>
+              <path d="M0 0h4.5v4H0zM9 0h4.5v4H9zM4.5 4H9v4H4.5zM13.5 4H18v4h-4.5zM0 8h4.5v4H0zM9 8h4.5v4H9z" fill="#111"/>
+              <path d="M0 0v20" stroke="#fff" stroke-width="1.5"/>
+            </g>
+          </svg>
+          <a href="#" class="btn btn-sm">Event Details anzeigen <svg class="btn-arrow arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ÄNDERUNGEN -->
     <section class="card changes">
-      <div class="card-head"><div class="head-icon"><svg viewBox="0 0 24 24"><path d="M9 4h6v3h4v13H5V7h4V4Zm0 0v3m6-3v3"/></svg></div><div><div class="head-title">ÄNDERUNGEN</div><span class="head-sub">BLACKLIST &amp; REGELN</span></div></div>
-      <div class="change-block change-red"><div class="change-head"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 8 8 8"/></svg><h3>BLACKLIST UPDATE</h3><time>30. SEP 2026</time></div><ul class="change-list" id="blacklistChanges"><li>Überhöhte Beschleunigung (Meta) – jetzt verboten</li><li>Annis 300R und Declasse Vigero jetzt betroffen</li><li>T20 – Gewichtsreduktion unter Mindestwert untersagt</li></ul><a class="change-link" href="/blacklist">ZUR AKTUELLEN BLACKLIST&nbsp; →</a></div>
-      <div class="change-block change-blue"><div class="change-head"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M7 7h10M7 11h10M7 15h6"/></svg><h3>REGELWERK UPDATE</h3><time>27. SEP 2026</time></div><ul class="change-list"><li>Neue Regel: Berührungen in Startzone = +5 Sekunden</li><li>Checkpoint-Cut: 3 Verwarnungen = Disqualifikation</li><li>Rundenlimit bei technischen Problemen präzisiert</li></ul><a class="change-link" href="#">ZU DEN REGELN&nbsp; →</a></div>
+      <div class="big-head">
+        <svg class="big-icon" viewBox="0 0 24 24"><path d="m13.8 2 .5 2.6c.7.2 1.3.5 1.9.9l2.4-1.2 2.1 2.1-1.2 2.4c.4.6.7 1.2.9 1.9l2.6.5v3l-2.6.5c-.2.7-.5 1.3-.9 1.9l1.2 2.4-2.1 2.1-2.4-1.2c-.6.4-1.2.7-1.9.9l-.5 2.6h-3l-.5-2.6c-.7-.2-1.3-.5-1.9-.9l-2.4 1.2-2.1-2.1 1.2-2.4c-.4-.6-.7-1.2-.9-1.9L2 13.5v-3l2.6-.5c.2-.7.5-1.3.9-1.9L4.3 5.7l2.1-2.1 2.4 1.2c.6-.4 1.2-.7 1.9-.9l.5-2.6h3ZM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></svg>
+        <div>
+          <h2 class="big-title">Änderungen</h2>
+          <p class="big-sub">Blacklist &amp; Regeln</p>
+        </div>
+      </div>
+
+      <div class="changes-list">
+        <article class="change change-red">
+          <div class="change-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>
+            <h3>Blacklist Update</h3>
+            <time>30. Sep 2026</time>
+          </div>
+          <ul>
+            <li>Überhöhte Beschleunigung (Meta) – jetzt verboten</li>
+            <li>Annis 300R und Declasse Vigero jetzt betroffen</li>
+            <li>T20 – Gewichtsreduktion unter Mindestwert untersagt</li>
+          </ul>
+          <a href="#" class="change-link">Zur aktuellen Blacklist <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+        </article>
+
+        <article class="change change-blue">
+          <div class="change-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/></svg>
+            <h3>Regelwerk Update</h3>
+            <time>27. Sep 2026</time>
+          </div>
+          <ul>
+            <li>Neue Regel: Berührungen in Startzone = +5 Sekunden</li>
+            <li>Checkpoint-Cut: 3 Verwarnungen = Disqualifikation</li>
+            <li>Rundenlimit bei technischen Problemen präzisiert</li>
+          </ul>
+          <a href="#" class="change-link">Zu den Regeln <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+        </article>
+      </div>
     </section>
-  </div>
 
-  <div class="bottom-grid">
-    <section class="card hearts">
-      <div class="heart-left"><div class="heart-image"></div><div class="heart-content"><div class="heart-mark"><svg viewBox="0 0 24 24"><path d="M12 21S4 15 4 9a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 6-6 11-6 11Z"/></svg></div><div class="heart-title">SIEGER DER HERZEN</div><div class="heart-sub">VOM LETZTEN RENNEN</div></div><div class="winner"><div class="winner-name">♛ <span id="heartWinner">Apex</span></div><div class="winner-team" id="heartTeam">TEAM JACKAL</div><p class="winner-copy">„Saubere Lines, starker Fight und bis zum Schluss maximaler Einsatz – genau das lieben wir an dir!“</p><a class="outline-btn" href="/drivers">ZUR FAHRERSEITE →</a></div></div>
-      <div class="poll"><div class="poll-head">JETZT ABSTIMMEN!</div><div class="poll-q">Wer war dein Sieger der Herzen?</div><div class="poll-list"><div class="poll-option active"><span class="poll-radio"></span><span>Apex</span><span class="poll-pct">44%</span></div><div class="poll-option"><span class="poll-radio"></span><span>Shadow</span><span class="poll-pct">26%</span></div><div class="poll-option"><span class="poll-radio"></span><span>Nova</span><span class="poll-pct">16%</span></div><div class="poll-option"><span class="poll-radio"></span><span>Blaze</span><span class="poll-pct">9%</span></div><div class="poll-option"><span class="poll-radio"></span><span>Onyx</span><span class="poll-pct">5%</span></div></div><button class="poll-btn" type="button">ABSTIMMUNG ABSENDEN</button></div>
-    </section>
+    <div class="row-2">
+      <!-- SIEGER DER HERZEN -->
+      <section class="card hearts">
+        <div class="hearts-left">
+          <div class="big-head">
+            <svg class="big-icon" viewBox="0 0 24 24"><path d="M12 21s-8-5.2-10-10.3C.6 6.9 3 3 6.8 3c2.2 0 3.9 1.2 5.2 3 1.3-1.8 3-3 5.2-3C21 3 23.4 6.9 22 10.7 20 15.8 12 21 12 21Z"/></svg>
+            <div>
+              <h2 class="big-title">Sieger der Herzen</h2>
+              <p class="big-sub">Vom letzten Rennen</p>
+            </div>
+          </div>
+          <div class="winner">
+            <div class="img-slot winner-img" data-label="sieger-herzen.jpg">
+              <img src="images/sieger-herzen.jpg" alt="">
+            </div>
+            <span class="winner-tag">Gewinner</span>
+            <div class="winner-info">
+              <div class="winner-name">
+                <svg viewBox="0 0 24 24"><path d="m2 7 5 4 5-7 5 7 5-4-2 12H4L2 7Zm2 14h16v2H4v-2Z"/></svg>
+                Apex
+              </div>
+              <div class="winner-team t-jackal">
+                <span class="img-slot team-ico" data-label="J"><img src="images/team-jackal.png" alt=""></span>
+                Team Jackal
+              </div>
+              <p class="winner-quote">„Saubere Lines, starker Fight und bis zum Schluss maximaler Einsatz – genau das lieben wir an dir!“</p>
+              <a href="#" class="btn btn-sm">Zur Fahrerseite <svg class="btn-arrow arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+            </div>
+          </div>
+        </div>
 
-    <section class="card laps">
-      <div class="lap-head"><div class="lap-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2M7 3 5 5M17 3l2 2"/></svg></div><div><div class="lap-title">NEUESTE RUNDENZEITEN</div><div class="lap-sub">TOP 5 – VOM LETZTEN RENNEN (QUALIFYING &amp; RENNEN)</div></div><div class="lap-filter">ALLE FAHRZEUGE</div></div>
-      <div class="laps-table"><table><thead><tr><th>POS</th><th>FAHRER</th><th>FAHRZEUG</th><th>BESTE RUNDE</th><th>RENNEN</th><th>DIFFERENZ</th></tr></thead><tbody id="lapsBody"></tbody></table></div><div class="laps-foot"><a class="outline-btn laps-btn" href="/races">ALLE RUNDENZEITEN ANZEIGEN →</a></div>
-    </section>
-  </div>
-</main>
+        <form class="poll" id="poll">
+          <div class="poll-head">Jetzt abstimmen!</div>
+          <p class="poll-q">Wer war dein Sieger der Herzen?</p>
+          <ul class="poll-list">
+            <li><label class="poll-opt"><input type="radio" name="vote" value="Apex" checked><span class="bar" style="width:44%"></span><span class="radio"></span><span class="label">Apex</span><span class="pct">44%</span></label></li>
+            <li><label class="poll-opt"><input type="radio" name="vote" value="Shadow"><span class="bar" style="width:26%"></span><span class="radio"></span><span class="label">Shadow</span><span class="pct">26%</span></label></li>
+            <li><label class="poll-opt"><input type="radio" name="vote" value="Nova"><span class="bar" style="width:16%"></span><span class="radio"></span><span class="label">Nova</span><span class="pct">16%</span></label></li>
+            <li><label class="poll-opt"><input type="radio" name="vote" value="Blaze"><span class="bar" style="width:9%"></span><span class="radio"></span><span class="label">Blaze</span><span class="pct">9%</span></label></li>
+            <li><label class="poll-opt"><input type="radio" name="vote" value="Onyx"><span class="bar" style="width:5%"></span><span class="radio"></span><span class="label">Onyx</span><span class="pct">5%</span></label></li>
+          </ul>
+          <div class="poll-foot">
+            <button type="submit" class="btn">Abstimmung absenden</button>
+            <p class="poll-thanks">Danke für deine Stimme!</p>
+          </div>
+        </form>
+      </section>
 
-<footer class="footer"><span>JACKAL RACING LEAGUE</span><span class="footer-center">WE ARE JACKAL. WE ARE RACING.</span><span class="footer-right">LOS SANTOS · EST. 2026</span></footer>
+      <!-- NEUESTE RUNDENZEITEN -->
+      <section class="card laps">
+        <div class="big-head">
+          <svg class="big-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="14" r="8"/><path d="M12 10v4l2.5 2M9 2h6M12 2v4M19 6l1.5-1.5" stroke-linecap="round"/></svg>
+          <div>
+            <h2 class="big-title">Neueste Rundenzeiten</h2>
+            <p class="big-sub">Top 5 – vom letzten Rennen (Qualifying &amp; Rennen)</p>
+          </div>
+          <div class="select-wrap">
+            <select id="lapFilter" aria-label="Fahrzeug filtern">
+              <option value="">Alle Fahrzeuge</option>
+              <option>Wenny Issi Sport</option>
+              <option>Karin Sultan RS</option>
+              <option>Annis Elegy Retro</option>
+              <option>Bravado Banshee</option>
+              <option>Übermacht Sentinel</option>
+            </select>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
 
+        <div class="table-wrap">
+          <table class="tbl" id="lapTable">
+            <thead>
+              <tr><th>Pos</th><th>Fahrer</th><th>Fahrzeug</th><th>Beste Runde</th><th>Rennen</th><th>Differenz</th></tr>
+            </thead>
+            <tbody>
+              <tr data-car="Wenny Issi Sport"><td><span class="pos pos-1">1</span></td><td class="driver"><span><span class="img-slot team-ico t-jackal" data-label="J"><img src="images/team-jackal.png" alt=""></span>Apex</span></td><td>Wenny Issi Sport</td><td class="time">03:12.451</td><td class="time">03:12.451</td><td>–</td></tr>
+              <tr data-car="Karin Sultan RS"><td><span class="pos pos-2">2</span></td><td class="driver"><span><span class="img-slot team-ico t-nightshift" data-label="N"><img src="images/team-nightshift.png" alt=""></span>Shadow</span></td><td>Karin Sultan RS</td><td class="time">03:12.998</td><td class="time">03:14.882</td><td>+2,431</td></tr>
+              <tr data-car="Annis Elegy Retro"><td><span class="pos pos-3">3</span></td><td class="driver"><span><span class="img-slot team-ico t-jackal" data-label="J"><img src="images/team-jackal.png" alt=""></span>Nova</span></td><td>Annis Elegy Retro</td><td class="time">03:13.221</td><td class="time">03:15.209</td><td>+2,758</td></tr>
+              <tr data-car="Bravado Banshee"><td><span class="pos">4</span></td><td class="driver"><span><span class="img-slot team-ico t-velocity" data-label="V"><img src="images/team-velocity.png" alt=""></span>Blaze</span></td><td>Bravado Banshee</td><td class="time">03:13.998</td><td class="time">03:16.114</td><td>+3,663</td></tr>
+              <tr data-car="Übermacht Sentinel"><td><span class="pos">5</span></td><td class="driver"><span><span class="img-slot team-ico t-nightshift" data-label="N"><img src="images/team-nightshift.png" alt=""></span>Onyx</span></td><td>Übermacht Sentinel</td><td class="time">03:14.551</td><td class="time">03:17.001</td><td>+4,550</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-foot">
+          <a href="#" class="btn">Alle Rundenzeiten anzeigen <svg class="btn-arrow arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <span>Jackal Racing League</span>
+    <span class="footer-claim">We are Jackal. We are racing.</span>
+    <span>Los Santos &middot; Est. 2026</span>
+  </footer>
+
+  
 <script>
 (function(){
-  const fallbackRanking=[
-    {place:1,name:'Apex',team:'TEAM JACKAL',car:'Wenny Issi Sport',best_lap:'03:12.451',time:'03:12.451',points:25},
-    {place:2,name:'Shadow',team:'TEAM NIGHTSHIFT',car:'Karin Sultan RS',best_lap:'03:12.998',time:'03:14.882',points:18},
-    {place:3,name:'Nova',team:'TEAM JACKAL',car:'Annis Elegy Retro',best_lap:'03:13.221',time:'03:15.209',points:15},
-    {place:4,name:'Blaze',team:'TEAM VELOCITY',car:'Bravado Banshee',best_lap:'03:13.998',time:'03:16.114',points:12},
-    {place:5,name:'Onyx',team:'TEAM NIGHTSHIFT',car:'Ubermacht Sentinel',best_lap:'03:14.551',time:'03:17.001',points:10},
-    {place:6,name:'Raven',team:'TEAM JACKAL',car:'Dinka Jester RR',best_lap:'03:14.900',time:'03:17.556',points:8},
-    {place:7,name:'Lexi',team:'TEAM VELOCITY',car:'Maibatsu EVO X',best_lap:'03:15.120',time:'03:18.334',points:6},
-    {place:8,name:'Zero',team:'TEAM PHANTOM',car:'Vapid Dominator GT',best_lap:'03:15.442',time:'03:18.901',points:4}
-  ];
-  const fallbackLaps=fallbackRanking.slice(0,5).map((r,i)=>({...r,diff:i?`+${['2,431','2,758','3,663','4,550'][i-1]}`:'–'}));
-  const teamClass=t=>{const s=String(t||'').toLowerCase();if(s.includes('night'))return 'nightshift';if(s.includes('velocity'))return 'velocity';if(s.includes('phantom'))return 'phantom';return 'jackal'};
-  const escape=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-  const formatDate=v=>{const s=String(v||'').slice(0,10),m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}. ${['JAN','FEB','MÄR','APR','MAI','JUN','JUL','AUG','SEP','OKT','NOV','DEZ'][Number(m[2])-1]} ${m[1]}`:s};
-  function renderRanking(rows){
-    const body=document.getElementById('rankingBody'); body.innerHTML=rows.slice(0,8).map((r,i)=>`<tr><td><span class="pos ${i<3?'pos-'+(i+1):''}">${i+1}</span></td><td><span class="driver-line"><span class="driver-dot">${escape(String(r.name||'?').slice(0,1))}</span><span class="driver">${escape(r.name||'–')}</span></span></td><td><span class="team ${teamClass(r.team)}">${escape(r.team||'–')}</span></td><td class="car">${escape(r.car||r.vehicle||'–')}</td><td class="time">${escape(r.time||r.best_lap||'–')}</td><td class="pts">${Number(r.points)||0}</td></tr>`).join('');
+
+function escapeHtml(value){
+  return String(value ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+function imageSlot(url, label, alt='', cls=''){
+  if(url){
+    return `<div class="img-slot ${cls}" data-label="${escapeHtml(label)}"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}"></div>`;
   }
-  function renderLaps(rows){
-    const body=document.getElementById('lapsBody'); body.innerHTML=rows.slice(0,5).map((r,i)=>`<tr><td><span class="pos ${i<3?'pos-'+(i+1):''}">${i+1}</span></td><td class="lap-driver">${escape(r.name||'–')}</td><td>${escape(r.car||r.vehicle||'–')}</td><td class="lap-time">${escape(r.best_lap||r.bestlap||r.time||'–')}</td><td class="lap-time">${escape(r.time||'–')}</td><td class="diff pos">${escape(r.diff|| (i?`+${['2,431','2,758','3,663','4,550'][i-1]}`:'–'))}</td></tr>`).join('');
+  return `<div class="img-slot ${cls}" data-label="${escapeHtml(label)}"></div>`;
+}
+
+function wireImageSlots(root=document){
+  root.querySelectorAll('.img-slot img').forEach(function(img){
+    var slot = img.closest('.img-slot');
+    function ok(){ if(slot){ slot.classList.add('loaded'); slot.classList.remove('missing'); } }
+    function fail(){ if(slot){ slot.classList.add('missing'); slot.classList.remove('loaded'); } }
+    if(img.complete) img.naturalWidth > 0 ? ok() : fail();
+    img.addEventListener('load', ok);
+    img.addEventListener('error', fail);
+  });
+}
+
+async function loadJackalData(){
+  if(window.__JACKAL_DATA_PROMISE) return window.__JACKAL_DATA_PROMISE;
+  window.__JACKAL_DATA_PROMISE = fetch('/api/public/data', {cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('Website-Daten konnten nicht geladen werden.'); return r.json(); })
+    .then(function(d){ if(!d.ok) throw new Error(d.error || 'Website-Daten konnten nicht geladen werden.'); window.__JACKAL_DATA=d; return d; });
+  return window.__JACKAL_DATA_PROMISE;
+}
+
+function raceDateTime(race){
+  if(!race || !race.date) return null;
+  var time = race.time || '00:00';
+  var d = new Date(String(race.date).slice(0,10) + 'T' + String(time).slice(0,5) + ':00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDateDe(value){
+  if(!value) return '—';
+  var raw=String(value).slice(0,10);
+  var m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return String(value);
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
+function formatDateShort(value){
+  if(!value) return '—';
+  var raw=String(value).slice(0,10);
+  var m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return String(value);
+  var months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  return `${m[3]}. ${months[Number(m[2])-1] || m[2]} ${m[1]}`;
+}
+
+function isPastRace(race){
+  var d=raceDateTime(race);
+  return d ? d.getTime() < Date.now() : !Number(race && race.is_next);
+}
+
+function driverMap(data){
+  var map=new Map();
+  (data.drivers || []).forEach(function(d){ map.set(String(d.id),d); });
+  return map;
+}
+
+  function teamIcon(team){var label=(String(team||'K').trim()[0]||'K').toUpperCase();return `<span class="img-slot team-ico" data-label="${escapeHtml(label)}"></span>`;}
+  function render(data){
+    var dmap=driverMap(data);
+    var past=(data.races||[]).filter(isPastRace).sort(function(a,b){return (raceDateTime(b)?.getTime()||0)-(raceDateTime(a)?.getTime()||0);});
+    var latest=past[0]||null;
+    var latestResults=(data.results||[]).filter(function(r){return latest&&String(r.race_id)===String(latest.id);}).sort(function(a,b){return (Number(a.position)||999)-(Number(b.position)||999);});
+    var bestBody=document.querySelector('.bestlist tbody');
+    if(bestBody){bestBody.innerHTML=latestResults.slice(0,8).map(function(r,i){var d=dmap.get(String(r.driver_id));return `<tr><td><span class="pos ${i<3?'pos-'+(i+1):''}">${escapeHtml(String(r.position??i+1))}</span></td><td class="driver"><span>${teamIcon(d?.team)}${escapeHtml(d?.name||'Unbekannter Fahrer')}</span></td><td class="team"><span>${teamIcon(d?.team)}${escapeHtml(d?.team||'—')}</span></td><td>${escapeHtml(r.vehicle||r.car||d?.car||'—')}</td><td class="time">${escapeHtml(r.time||r.best_lap||r.bestlap||'—')}</td><td class="pts">${escapeHtml(String(r.points??'—'))}</td></tr>`;}).join('') || '<tr><td colspan="6">Keine Rennergebnisse vorhanden.</td></tr>';wireImageSlots(bestBody);}
+    var raceCard=document.querySelector('.race-card');
+    if(raceCard && latest){raceCard.querySelector('.race-bg').innerHTML=latest.image_url?`<img src="${escapeHtml(latest.image_url)}" alt="${escapeHtml(latest.name||'')}">`:'';raceCard.querySelector('.big-title').textContent='Nächstes Rennen';raceCard.querySelector('.race-name').textContent=latest.name||'Rennen';raceCard.querySelector('.race-date div').innerHTML=`${escapeHtml(formatDateShort(latest.date))}<small>${escapeHtml(latest.time||'—')} Uhr</small>`;raceCard.querySelector('.race-facts').innerHTML=`<li><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg><span>${escapeHtml(latest.location||'—')}</span></li><li><svg viewBox="0 0 24 24"><path d="M3 20 9 9l3 5 3-3 6 9H3Z"/></svg><span>${escapeHtml(String(latest.description||'').slice(0,90)||'Rennen')}</span></li>`;var btn=raceCard.querySelector('.race-track .btn');if(btn){btn.href='index.html';btn.textContent='Race Details';}wireImageSlots(raceCard);}
+    var changes=document.querySelector('.changes');if(changes){var title=changes.querySelector('.big-title');if(title)title.textContent='Neueste News';var sub=changes.querySelector('.big-sub');if(sub)sub.textContent='Aktuelle Neuigkeiten';var list=changes.querySelector('.changes-list');var items=(data.news||[]).slice().sort(function(a,b){return String(b.date||b.created_at||'').localeCompare(String(a.date||a.created_at||''));}).slice(0,2);if(list)list.innerHTML=items.map(function(n){return `<article class="change change-${n.category==='Blacklist'?'red':'blue'}"><div class="change-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><h3>${escapeHtml(n.title||'News')}</h3><time>${escapeHtml(formatDateShort(n.date||n.created_at))}</time></div><ul><li>${escapeHtml(String(n.text||n.content||'').slice(0,220))}</li></ul><a class="change-link" href="news.html">Mehr lesen <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></article>`;}).join('');}
+    var lapTable=document.querySelector('#lapTable tbody');if(lapTable){var opts=document.getElementById('lapFilter');if(opts){opts.innerHTML='<option value="">Alle Fahrzeuge</option>';[...new Set(latestResults.map(function(r){return r.vehicle||r.car||dmap.get(String(r.driver_id))?.car||'';}).filter(Boolean))].forEach(function(v){opts.add(new Option(v,v));});}lapTable.innerHTML=latestResults.slice(0,5).map(function(r,i){var d=dmap.get(String(r.driver_id));var car=r.vehicle||r.car||d?.car||'—';return `<tr data-car="${escapeHtml(car)}"><td><span class="pos ${i<3?'pos-'+(i+1):''}">${escapeHtml(String(r.position??i+1))}</span></td><td class="driver"><span>${teamIcon(d?.team)}${escapeHtml(d?.name||'—')}</span></td><td>${escapeHtml(car)}</td><td class="time">${escapeHtml(r.best_lap||r.bestlap||r.time||'—')}</td><td class="time">${escapeHtml(r.time||'—')}</td><td>–</td></tr>`;}).join('');if(opts)opts.onchange=function(){lapTable.querySelectorAll('tr').forEach(function(tr){tr.style.display=!opts.value||tr.dataset.car===opts.value?'':'none';});};}
   }
-  renderRanking(fallbackRanking); renderLaps(fallbackLaps);
-  fetch('/api/public/data',{cache:'no-store'}).then(r=>r.json()).then(data=>{
-    const ranking=Array.isArray(data.ranking)?data.ranking:[]; if(ranking.length){renderRanking(ranking);renderLaps(ranking.slice(0,5)); const champ=ranking[0]; if(champ){document.getElementById('heartWinner').textContent=champ.name||'Apex';document.getElementById('heartTeam').textContent=champ.team||'TEAM JACKAL'}}
-    const n=data.nextRace; if(n){document.getElementById('nextName').textContent=n.name||n.title||document.getElementById('nextName').textContent;document.getElementById('nextLoc').innerHTML=escape(n.location||'LOS SANTOS')+'<br>SANDY SHORES AIRFIELD';document.getElementById('nextDate').textContent=formatDate(n.date);document.getElementById('nextDay').textContent=(n.time||'20:00')+' UHR (MEZ)';if(n.image_url)document.getElementById('nextBg').style.backgroundImage=`url('${String(n.image_url).replace(/'/g,"%27")}')`;}
-    const first=(data.races||[]).find(r=>Number(r.is_next)===1); if(!n&&first){if(first.image_url)document.getElementById('nextBg').style.backgroundImage=`url('${String(first.image_url).replace(/'/g,"%27")}')`;}
-  }).catch(()=>{});
+  function init(){loadJackalData().then(render).catch(console.error);wireImageSlots();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
+
 </body>
 </html>
