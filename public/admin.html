@@ -3253,19 +3253,6 @@ document
     closeBlacklistModal
   );
 
-document
-  .getElementById("blacklistModal")
-  ?.addEventListener(
-    "click",
-    event => {
-      if(
-        event.target ===
-        document.getElementById("blacklistModal")
-      ){
-        closeBlacklistModal();
-      }
-    }
-  );
 
 document
   .getElementById("blacklistTable")
@@ -3950,21 +3937,6 @@ document
     closeRankingModal
   );
 
-document
-  .getElementById("rankingModal")
-  ?.addEventListener(
-    "click",
-    event => {
-      if(
-        event.target ===
-        document.getElementById(
-          "rankingModal"
-        )
-      ){
-        closeRankingModal();
-      }
-    }
-  );
 
 document
   .getElementById("rankingTable")
@@ -4280,21 +4252,6 @@ document
   );
 
 
-permissionsModal.addEventListener(
-  "click",
-  event => {
-
-    if(
-      event.target ===
-      permissionsModal
-    ){
-
-      closePermissions();
-
-    }
-
-  }
-);
 
 
 /* =========================================================
@@ -5159,10 +5116,11 @@ document.addEventListener("click",event=>{
   const del=event.target.closest(".crud-delete");if(del){deleteCrudRow(del.dataset.resource,del.dataset.id);}
 });
 
+/* Modals schließen absichtlich NICHT mehr per Klick auf den Hintergrund.
+   Schließen ist nur über X, Abbrechen oder Speichern möglich. */
 document.getElementById("crudForm").addEventListener("submit",saveCrudForm);
 document.getElementById("crudModalClose").addEventListener("click",closeCrudModal);
 document.getElementById("crudModalCancel").addEventListener("click",closeCrudModal);
-document.getElementById("crudModal").addEventListener("click",event=>{if(event.target===document.getElementById("crudModal"))closeCrudModal();});
 
 document.addEventListener("change",event=>{
   const input=event.target.closest('input[type="file"][name="__image_file"]');
