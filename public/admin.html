@@ -922,6 +922,42 @@ button,input,textarea,select{font-family:var(--f-body);}
 @media(max-width:960px){#adminApp>.admin-topbar{flex-wrap:wrap;height:auto;min-height:56px;padding:7px 16px;}.admin-topbar .menu{order:3;flex-basis:100%;justify-content:flex-start;border-top:1px solid rgba(42,35,66,.7);}.admin-topbar .menu button{padding:12px 11px;}.hero-admin{height:250px;}.admin-dashboard-grid{grid-template-columns:1fr;}.admin-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:700px){.page{padding:0 12px 22px;}.hero-admin{height:220px;}.hero-admin .hero-title{font-size:clamp(48px,16vw,82px);}.hero-admin .hero-sub{font-size:11px;letter-spacing:.22em;}.stats{grid-template-columns:repeat(2,minmax(0,1fr));}.dashboard-preview-body{grid-template-columns:1fr;}.preview-media{min-height:175px;}.admin-quick-grid{grid-template-columns:1fr;}.crud-toolbar,.ranking-toolbar,.user-toolbar{align-items:flex-start;flex-direction:column;}.form-grid,.crud-form,.ranking-modal-grid{grid-template-columns:1fr;}.form-grid .full,.crud-form .full,.ranking-modal-grid .full{grid-column:auto;}.admin-top-actions{margin-left:auto;}.admin-topbar .logout{font-size:11px;padding:8px 10px;}}
 @media(max-width:480px){.stats{grid-template-columns:1fr;}.admin-topbar .brand-text{font-size:26px;}.admin-chip{display:none;}.hero-admin{height:200px;}}
+
+.news-admin-head{overflow:hidden;}
+.news-admin-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0;}
+.news-admin-stat{border:1px solid #27213a;background:linear-gradient(135deg,rgba(35,26,58,.72),rgba(12,10,22,.86));border-radius:10px;padding:12px 14px;position:relative;overflow:hidden;}
+.news-admin-stat:after{content:"";position:absolute;right:-25px;top:-25px;width:70px;height:70px;border-radius:50%;background:rgba(168,85,255,.10);filter:blur(4px);}
+.news-admin-stat span{display:block;font-size:9px;letter-spacing:1.4px;color:#777080;font-weight:800;}
+.news-admin-stat strong{display:block;margin-top:3px;font-size:24px;color:#f2eefc;font-family:'Rajdhani',sans-serif;}
+.news-admin-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 4px;}
+.news-filter-tabs{display:flex;gap:7px;flex-wrap:wrap;}
+.news-filter{border:1px solid #302744;background:#0e0b18;color:#aaa1bb;border-radius:7px;padding:8px 11px;font-size:10px;font-weight:800;letter-spacing:.7px;cursor:pointer;}
+.news-filter:hover,.news-filter.active{border-color:#8d39e9;color:#fff;background:linear-gradient(135deg,#3b1467,#171022);box-shadow:0 0 14px rgba(168,85,255,.18);}
+.news-search{width:250px;border:1px solid #2b2440;background:#0b0913;color:#eee;border-radius:7px;padding:10px 12px;font:600 11px 'Rajdhani',sans-serif;outline:none;}
+.news-search:focus{border-color:#8d39e9;box-shadow:0 0 0 2px rgba(168,85,255,.10);}
+.news-table-wrap{overflow:auto;border:1px solid #29223b;border-radius:8px;}
+.news-table{width:100%;border-collapse:collapse;min-width:850px;}
+.news-table th{padding:11px 12px;text-align:left;font-size:9px;color:#6f687d;letter-spacing:1px;border-bottom:1px solid #282239;}
+.news-table td{padding:11px 12px;border-bottom:1px solid #191522;font-size:11px;color:#c6c0d0;vertical-align:middle;}
+.news-table tr:last-child td{border-bottom:0;}
+.news-table tr:hover td{background:rgba(118,49,186,.05);}
+.news-thumb{width:74px;height:43px;object-fit:cover;border-radius:5px;border:1px solid #34284c;display:block;background:#080610;}
+.news-title-cell{font-weight:800;color:#eee;max-width:300px;}
+.news-title-cell small{display:block;color:#6e6878;margin-top:3px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;}
+.news-tag{display:inline-flex;padding:4px 7px;border-radius:5px;border:1px solid #56307a;background:rgba(103,38,153,.13);color:#d2a5ff;font-size:8px;font-weight:900;letter-spacing:.8px;}
+.news-status{display:inline-flex;padding:4px 7px;border-radius:5px;font-size:8px;font-weight:900;letter-spacing:.8px;}
+.news-status.active{color:#9ff4c1;border:1px solid #205a3a;background:rgba(35,143,81,.12);}
+.news-status.draft{color:#f1ca77;border:1px solid #6c5120;background:rgba(180,125,25,.12);}
+.news-status.off{color:#a9a3b0;border:1px solid #3b3743;background:rgba(90,86,100,.10);}
+.news-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+.news-modal-grid .full{grid-column:1/-1;}
+.news-modal-help{font-size:9px;color:#6e6878;line-height:1.5;margin-top:5px;}
+.news-image-preview{max-width:100%;height:170px;object-fit:cover;border-radius:7px;border:1px solid #33294a;margin-top:10px;display:none;background:#080610;}
+.news-image-box{border:1px dashed #4c2870;background:#0b0913;border-radius:8px;padding:11px;}
+.news-image-box input[type=file]{margin-top:8px;width:100%;font-size:10px;color:#8f879c;}
+.news-char-count{font-size:9px;color:#625c6d;text-align:right;margin-top:4px;}
+@media(max-width:900px){.news-admin-stats{grid-template-columns:repeat(2,1fr)}.news-admin-toolbar{align-items:stretch;flex-direction:column}.news-search{width:100%}.news-modal-grid{grid-template-columns:1fr}.news-modal-grid .full{grid-column:auto}}
+
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/></head>
 <body>
@@ -1098,14 +1134,38 @@ button,input,textarea,select{font-family:var(--f-body);}
 </div>
 </section>
 <section class="page crud-page" data-resource="news" id="page-news">
-<div class="card">
-<div class="card-header">
-<div><h2>News verwalten</h2><span>Neuigkeiten erstellen, bearbeiten und löschen</span></div>
-<button class="action-button crud-create-button" data-resource="news">+ Neue News</button>
-</div>
-<div class="crud-toolbar"><div class="crud-info" id="crud-info-news">Daten werden geladen...</div><button class="user-button crud-refresh" data-resource="news">↻ Aktualisieren</button></div>
-<div id="crud-table-news"></div>
-</div>
+  <div class="news-admin-head card">
+    <div class="card-header">
+      <div>
+        <h2>News Center</h2>
+        <span>Öffentliche Meldungen erstellen, planen, kategorisieren und verwalten</span>
+      </div>
+      <div class="ranking-header-actions">
+        <button class="user-button" id="newsRefresh">↻ Aktualisieren</button>
+        <button class="action-button" id="newsNew">+ Neue News</button>
+      </div>
+    </div>
+    <div class="news-admin-stats">
+      <div class="news-admin-stat"><span>GESAMT</span><strong id="newsStatTotal">0</strong></div>
+      <div class="news-admin-stat"><span>AKTIV</span><strong id="newsStatActive">0</strong></div>
+      <div class="news-admin-stat"><span>ENTWURF</span><strong id="newsStatDraft">0</strong></div>
+      <div class="news-admin-stat"><span>KATEGORIEN</span><strong id="newsStatCategories">0</strong></div>
+    </div>
+    <div class="news-admin-toolbar">
+      <div class="news-filter-tabs" id="newsFilterTabs">
+        <button type="button" class="news-filter active" data-news-filter="all">ALLE</button>
+        <button type="button" class="news-filter" data-news-filter="EVENT">EVENTS</button>
+        <button type="button" class="news-filter" data-news-filter="ERGEBNISSE">ERGEBNISSE</button>
+        <button type="button" class="news-filter" data-news-filter="UPDATE">UPDATES</button>
+        <button type="button" class="news-filter" data-news-filter="ALLGEMEIN">ALLGEMEIN</button>
+      </div>
+      <input class="news-search" id="newsSearch" type="search" placeholder="News durchsuchen...">
+    </div>
+    <div class="crud-toolbar">
+      <div class="crud-info" id="crud-info-news">Daten werden geladen...</div>
+    </div>
+    <div id="crud-table-news"></div>
+  </div>
 </section>
 <section class="page" data-resource="blacklist" id="page-blacklist">
 <div class="card">
@@ -3937,6 +3997,21 @@ document
     closeRankingModal
   );
 
+document
+  .getElementById("rankingModal")
+  ?.addEventListener(
+    "click",
+    event => {
+      if(
+        event.target ===
+        document.getElementById(
+          "rankingModal"
+        )
+      ){
+        closeRankingModal();
+      }
+    }
+  );
 
 document
   .getElementById("rankingTable")
@@ -4252,6 +4327,21 @@ document
   );
 
 
+permissionsModal.addEventListener(
+  "click",
+  event => {
+
+    if(
+      event.target ===
+      permissionsModal
+    ){
+
+      closePermissions();
+
+    }
+
+  }
+);
 
 
 /* =========================================================
@@ -4787,7 +4877,82 @@ function renderResultTable(){
   </tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
+function newsNormalizeCategory(value){
+  const v=String(value||"NEWS").trim().toUpperCase();
+  if(v.includes("ERGEB")) return "ERGEBNISSE";
+  if(v.includes("EVENT")) return "EVENT";
+  if(v.includes("UPDATE")) return "UPDATE";
+  if(v.includes("ALLG")) return "ALLGEMEIN";
+  return v || "NEWS";
+}
+
+function newsIsActive(row){
+  if(row?.active !== undefined) return Number(row.active) === 1 || row.active === true || String(row.active).toLowerCase() === "true";
+  if(row?.status !== undefined){
+    const v=String(row.status).trim().toLowerCase();
+    return ["active","aktiv","aktive","published","veröffentlicht","veroeffentlicht","1","true","ja"].includes(v);
+  }
+  return true;
+}
+
+let newsAdminFilter="all";
+let newsAdminSearch="";
+
+function renderNewsAdminTable(){
+  const rows=[...(crudRows.news||[])].sort((a,b)=>String(b.date||b.created_at||"").localeCompare(String(a.date||a.created_at||"")));
+  const info=document.getElementById("crud-info-news");
+  const container=document.getElementById("crud-table-news");
+  if(!info||!container)return;
+
+  const categories=new Set();
+  rows.forEach(r=>categories.add(newsNormalizeCategory(r.category)));
+  document.getElementById("newsStatTotal")?.replaceChildren(document.createTextNode(String(rows.length)));
+  document.getElementById("newsStatActive")?.replaceChildren(document.createTextNode(String(rows.filter(newsIsActive).length)));
+  document.getElementById("newsStatDraft")?.replaceChildren(document.createTextNode(String(rows.filter(r=>!newsIsActive(r)).length)));
+  document.getElementById("newsStatCategories")?.replaceChildren(document.createTextNode(String(categories.size)));
+
+  const filtered=rows.filter(row=>{
+    const cat=newsNormalizeCategory(row.category);
+    if(newsAdminFilter!=="all" && cat!==newsAdminFilter)return false;
+    if(newsAdminSearch){
+      const hay=[row.title,row.text,row.content,row.category].map(v=>String(v||"").toLowerCase()).join(" ");
+      if(!hay.includes(newsAdminSearch))return false;
+    }
+    return true;
+  });
+
+  info.textContent=`${filtered.length} von ${rows.length} News`;
+  if(!filtered.length){container.innerHTML=`<div class="empty">Keine News für diese Auswahl vorhanden.</div>`;return;}
+
+  const identity=crudSchemas.news?.identity||"id";
+  const body=filtered.map(row=>{
+    const id=row[identity];
+    const title=String(row.title||"Unbenannte News");
+    const text=String(row.text||row.content||"");
+    const img=row.image_url||row.image||"";
+    const cat=newsNormalizeCategory(row.category);
+    const active=newsIsActive(row);
+    const edit=hasPermission("news","edit")?`<button class="crud-button crud-edit" data-resource="news" data-id="${escapeHtml(String(id))}">Bearbeiten</button>`:"";
+    const del=hasPermission("news","delete")?`<button class="crud-button danger crud-delete" data-resource="news" data-id="${escapeHtml(String(id))}">Löschen</button>`:"";
+    const statusLabel=active?"Veröffentlicht":"Entwurf / Inaktiv";
+    return `<tr>
+      <td>${img?`<img class="news-thumb" src="${escapeHtml(String(img))}" alt="" onerror="this.style.display='none'">`:`<div class="news-thumb"></div>`}</td>
+      <td><div class="news-title-cell">${escapeHtml(title)}<small>${escapeHtml(text.slice(0,110))}</small></div></td>
+      <td><span class="news-tag">${escapeHtml(cat)}</span></td>
+      <td>${escapeHtml(String(row.date||"—"))}</td>
+      <td><span class="news-status ${active?"active":"draft"}">${escapeHtml(statusLabel)}</span></td>
+      <td><div class="crud-actions">${edit}${del}</div></td>
+    </tr>`;
+  }).join("");
+
+  container.innerHTML=`<div class="news-table-wrap"><table class="news-table"><thead><tr><th>BILD</th><th>TITEL</th><th>KATEGORIE</th><th>DATUM</th><th>STATUS</th><th>AKTIONEN</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
 function renderCrudTable(resource){
+  if(resource === "news"){
+    renderNewsAdminTable();
+    return;
+  }
   if(resource === "results"){
     renderResultTable();
     return;
@@ -4818,7 +4983,6 @@ function renderCrudTable(resource){
   }).join("");
   container.innerHTML=`<div class="crud-table-wrap"><table class="crud-table"><thead><tr>${head}<th>Aktionen</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
-
 async function openCrudModal(resource,row=null){
   if(row===null&&!hasPermission(resource,"create")){
     showToast("Keine Berechtigung zum Erstellen.",true);
@@ -4840,6 +5004,56 @@ async function openCrudModal(resource,row=null){
   crudEditing={resource,row};
   const modal=document.getElementById("crudModal");
   const body=document.getElementById("crudFormBody");
+
+  if(resource === "news"){
+    const schemaCols=schema.columns||[];
+    const has=name=>schemaCols.some(c=>c.name===name);
+    const field=(name)=>schemaCols.find(c=>c.name===name);
+    const value=(name, fallback="")=>row?.[name] ?? fallback;
+    const imageCol=has("image_url")?"image_url":(has("image")?"image":null);
+    const textCol=has("text")?"text":(has("content")?"content":null);
+    const titleRequired=field("title")?.notnull===1 && field("title")?.default===null;
+    const dateValue=String(value("date","")).slice(0,10);
+    const categoryValue=newsNormalizeCategory(value("category","NEWS"));
+    const active=has("active") ? (Number(value("active",1))===1) : newsIsActive(row);
+    const statusValue=String(value("status",active?"published":"draft"));
+
+    document.getElementById("crudModalTitle").textContent=row?"News bearbeiten":"Neue News erstellen";
+    document.getElementById("crudModalSubtitle").textContent="Öffentliche Meldung · JACKAL Racing League";
+    document.getElementById("crudFormMessage").textContent="";
+    document.getElementById("crudFormMessage").classList.remove("error");
+
+    body.innerHTML=`
+      <div class="news-modal-grid">
+        ${has("title")?`<div class="crud-field full"><label>Titel</label><input name="title" type="text" value="${escapeHtml(String(value("title")))}" placeholder="z. B. Racewars Recap" ${titleRequired?"required":""}></div>`:""}
+        ${has("category")?`<div class="crud-field"><label>News-Kategorie</label><select name="category">
+          ${["EVENT","ERGEBNISSE","UPDATE","ALLGEMEIN","NEWS"].map(c=>`<option value="${c}" ${categoryValue===c?"selected":""}>${c=== "EVENT"?"Event":c=== "ERGEBNISSE"?"Ergebnisse":c=== "UPDATE"?"Update":c=== "ALLGEMEIN"?"Allgemein":"News"}</option>`).join("")}
+        </select><div class="news-modal-help">Die Kategorie erscheint als farbiges Label auf der öffentlichen News-Seite.</div></div>`:""}
+        ${has("date")?`<div class="crud-field"><label>Veröffentlichungsdatum</label><input name="date" type="date" value="${escapeHtml(dateValue)}"><div class="news-modal-help">Wird für Sortierung und Anzeige verwendet.</div></div>`:""}
+        ${has("status")?`<div class="crud-field"><label>Status</label><select name="status">
+          <option value="published" ${statusValue.toLowerCase()==="published"?"selected":""}>Veröffentlicht</option>
+          <option value="draft" ${statusValue.toLowerCase()==="draft"?"selected":""}>Entwurf</option>
+          <option value="inactive" ${statusValue.toLowerCase()==="inactive"?"selected":""}>Inaktiv</option>
+        </select></div>`:""}
+        ${has("active")?`<div class="crud-checkbox full"><input id="newsActiveField" name="active" type="checkbox" ${active?"checked":""}><span>News öffentlich anzeigen</span></div>`:""}
+        ${textCol?`<div class="crud-field full"><label>Kurztext / Teaser</label><textarea rows="3" maxlength="300" name="${escapeHtml(textCol)}" id="newsTeaserField" placeholder="Kurzer Text für Karten und Vorschauen...">${escapeHtml(String(value(textCol,"")))}</textarea><div class="news-char-count" id="newsCharCount"></div></div>`:""}
+        ${has("content") && textCol!=="content"?`<div class="crud-field full"><label>Vollständiger Inhalt</label><textarea rows="8" name="content" placeholder="Der vollständige News-Text...">${escapeHtml(String(value("content","")))}</textarea></div>`:""}
+        ${imageCol?`<div class="crud-field full"><label>Titelbild</label><div class="news-image-box"><input type="text" name="${escapeHtml(imageCol)}" id="newsImageUrl" value="${escapeHtml(String(value(imageCol,"")))}" placeholder="Bild-URL (optional)"><input type="file" name="__image_file" accept="image/jpeg,image/png,image/webp,image/gif"><img class="news-image-preview" id="newsImagePreview" src="${escapeHtml(String(value(imageCol,"")))}" alt="Vorschau" style="${value(imageCol,"")?"display:block":"display:none"}"><div class="news-modal-help">JPG, PNG, WEBP oder GIF · maximal 10 MB. Beim Speichern wird das Bild automatisch in R2 hochgeladen.</div></div></div>`:""}
+      </div>`;
+
+    const teaser=document.getElementById("newsTeaserField");
+    const counter=document.getElementById("newsCharCount");
+    const updateCount=()=>{if(counter&&teaser)counter.textContent=`${teaser.value.length}/300`;};
+    teaser?.addEventListener("input",updateCount); updateCount();
+    const imageInput=body.querySelector('input[type="file"][name="__image_file"]');
+    const imageUrl=body.querySelector("#newsImageUrl");
+    const preview=body.querySelector("#newsImagePreview");
+    const refreshPreview=()=>{if(!preview)return;const u=imageUrl?.value.trim()||"";if(u){preview.src=u;preview.style.display="block";}else{preview.removeAttribute("src");preview.style.display="none";}};
+    imageInput?.addEventListener("change",()=>{const f=imageInput.files?.[0];if(!f){refreshPreview();return;}preview.src=URL.createObjectURL(f);preview.style.display="block";});
+    imageUrl?.addEventListener("input",refreshPreview);
+    modal.classList.remove("hidden");
+    return;
+  }
 
   document.getElementById("crudModalTitle").textContent =
     resource === "results"
@@ -4971,8 +5185,73 @@ async function saveCrudForm(event){
   const message=document.getElementById("crudFormMessage");
   const button=document.getElementById("crudModalSave");
   const data={};
-  const uploadedImages = [];
-  const imageFields = [];
+
+  if(resource === "news"){
+    const schemaCols=schema.columns||[];
+    const has=name=>schemaCols.some(c=>c.name===name);
+    const title=form.elements.namedItem("title");
+    const category=form.elements.namedItem("category");
+    const date=form.elements.namedItem("date");
+    const status=form.elements.namedItem("status");
+    const active=form.elements.namedItem("active");
+    if(has("title")) data.title=title?.value.trim()||"";
+    if(has("category")) data.category=category?.value||"NEWS";
+    if(has("date")) data.date=date?.value||"";
+    if(has("status")) data.status=status?.value||"published";
+    if(has("active")) data.active=active?.checked?1:0;
+    if(has("text")) data.text=form.elements.namedItem("text")?.value.trim()||"";
+    if(has("content")) data.content=form.elements.namedItem("content")?.value.trim()||"";
+    if(has("image_url")) data.image_url=form.elements.namedItem("image_url")?.value.trim()||"";
+    if(has("image") && !has("image_url")) data.image=form.elements.namedItem("image")?.value.trim()||"";
+
+    if(has("title") && !data.title){
+      message.textContent="Bitte einen Titel eingeben.";
+      message.classList.add("error");
+      return;
+    }
+
+    const imageColumn=has("image_url")?"image_url":(has("image")?"image":null);
+    const imageFile=form.elements.namedItem("__image_file")?.files?.[0]||null;
+    let uploadedImage=null;
+    if(imageFile && imageColumn){
+      try{
+        uploadedImage=await uploadImageFile(imageFile,"news",row!==null?"edit":"create");
+        data[imageColumn]=uploadedImage.url;
+      }catch(error){
+        message.textContent=error.message||"Bild konnte nicht hochgeladen werden.";
+        message.classList.add("error");
+        return;
+      }
+    }
+
+    button.disabled=true;
+    button.textContent="Wird gespeichert...";
+    message.textContent="";
+    message.classList.remove("error");
+
+    try{
+      let url=`/api/admin/data/news`;
+      let method="POST";
+      if(row!==null){method="PUT";url+=`/${encodeURIComponent(String(row[schema.identity]))}`;}
+      const r=await fetch(url,{method,credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok){if(uploadedImage?.url)await deleteImageUrl(uploadedImage.url,"news","edit");throw new Error(d.error||"News konnte nicht gespeichert werden.");}
+      if(row!==null && uploadedImage?.url){
+        const oldUrl=String(row?.[imageColumn]||"");
+        if(oldUrl && oldUrl!==uploadedImage.url) await deleteImageUrl(oldUrl,"news","edit");
+      }
+      closeCrudModal();
+      showToast(row?"News wurde gespeichert.":"News wurde veröffentlicht.");
+      await loadCrudResource("news");
+    }catch(error){
+      message.textContent=error.message||"Speichern fehlgeschlagen.";
+      message.classList.add("error");
+    }finally{
+      button.disabled=false;
+      button.textContent="Speichern";
+    }
+    return;
+  }
 
   if(resource === "results"){
     data.race_id=form.elements.namedItem("race_id")?.value || "";
@@ -4994,6 +5273,9 @@ async function saveCrudForm(event){
       if(!el)return;
       data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
     });
+
+    const uploadedImages = [];
+    const imageFields = [];
 
     const imageCol = imageColumnName(schema);
     if(imageCol){
@@ -5067,10 +5349,9 @@ async function saveCrudForm(event){
     }
 
     if(row !== null){
-      for(const imageField of imageFields){
-        const oldUrl = String(row?.[imageField.column] || "").trim();
-        const newUrl = String(data?.[imageField.column] || "").trim();
-        if(oldUrl && oldUrl !== newUrl){
+      for(const uploaded of uploadedImages){
+        const oldUrl = String(row?.[uploaded.column] || "");
+        if(oldUrl && oldUrl !== uploaded.url){
           await deleteImageUrl(oldUrl, resource, "edit");
         }
       }
@@ -5109,6 +5390,15 @@ async function loadAllVisibleCrud(){
   }
 }
 
+document.getElementById("newsNew")?.addEventListener("click",()=>openCrudModal("news"));
+document.getElementById("newsRefresh")?.addEventListener("click",()=>loadCrudResource("news"));
+document.getElementById("newsSearch")?.addEventListener("input",event=>{newsAdminSearch=String(event.target.value||"").trim().toLowerCase();renderNewsAdminTable();});
+document.querySelectorAll("[data-news-filter]").forEach(button=>button.addEventListener("click",()=>{
+  newsAdminFilter=button.dataset.newsFilter||"all";
+  document.querySelectorAll("[data-news-filter]").forEach(x=>x.classList.toggle("active",x===button));
+  renderNewsAdminTable();
+}));
+
 document.addEventListener("click",event=>{
   const create=event.target.closest(".crud-create-button");if(create){openCrudModal(create.dataset.resource);return;}
   const refresh=event.target.closest(".crud-refresh");if(refresh){loadCrudResource(refresh.dataset.resource);return;}
@@ -5116,8 +5406,6 @@ document.addEventListener("click",event=>{
   const del=event.target.closest(".crud-delete");if(del){deleteCrudRow(del.dataset.resource,del.dataset.id);}
 });
 
-/* Modals schließen absichtlich NICHT mehr per Klick auf den Hintergrund.
-   Schließen ist nur über X, Abbrechen oder Speichern möglich. */
 document.getElementById("crudForm").addEventListener("submit",saveCrudForm);
 document.getElementById("crudModalClose").addEventListener("click",closeCrudModal);
 document.getElementById("crudModalCancel").addEventListener("click",closeCrudModal);
@@ -5131,22 +5419,6 @@ document.addEventListener("change",event=>{
   if(!preview) return;
   if(file){
     preview.src=URL.createObjectURL(file);
-    preview.style.display="block";
-  }else{
-    preview.removeAttribute("src");
-    preview.style.display="none";
-  }
-});
-
-document.addEventListener("input",event=>{
-  const input=event.target.closest('input[type="text"][name="image_url"], input[type="text"][name="image"]');
-  if(!input) return;
-  const box=input.closest(".image-upload-box");
-  const preview=box?.querySelector(".image-upload-preview");
-  if(!preview) return;
-  const url=input.value.trim();
-  if(url){
-    preview.src=url;
     preview.style.display="block";
   }else{
     preview.removeAttribute("src");
