@@ -958,6 +958,55 @@ button,input,textarea,select{font-family:var(--f-body);}
 .news-char-count{font-size:9px;color:#625c6d;text-align:right;margin-top:4px;}
 @media(max-width:900px){.news-admin-stats{grid-template-columns:repeat(2,1fr)}.news-admin-toolbar{align-items:stretch;flex-direction:column}.news-search{width:100%}.news-modal-grid{grid-template-columns:1fr}.news-modal-grid .full{grid-column:auto}}
 
+
+/* =========================================================
+   NEWS CENTER – DASHBOARD STEUERUNG
+========================================================= */
+.news-control-shell{display:grid;gap:14px;margin-bottom:14px}
+.news-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.news-control-card{background:linear-gradient(180deg,#171329,#110e1f);border:1px solid #2a2342;border-radius:10px;overflow:hidden}
+.news-control-card.full{grid-column:1/-1}
+.news-control-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid #2a2342;background:linear-gradient(100deg,rgba(168,85,255,.13),transparent 60%)}
+.news-control-head h3{font:700 22px var(--f-head);text-transform:uppercase;color:#fff;letter-spacing:.02em}
+.news-control-head p{margin-top:2px;color:#b266ff;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.news-control-body{padding:15px 16px}
+.news-control-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.news-control-row.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.news-control-row.five{grid-template-columns:1.5fr .7fr 1fr .7fr 1fr}
+.news-control-field{display:grid;gap:6px}
+.news-control-field label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#81788f}
+.news-control-field input,.news-control-field select,.news-control-field textarea{width:100%;min-height:38px;padding:0 11px;background:#0d0b16;border:1px solid #2d2740;border-radius:6px;color:#f2eefc;font:600 13px var(--f-body);outline:none}
+.news-control-field textarea{padding:10px 11px;min-height:88px;resize:vertical}
+.news-control-field input[type=color]{padding:3px;height:38px;cursor:pointer}
+.news-control-field input:focus,.news-control-field select:focus,.news-control-field textarea:focus{border-color:#a855ff;box-shadow:0 0 0 2px rgba(168,85,255,.1)}
+.news-control-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px}
+.news-control-help{margin-top:8px;color:#6f687d;font-size:10px;line-height:1.45}
+.news-mini{display:grid;gap:8px;margin-top:10px}
+.news-mini-row{display:grid;grid-template-columns:1.3fr .8fr auto;gap:8px;align-items:center;padding:8px 9px;background:#0e0c1a;border:1px solid #29233a;border-radius:6px}
+.news-mini-title{font-size:12px;font-weight:800;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.news-mini-meta{font-size:10px;color:#756d80;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.news-dashboard-status{font-size:11px;font-weight:700;color:#a49cbc;min-height:18px}
+.news-dashboard-status.ok{color:#9ff4c1}
+.news-dashboard-status.err{color:#ff8d9d}
+.news-toggle{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #302744;border-radius:6px;background:#0e0c1a}
+.news-toggle input{width:16px;height:16px;accent-color:#a855ff}
+.news-toggle span{font-size:12px;font-weight:800;text-transform:uppercase;color:#fff}
+.news-percent{display:flex;align-items:center;gap:7px}
+.news-percent input{width:78px}
+.news-category-list{display:grid;gap:8px;margin-top:12px}
+.news-category-row{display:grid;grid-template-columns:1.2fr .8fr 80px 80px auto;gap:8px;align-items:center;padding:8px;background:#0e0c1a;border:1px solid #29233a;border-radius:6px}
+.news-category-swatch{height:32px;border-radius:5px;border:1px solid rgba(255,255,255,.12);box-shadow:0 0 12px rgba(168,85,255,.16)}
+.news-archive-list{display:grid;gap:7px;margin-top:12px;max-height:330px;overflow:auto;padding-right:3px}
+.news-archive-row{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:8px 9px;background:#0e0c1a;border:1px solid #29233a;border-radius:6px}
+.news-archive-title{font-size:11px;font-weight:800;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.news-muted{color:#716a7b;font-size:10px}
+.news-control-badge{display:inline-flex;align-items:center;padding:4px 7px;border-radius:5px;font-size:8px;font-weight:900;letter-spacing:.7px;border:1px solid #4b3471;color:#d2a5ff;background:rgba(103,38,153,.11)}
+.news-control-empty{padding:18px;border:1px dashed #33294a;border-radius:7px;text-align:center;color:#70687d;font-size:11px;text-transform:uppercase;font-weight:700}
+.news-control-divider{height:1px;background:#27213a;margin:14px 0}
+.news-color-code{font:700 11px ui-monospace,SFMono-Regular,Consolas,monospace;color:#9f96aa}
+@media(max-width:1100px){.news-control-grid{grid-template-columns:1fr}.news-control-row.five{grid-template-columns:1fr 1fr}.news-category-row{grid-template-columns:1fr 1fr 70px 70px auto}.news-archive-row{grid-template-columns:1fr auto auto}}
+@media(max-width:700px){.news-control-row,.news-control-row.three,.news-control-row.five{grid-template-columns:1fr}.news-category-row{grid-template-columns:1fr 1fr}.news-archive-row{grid-template-columns:1fr auto}.news-archive-row>*:nth-child(3),.news-archive-row>*:nth-child(4){grid-column:2}}
+
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/></head>
 <body>
@@ -1134,6 +1183,103 @@ button,input,textarea,select{font-family:var(--f-body);}
 </div>
 </section>
 <section class="page crud-page" data-resource="news" id="page-news">
+  <div class="news-control-shell">
+    <div class="news-control-card full">
+      <div class="news-control-head">
+        <div><h3>News Dashboard</h3><p>Alle Bereiche der öffentlichen News-Seite direkt steuern</p></div>
+        <div class="news-dashboard-status" id="newsControlStatus">Wird geladen...</div>
+      </div>
+      <div class="news-control-body">
+        <div class="news-control-grid">
+          <div class="news-control-card">
+            <div class="news-control-head"><div><h3>Nächstes Rennen</h3><p>Welche Veranstaltung oben angezeigt wird</p></div></div>
+            <div class="news-control-body">
+              <div class="news-control-field"><label>Next Race</label><select id="newsNextRaceSelect"><option value="">Kein Rennen ausgewählt</option></select></div>
+              <div class="news-control-actions"><button class="action-button" id="newsNextRaceSave">Next Race speichern</button><button class="user-button" id="newsNextRaceClear">Entfernen</button></div>
+              <div class="news-control-help">Verwendet eure bestehende Next-Race-Funktion. Das Rennen wird auch von der Home-Seite übernommen.</div>
+              <div class="news-dashboard-status" id="newsNextRaceStatus"></div>
+            </div>
+          </div>
+
+          <div class="news-control-card">
+            <div class="news-control-head"><div><h3>Neueste News</h3><p>Welche Meldungen rechts hervorgehoben werden</p></div></div>
+            <div class="news-control-body">
+              <div class="news-control-row">
+                <div class="news-control-field"><label>News 1</label><select id="newsLatest1"><option value="">Automatisch neueste</option></select></div>
+                <div class="news-control-field"><label>News 2</label><select id="newsLatest2"><option value="">Keine Auswahl</option></select></div>
+                <div class="news-control-field"><label>News 3</label><select id="newsLatest3"><option value="">Keine Auswahl</option></select></div>
+                <div class="news-control-field"><label>Featured News</label><select id="newsFeatured"><option value="">Keine Featured News</option></select></div>
+              </div>
+              <div class="news-control-actions"><button class="action-button" id="newsLatestSave">Neueste News speichern</button><button class="user-button" id="newsLatestAuto">Auf automatisch stellen</button></div>
+              <div class="news-control-status" id="newsLatestStatus"></div>
+            </div>
+          </div>
+
+          <div class="news-control-card">
+            <div class="news-control-head"><div><h3>Rundenzeiten</h3><p>Fahrer und Ergebnisse direkt pflegen</p></div></div>
+            <div class="news-control-body">
+              <div class="news-control-row three">
+                <div class="news-control-field"><label>Ergebnisse</label><div class="news-dashboard-status" id="newsResultCount">Wird geladen...</div></div>
+                <div class="news-control-field"><label>Fahrer</label><div class="news-dashboard-status" id="newsDriverCount">Wird geladen...</div></div>
+                <div class="news-control-field"><label>Letztes Ergebnis</label><div class="news-dashboard-status" id="newsLastResultLabel">—</div></div>
+              </div>
+              <div class="news-control-actions"><button class="action-button" id="newsResultNew">+ Rundenzeit eintragen</button><button class="user-button" id="newsDriverNew">+ Fahrer hinzufügen</button></div>
+              <div id="newsResultsMini" class="news-mini"></div>
+              <div class="news-control-help">Die Einträge werden in `race_results` gespeichert und stehen damit auch für Rangliste und öffentliche Zeiten zur Verfügung.</div>
+            </div>
+          </div>
+
+          <div class="news-control-card">
+            <div class="news-control-head"><div><h3>Abstimmung</h3><p>„Sieger der Herzen“ Voting steuern</p></div></div>
+            <div class="news-control-body">
+              <div class="news-control-toggle" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                <label class="news-toggle" style="flex:1"><input id="newsPollActive" type="checkbox"><span>Abstimmung aktiv</span></label>
+              </div>
+              <div class="news-control-field"><label>Frage</label><input id="newsPollQuestion" placeholder="Wer war dein Sieger der Herzen?"></div>
+              <div class="news-control-divider"></div>
+              <div class="news-control-row five" id="newsPollOptions"></div>
+              <div class="news-control-actions"><button class="action-button" id="newsPollSave">Abstimmung speichern</button></div>
+              <div class="news-control-status" id="newsPollStatus"></div>
+            </div>
+          </div>
+
+          <div class="news-control-card">
+            <div class="news-control-head"><div><h3>Sieger der Herzen</h3><p>Gewinner und Darstellung festlegen</p></div></div>
+            <div class="news-control-body">
+              <div class="news-control-row">
+                <div class="news-control-field"><label>Fahrer</label><select id="newsHeartWinner"><option value="">Noch nicht festgelegt</option></select></div>
+                <div class="news-control-field"><label>Beitrag / Zitat</label><textarea id="newsHeartQuote" placeholder="Kurzer Text zum Sieger der Herzen..." rows="3"></textarea></div>
+              </div>
+              <div class="news-control-actions"><button class="action-button" id="newsHeartSave">Sieger speichern</button><button class="user-button" id="newsHeartClear">Zurücksetzen</button></div>
+              <div class="news-control-status" id="newsHeartStatus"></div>
+            </div>
+          </div>
+
+          <div class="news-control-card">
+            <div class="news-control-head"><div><h3>News archivieren</h3><p>Alte Meldungen aus dem öffentlichen Bereich nehmen</p></div></div>
+            <div class="news-control-body">
+              <div class="news-control-help">Archivierte News bleiben in D1 erhalten. Sie werden nicht gelöscht und können jederzeit wieder veröffentlicht werden.</div>
+              <div id="newsArchiveList" class="news-archive-list"></div>
+            </div>
+          </div>
+
+          <div class="news-control-card full">
+            <div class="news-control-head"><div><h3>News-Kategorien</h3><p>Eigene Kategorien, Farben und Reihenfolge verwalten</p></div></div>
+            <div class="news-control-body">
+              <div class="news-control-row three">
+                <div class="news-control-field"><label>Name</label><input id="newsCatName" placeholder="z. B. BLACKLIST UPDATE"></div>
+                <div class="news-control-field"><label>Farbe</label><input id="newsCatColor" type="color" value="#A855FF"></div>
+                <div class="news-control-field"><label>Textfarbe</label><input id="newsCatTextColor" type="color" value="#FFFFFF"></div>
+              </div>
+              <div class="news-control-actions"><button class="action-button" id="newsCatAdd">+ Kategorie hinzufügen</button></div>
+              <div id="newsCategoryList" class="news-category-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="news-admin-head card">
     <div class="card-header">
       <div>
@@ -1555,6 +1701,7 @@ let crudEditing = null;
 const CRUD_RESOURCES = [
   { key:"races" },
   { key:"drivers" },
+  { key:"results" },
   { key:"news" },
   { key:"blacklist" },
   { key:"gallery" },
@@ -4922,6 +5069,7 @@ function renderNewsAdminTable(){
   });
 
   info.textContent=`${filtered.length} von ${rows.length} News`;
+  try{ if(document.getElementById("newsCategoryList")) renderNewsArchiveList(); }catch(e){}
   if(!filtered.length){container.innerHTML=`<div class="empty">Keine News für diese Auswahl vorhanden.</div>`;return;}
 
   const identity=crudSchemas.news?.identity||"id";
@@ -4946,6 +5094,254 @@ function renderNewsAdminTable(){
   }).join("");
 
   container.innerHTML=`<div class="news-table-wrap"><table class="news-table"><thead><tr><th>BILD</th><th>TITEL</th><th>KATEGORIE</th><th>DATUM</th><th>STATUS</th><th>AKTIONEN</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+
+/* =========================================================
+   NEWS DASHBOARD CONTROL
+========================================================= */
+let newsControlConfig={
+  next_race_id:"",
+  latest_news_ids:[],
+  featured_news_id:"",
+  hearts_winner_driver_id:"",
+  hearts_quote:"",
+  poll_active:0,
+  poll_question:"Wer war dein Sieger der Herzen?",
+  poll_options:[]
+};
+let newsCategories=[];
+
+function newsControlSetStatus(id,text,type=""){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=text||"";
+  el.className="news-dashboard-status"+(type?` ${type}`:"");
+}
+
+function newsControlRows(){return Array.isArray(crudRows.news)?crudRows.news:[];}
+function newsDriverRows(){return Array.isArray(crudRows.drivers)?crudRows.drivers:[];}
+function newsRaceRows(){return Array.isArray(crudRows.races)?crudRows.races:[];}
+
+function newsOptionLabel(row){
+  const date=String(row?.date||row?.created_at||"").slice(0,10);
+  return `${row?.title||"Unbenannte News"}${date?` · ${date}`:""}`;
+}
+
+function populateNewsControlSelects(){
+  const news=newsControlRows().slice().sort((a,b)=>String(b.date||b.created_at||"").localeCompare(String(a.date||a.created_at||"")));
+  ["newsLatest1","newsLatest2","newsLatest3","newsFeatured"].forEach(id=>{
+    const s=document.getElementById(id);if(!s)return;
+    const first=s.options[0];
+    s.innerHTML="";if(first)s.appendChild(first);
+    news.forEach(row=>{const idv=row?.id; if(idv===undefined||idv===null)return; s.appendChild(new Option(newsOptionLabel(row),String(idv)));});
+  });
+  const ids=Array.isArray(newsControlConfig.latest_news_ids)?newsControlConfig.latest_news_ids.map(String):[];
+  ["newsLatest1","newsLatest2","newsLatest3"].forEach((id,i)=>{const s=document.getElementById(id);if(s)s.value=ids[i]||"";});
+  const f=document.getElementById("newsFeatured");if(f)f.value=String(newsControlConfig.featured_news_id||"");
+}
+
+function populateNewsNextRace(){
+  const s=document.getElementById("newsNextRaceSelect");if(!s)return;
+  s.innerHTML='<option value="">Kein Rennen ausgewählt</option>';
+  newsRaceRows().forEach(r=>{
+    const id=crudSchemas.races?.identity?r[crudSchemas.races.identity]:r.id;
+    if(id===undefined||id===null)return;
+    const label=`${r.name||"Rennen"}${r.date?` · ${String(r.date).slice(0,10)}`:""}`;
+    s.appendChild(new Option(label,String(id)));
+  });
+  s.value=String(newsControlConfig.next_race_id||"");
+}
+
+function populateNewsDrivers(){
+  const s=document.getElementById("newsHeartWinner"); if(s){
+    s.innerHTML='<option value="">Noch nicht festgelegt</option>';
+    newsDriverRows().forEach(d=>{const id=crudSchemas.drivers?.identity?d[crudSchemas.drivers.identity]:d.id;if(id===undefined||id===null)return;s.appendChild(new Option(`${d.name||"Fahrer"}${d.nickname?` · ${d.nickname}`:""}`,String(id)));});
+    s.value=String(newsControlConfig.hearts_winner_driver_id||"");
+  }
+
+  const wrap=document.getElementById("newsPollOptions");if(!wrap)return;
+  const saved=Array.isArray(newsControlConfig.poll_options)?newsControlConfig.poll_options:[];
+  wrap.innerHTML="";
+  for(let i=0;i<5;i++){
+    const item=saved[i]||{};
+    const field=document.createElement("div");field.className="news-control-field";
+    const opts=['<option value="">Kein Fahrer</option>'].concat(newsDriverRows().map(d=>{
+      const id=crudSchemas.drivers?.identity?d[crudSchemas.drivers.identity]:d.id;
+      return id==null?"":`<option value="${escapeHtml(String(id))}" ${String(item.driver_id||"")===String(id)?"selected":""}>${escapeHtml(d.name||"Fahrer")}</option>`;
+    }));
+    field.innerHTML=`<label>Kandidat ${i+1}</label><select data-poll-driver="${i}">${opts.join("")}</select><div class="news-percent"><input type="number" min="0" max="100" step="1" data-poll-percent="${i}" value="${Number(item.percent)||0}" placeholder="%"><span class="news-color-code">%</span></div>`;
+    wrap.appendChild(field);
+  }
+}
+
+function renderNewsMiniResults(){
+  const count=document.getElementById("newsResultCount"),dc=document.getElementById("newsDriverCount"),last=document.getElementById("newsLastResultLabel"),box=document.getElementById("newsResultsMini");
+  const rows=Array.isArray(crudRows.results)?crudRows.results:[];
+  if(count)count.textContent=String(rows.length);
+  if(dc)dc.textContent=String(newsDriverRows().length);
+  const ordered=rows.slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+  const recent=ordered.slice(0,5);
+  if(last){
+    const r=recent[0];
+    const d=r?findDriverById(r.driver_id):null;
+    last.textContent=r&&d?`${d.name||"Fahrer"} · ${r.best_lap||r.bestlap||r.time||"—"}`:"—";
+  }
+  if(!box)return;
+  if(!recent.length){box.innerHTML='<div class="news-control-empty">Noch keine Rundenzeiten vorhanden.</div>';return;}
+  box.innerHTML=recent.map(r=>{
+    const d=findDriverById(r.driver_id);
+    const race=findRaceById(r.race_id);
+    const id=crudSchemas.results?.identity?r[crudSchemas.results.identity]:r.id;
+    const edit=hasPermission("results","edit")?`<button class="user-button news-result-edit" data-result-id="${escapeHtml(String(id))}">Bearbeiten</button>`:"";
+    return `<div class="news-mini-row"><div><div class="news-mini-title">${escapeHtml(d?.name||"Unbekannter Fahrer")}</div><div class="news-mini-meta">${escapeHtml(race?.name||"Rennen")} · ${escapeHtml(r.vehicle||r.car||d?.car||"—")}</div></div><div class="news-mini-meta">${escapeHtml(r.best_lap||r.bestlap||r.time||"—")}</div><div>${edit}</div></div>`;
+  }).join("");
+}
+
+function findRaceById(id){
+  if(id==null||id==="")return null;
+  const key=String(id);return newsRaceRows().find(r=>String(r[crudSchemas.races?.identity||"id"])===key||String(r.id)===key)||null;
+}
+
+async function loadNewsControl(){
+  if(!hasPermission("news","view"))return;
+  try{
+    if(!crudSchemas.races||!crudRows.races) await loadCrudResource("races");
+    if(!crudSchemas.drivers||!crudRows.drivers) await loadCrudResource("drivers");
+    if(!crudSchemas.news||!crudRows.news) await loadCrudResource("news");
+    if(hasPermission("results","view") && (!crudSchemas.results||!crudRows.results)) await loadCrudResource("results");
+  }catch(e){console.warn("News Control Grunddaten:",e);}
+
+  try{
+    try{
+      const nextRes=await fetch("/api/admin/races/next",{credentials:"same-origin",cache:"no-store"});
+      const nextData=await nextRes.json().catch(()=>({}));
+      if(nextData.ok) newsControlConfig.next_race_id=String(nextData.race?.id||"");
+    }catch(e){}
+
+    const [cfgRes,catRes]=await Promise.all([
+      fetch("/api/admin/news/dashboard",{credentials:"same-origin",cache:"no-store"}),
+      fetch("/api/admin/news/categories",{credentials:"same-origin",cache:"no-store"})
+    ]);
+    const cfg=await cfgRes.json().catch(()=>({}));
+    const cats=await catRes.json().catch(()=>({}));
+    if(cfg.ok)newsControlConfig={...newsControlConfig,...(cfg.config||{})};
+    if(cats.ok)newsCategories=Array.isArray(cats.categories)?cats.categories:[];
+  }catch(e){
+    newsControlSetStatus("newsControlStatus","News-Konfiguration konnte nicht geladen werden.","err");
+  }
+
+  populateNewsNextRace();populateNewsControlSelects();populateNewsDrivers();renderNewsMiniResults();renderNewsCategories();
+  const q=document.getElementById("newsPollQuestion");if(q)q.value=newsControlConfig.poll_question||"Wer war dein Sieger der Herzen?";
+  const pa=document.getElementById("newsPollActive");if(pa)pa.checked=Number(newsControlConfig.poll_active)===1;
+  const hq=document.getElementById("newsHeartQuote");if(hq)hq.value=newsControlConfig.hearts_quote||"";
+  newsControlSetStatus("newsControlStatus","Bereit","ok");
+  renderNewsArchiveList();
+}
+
+async function newsSaveDashboard(patch){
+  if(!hasPermission("news","edit")){newsControlSetStatus("newsControlStatus","Keine Berechtigung zum Ändern.","err");return false;}
+  try{
+    const next={...newsControlConfig,...patch};
+    const r=await fetch("/api/admin/news/dashboard",{method:"PUT",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(next)});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.ok)throw new Error(d.error||"News-Dashboard konnte nicht gespeichert werden.");
+    newsControlConfig={...newsControlConfig,...(d.config||next)};
+    newsControlSetStatus("newsControlStatus","Gespeichert","ok");
+    return true;
+  }catch(e){newsControlSetStatus("newsControlStatus",e.message||"Speichern fehlgeschlagen.","err");return false;}
+}
+
+async function saveNewsLatest(){
+  const ids=["newsLatest1","newsLatest2","newsLatest3"].map(id=>document.getElementById(id)?.value).filter(Boolean);
+  const featured=document.getElementById("newsFeatured")?.value||"";
+  const ok=await newsSaveDashboard({latest_news_ids:ids,featured_news_id:featured});
+  if(ok)newsControlSetStatus("newsLatestStatus","Neueste News gespeichert.","ok");
+}
+
+async function saveNewsPoll(){
+  const options=[];
+  document.querySelectorAll("[data-poll-driver]").forEach(sel=>{const i=Number(sel.dataset.pollDriver),id=sel.value||"",pct=Number(document.querySelector(`[data-poll-percent=\"${i}\"]`)?.value||0);if(id)options.push({driver_id:id,percent:Math.max(0,Math.min(100,pct))});});
+  const question=document.getElementById("newsPollQuestion")?.value.trim()||"Wer war dein Sieger der Herzen?";
+  const active=document.getElementById("newsPollActive")?.checked?1:0;
+  const ok=await newsSaveDashboard({poll_active:active,poll_question:question,poll_options:options});
+  if(ok)newsControlSetStatus("newsPollStatus","Abstimmung gespeichert.","ok");
+}
+
+async function saveNewsHeart(){
+  const driver=document.getElementById("newsHeartWinner")?.value||"";
+  const quote=document.getElementById("newsHeartQuote")?.value.trim()||"";
+  const ok=await newsSaveDashboard({hearts_winner_driver_id:driver,hearts_quote:quote});
+  if(ok)newsControlSetStatus("newsHeartStatus","Sieger der Herzen gespeichert.","ok");
+}
+
+async function saveNewsNextRaceControl(clear=false){
+  if(clear){
+    const r=await fetch("/api/admin/races/next",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({race_id:"",access_code:""})});
+    const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok){newsControlSetStatus("newsNextRaceStatus",d.error||"Next Race konnte nicht entfernt werden.","err");return;}
+    newsControlConfig.next_race_id="";populateNewsNextRace();newsControlSetStatus("newsNextRaceStatus","Next Race entfernt.","ok");return;
+  }
+  const raceId=document.getElementById("newsNextRaceSelect")?.value||"";
+  const current=String(newsControlConfig.next_race_id||"");
+  let code="";
+  if(raceId && raceId!==current){
+    code=prompt("Für ein neues Next Race wird ein Zugangscode benötigt. Code eingeben oder leer lassen, um abzubrechen:","")||"";
+    if(!code){newsControlSetStatus("newsNextRaceStatus","Nicht gespeichert: Für ein neues Next Race wird ein Zugangscode benötigt.","err");return;}
+  }
+  const r=await fetch("/api/admin/races/next",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({race_id:raceId,access_code:code})});
+  const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok){newsControlSetStatus("newsNextRaceStatus",d.error||"Next Race konnte nicht gespeichert werden.","err");return;}
+  newsControlConfig.next_race_id=raceId;newsControlSetStatus("newsNextRaceStatus",raceId?"Next Race gespeichert.":"Kein Next Race gesetzt.","ok");
+}
+
+async function newsArchiveToggle(id,archive){
+  if(!hasPermission("news","edit"))return;
+  const schema=crudSchemas.news; if(!schema?.identity)return;
+  const payload={status:archive?"archived":"published"};
+  if(schema.columns?.some(c=>c.name==="active"))payload.active=archive?0:1;
+  try{
+    const r=await fetch(`/api/admin/data/news/${encodeURIComponent(String(id))}`,{method:"PUT",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"News konnte nicht geändert werden.");
+    await loadCrudResource("news");renderNewsArchiveList();populateNewsControlSelects();
+  }catch(e){showToast(e.message||"Aktion fehlgeschlagen.",true);}
+}
+
+function renderNewsArchiveList(){
+  const box=document.getElementById("newsArchiveList");if(!box)return;
+  const rows=newsControlRows().slice().sort((a,b)=>String(b.date||b.created_at||"").localeCompare(String(a.date||a.created_at||"")));
+  if(!rows.length){box.innerHTML='<div class="news-control-empty">Keine News vorhanden.</div>';return;}
+  box.innerHTML=rows.slice(0,30).map(r=>{
+    const id=r[crudSchemas.news?.identity||"id"];
+    const state=String(r.status||"").toLowerCase();
+    const isArc=state==="archived";
+    const isDraft=!isArc && (state==="draft" || !newsIsActive(r));
+    const action=isArc?`<button class="user-button news-archive-action" data-id="${escapeHtml(String(id))}" data-archive="0">Wiederherstellen</button>`:`<button class="user-button news-archive-action" data-id="${escapeHtml(String(id))}" data-archive="1">Archivieren</button>`;
+    const label=isArc?"ARCHIV":(isDraft?"ENTWURF":"ÖFFENTLICH");
+    return `<div class="news-archive-row"><div><div class="news-archive-title">${escapeHtml(r.title||"Unbenannte News")}</div><div class="news-muted">${escapeHtml(String(r.date||"—"))}</div></div><span class="news-control-badge">${escapeHtml(newsNormalizeCategory(r.category))}</span><span class="news-muted">${label}</span>${action}</div>`;
+  }).join("");
+}
+
+async function loadNewsCategories(){
+  try{const r=await fetch("/api/admin/news/categories",{credentials:"same-origin",cache:"no-store"});const d=await r.json().catch(()=>({}));if(d.ok){newsCategories=d.categories||[];renderNewsCategories();}}catch(e){console.warn(e);}
+}
+function renderNewsCategories(){
+  const box=document.getElementById("newsCategoryList");if(!box)return;
+  if(!newsCategories.length){box.innerHTML='<div class="news-control-empty">Noch keine Kategorien gespeichert.</div>';return;}
+  box.innerHTML=newsCategories.slice().sort((a,b)=>(Number(a.sort_order)||0)-(Number(b.sort_order)||0)).map(c=>`<div class="news-category-row" data-cat-id="${escapeHtml(String(c.id))}"><input class="news-cat-name" value="${escapeHtml(c.name||"")}"><input class="news-cat-color" type="color" value="${escapeHtml(c.color||"#A855FF")}"><input class="news-cat-text" type="color" value="${escapeHtml(c.text_color||"#FFFFFF")}"><input class="news-cat-order" type="number" value="${Number(c.sort_order)||0}" title="Reihenfolge"><div style="display:flex;gap:6px;justify-content:flex-end"><button class="user-button news-cat-save">Speichern</button><button class="user-button news-cat-delete">Löschen</button></div></div>`).join("");
+}
+async function addNewsCategory(){
+  const name=document.getElementById("newsCatName")?.value.trim()||"", color=document.getElementById("newsCatColor")?.value||"#A855FF", text=document.getElementById("newsCatTextColor")?.value||"#FFFFFF";
+  if(!name){showToast("Bitte einen Kategorienamen eingeben.",true);return;}
+  try{const r=await fetch("/api/admin/news/categories",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,color,text_color:text})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"Kategorie konnte nicht angelegt werden.");newsCategories=d.categories||newsCategories.concat([d.category]);document.getElementById("newsCatName").value="";renderNewsCategories();showToast("Kategorie angelegt.");}catch(e){showToast(e.message||"Kategorie konnte nicht angelegt werden.",true);}
+}
+
+async function saveNewsCategoryRow(row){
+  const id=row.dataset.catId;
+  const payload={name:row.querySelector(".news-cat-name")?.value.trim()||"",color:row.querySelector(".news-cat-color")?.value||"#A855FF",text_color:row.querySelector(".news-cat-text")?.value||"#FFFFFF",sort_order:Number(row.querySelector(".news-cat-order")?.value||0)};
+  try{const r=await fetch(`/api/admin/news/categories/${encodeURIComponent(id)}`,{method:"PUT",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"Kategorie konnte nicht gespeichert werden.");await loadNewsCategories();showToast("Kategorie gespeichert.");}catch(e){showToast(e.message||"Kategorie konnte nicht gespeichert werden.",true);}
+}
+async function deleteNewsCategoryRow(row){
+  const id=row.dataset.catId;if(!confirm("Kategorie wirklich löschen? Bestehende News behalten ihren bisherigen Kategorie-Text."))return;
+  try{const r=await fetch(`/api/admin/news/categories/${encodeURIComponent(id)}`,{method:"DELETE",credentials:"same-origin"});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"Kategorie konnte nicht gelöscht werden.");await loadNewsCategories();showToast("Kategorie gelöscht.");}catch(e){showToast(e.message||"Kategorie konnte nicht gelöscht werden.",true);}
 }
 
 function renderCrudTable(resource){
@@ -5027,8 +5423,10 @@ async function openCrudModal(resource,row=null){
       <div class="news-modal-grid">
         ${has("title")?`<div class="crud-field full"><label>Titel</label><input name="title" type="text" value="${escapeHtml(String(value("title")))}" placeholder="z. B. Racewars Recap" ${titleRequired?"required":""}></div>`:""}
         ${has("category")?`<div class="crud-field"><label>News-Kategorie</label><select name="category">
-          ${["EVENT","ERGEBNISSE","UPDATE","ALLGEMEIN","NEWS"].map(c=>`<option value="${c}" ${categoryValue===c?"selected":""}>${c=== "EVENT"?"Event":c=== "ERGEBNISSE"?"Ergebnisse":c=== "UPDATE"?"Update":c=== "ALLGEMEIN"?"Allgemein":"News"}</option>`).join("")}
-        </select><div class="news-modal-help">Die Kategorie erscheint als farbiges Label auf der öffentlichen News-Seite.</div></div>`:""}
+          ${((newsCategories.length?newsCategories:[
+            {slug:"event",name:"EVENT"},{slug:"ergebnisse",name:"ERGEBNISSE"},{slug:"update",name:"UPDATE"},{slug:"allgemein",name:"ALLGEMEIN"},{slug:"news",name:"NEWS"}
+          ]).map(c=>{const val=String(c.name||c.slug||"").toUpperCase();return `<option value="${escapeHtml(val)}" ${categoryValue===val?"selected":""}>${escapeHtml(c.name||val)}</option>`;}).join(""))}
+        </select><div class="news-modal-help">Die Kategorie erscheint als farbiges Label auf der öffentlichen News-Seite. Eigene Kategorien legst du unten im News Center an.</div></div>`:""}
         ${has("date")?`<div class="crud-field"><label>Veröffentlichungsdatum</label><input name="date" type="date" value="${escapeHtml(dateValue)}"><div class="news-modal-help">Wird für Sortierung und Anzeige verwendet.</div></div>`:""}
         ${has("status")?`<div class="crud-field"><label>Status</label><select name="status">
           <option value="published" ${statusValue.toLowerCase()==="published"?"selected":""}>Veröffentlicht</option>
@@ -5460,6 +5858,29 @@ function escapeHtml(
 
 }
 
+
+
+document.getElementById("newsNextRaceSave")?.addEventListener("click",()=>saveNewsNextRaceControl(false));
+document.getElementById("newsNextRaceClear")?.addEventListener("click",()=>saveNewsNextRaceControl(true));
+document.getElementById("newsLatestSave")?.addEventListener("click",saveNewsLatest);
+document.getElementById("newsLatestAuto")?.addEventListener("click",()=>newsSaveDashboard({latest_news_ids:[],featured_news_id:""}));
+document.getElementById("newsPollSave")?.addEventListener("click",saveNewsPoll);
+document.getElementById("newsHeartSave")?.addEventListener("click",saveNewsHeart);
+document.getElementById("newsHeartClear")?.addEventListener("click",()=>newsSaveDashboard({hearts_winner_driver_id:"",hearts_quote:""}).then(()=>{const a=document.getElementById("newsHeartWinner");if(a)a.value="";const q=document.getElementById("newsHeartQuote");if(q)q.value="";}));
+document.getElementById("newsResultNew")?.addEventListener("click",()=>openCrudModal("results"));
+document.getElementById("newsDriverNew")?.addEventListener("click",()=>openCrudModal("drivers"));
+document.getElementById("newsCatAdd")?.addEventListener("click",addNewsCategory);
+document.getElementById("newsArchiveList")?.addEventListener("click",event=>{const b=event.target.closest(".news-archive-action");if(b)newsArchiveToggle(b.dataset.id,b.dataset.archive==="1");});
+document.getElementById("newsResultsMini")?.addEventListener("click",event=>{const b=event.target.closest(".news-result-edit");if(!b)return;const row=(crudRows.results||[]).find(x=>String(x[crudSchemas.results?.identity||"id"])===String(b.dataset.resultId));if(row)openCrudModal("results",row);});
+document.getElementById("newsCategoryList")?.addEventListener("click",event=>{const row=event.target.closest(".news-category-row");if(!row)return;if(event.target.closest(".news-cat-save"))saveNewsCategoryRow(row);if(event.target.closest(".news-cat-delete"))deleteNewsCategoryRow(row);});
+
+const __originalShowPage = typeof showPage === "function" ? showPage : null;
+if(__originalShowPage){
+  window.showPage = function(page){
+    __originalShowPage(page);
+    if(page === "news") setTimeout(()=>loadNewsControl(),80);
+  };
+}
 
 /* =========================================================
    INITIAL LOAD
