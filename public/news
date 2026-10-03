@@ -20,10 +20,11 @@ a{text-decoration:none;color:inherit}button,input{font:inherit}
 
 /* ===== HEADER ===== */
 .topbar{height:58px;display:flex;align-items:center;padding:0 6.7vw;background:#05050d;border-bottom:1px solid #311064;position:relative;z-index:20}
-.brand{display:flex;align-items:center;width:205px;flex:0 0 205px}
-.brand img{width:140px;height:48px;object-fit:contain;display:block}
-.nav{position:absolute;left:50%;transform:translateX(-50%);height:100%;display:flex;align-items:center;gap:31px}
-.nav a{position:relative;height:100%;display:flex;align-items:center;padding:0 2px;color:#d5cedf;text-transform:uppercase;font:700 13px var(--head);letter-spacing:1px}
+.brand{display:flex;align-items:center;width:220px;flex:0 0 220px;height:58px}
+.brand img{width:154px;height:52px;object-fit:contain;object-position:left center;display:block;filter:drop-shadow(0 0 7px rgba(168,61,255,.25));}
+.brand:hover img{filter:drop-shadow(0 0 10px rgba(168,61,255,.42));}
+.nav{position:absolute;left:50%;transform:translateX(-50%);height:100%;display:flex;align-items:center;gap:31px;white-space:nowrap}
+.nav a{position:relative;height:100%;display:flex;align-items:center;padding:0 2px;color:#d5cedf;text-transform:uppercase;font:700 13px var(--head);letter-spacing:1px;line-height:1}
 .nav a.active{color:#fff}
 .nav a.active:after{content:"";position:absolute;left:-7px;right:-7px;bottom:0;height:3px;background:linear-gradient(90deg,#ad42ff,#ff42db);box-shadow:0 0 12px rgba(181,69,255,.9)}
 
@@ -107,7 +108,7 @@ a{text-decoration:none;color:inherit}button,input{font:inherit}
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="/"><img src="images/logo-small.png" alt="JACKAL"></a>
+  <a class="brand" href="/"><img src="/images/logo-small.png" alt="JACKAL" onerror="this.onerror=null;this.src='/images/logo.png'"></a>
   <nav class="nav">
     <a href="/">HOME</a><a class="active" href="/news">NEWS</a><a href="/drivers">DRIVERS</a><a href="/rangliste">RANGLISTE</a><a href="/races">RACES</a><a href="/blacklist">BLACKLIST</a><a href="/gallery">GALLERY</a>
   </nav>
