@@ -754,6 +754,82 @@ button{
 }
 
 /* =========================================================
+   NEXT RACE MANAGEMENT
+========================================================= */
+
+.next-race-admin{
+  border-color:#332a50
+}
+
+.next-race-badge{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 10px;
+  border:1px solid rgba(141,92,255,.25);
+  border-radius:999px;
+  color:#c6a6ff;
+  background:rgba(141,92,255,.10);
+  font-size:10px;
+  letter-spacing:.8px;
+  text-transform:uppercase
+}
+
+.next-race-inline{
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+
+.next-race-inline input{
+  flex:1
+}
+
+.next-race-code{
+  min-width:190px;
+  font-family:monospace;
+  letter-spacing:2px;
+  text-transform:uppercase
+}
+
+.next-race-meta{
+  margin-top:12px;
+  color:#666673;
+  font-size:11px;
+  line-height:1.6
+}
+
+.next-race-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:9px;
+  flex-wrap:wrap;
+  margin-top:4px
+}
+
+.next-race-status{
+  margin-top:10px;
+  min-height:18px;
+  color:#75e29b;
+  font-size:12px
+}
+
+.next-race-status.error{
+  color:#ff7777
+}
+
+@media(max-width:700px){
+  .next-race-inline{
+    align-items:stretch;
+    flex-direction:column
+  }
+
+  .next-race-code{
+    min-width:0
+  }
+}
+
+/* =========================================================
    CRUD MANAGEMENT
 ========================================================= */
 
@@ -1035,6 +1111,51 @@ button{
     ====================================================== -->
 
     <section id="page-races" class="page crud-page" data-resource="races">
+
+  <div class="card next-race-admin">
+    <div class="card-header">
+      <div>
+        <h2>Next Race</h2>
+        <span>Lege hier fest, welches Rennen aktuell als nächstes auf der Home-Seite angezeigt wird.</span>
+      </div>
+      <span class="next-race-badge">HOME · NEXT RACE</span>
+    </div>
+
+    <div class="form-grid">
+      <div class="field full">
+        <label for="nextRaceSelect">Rennen auswählen</label>
+        <select id="nextRaceSelect">
+          <option value="">Kein Next Race festgelegt</option>
+        </select>
+      </div>
+
+      <div class="field full">
+        <label for="nextRaceCode">Gemeinsamer Zugangscode</label>
+        <div class="next-race-inline">
+          <input
+            id="nextRaceCode"
+            class="next-race-code"
+            type="text"
+            maxlength="32"
+            autocomplete="off"
+            placeholder="Code eingeben oder generieren"
+          >
+          <button id="generateNextRaceCode" class="action-button" type="button">Code generieren</button>
+        </div>
+        <div class="next-race-meta">
+          Alle Fahrer dieses Rennens bekommen denselben Code. Beim Wechsel auf ein anderes Next Race muss für das neue Rennen ein neuer Code gesetzt werden. Der Code wird nicht im Klartext in D1 gespeichert.
+        </div>
+      </div>
+    </div>
+
+    <div id="nextRaceStatus" class="next-race-status"></div>
+
+    <div class="next-race-actions">
+      <button id="clearNextRace" class="secondary-button" type="button">Next Race entfernen</button>
+      <button id="saveNextRace" class="primary-button small" type="button">Next Race speichern</button>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-header">
       <div><h2>Rennen verwalten</h2><span>Rennen erstellen, bearbeiten und löschen</span></div>
@@ -4661,12 +4782,218 @@ document
 
 
 /* =========================================================
+   NEXT RACE MANAGEMENT
+========================================================= */
+
+let currentNextRace = null;
+
+function nextRaceLabel(row){
+  if(!row) return "Rennen";
+  const name = row.name || row.title || row.titel || "Rennen";
+  const date = row.date || row.datum || "";
+  const time = row.time || row.uhrzeit || "";
+  const extra = [date, time].filter(Boolean).join(" · ");
+  return extra ? `${name} – ${extra}` : name;
+}
+
+function setNextRaceStatus(message, error=false){
+  const element = document.getElementById("nextRaceStatus");
+  if(!element) return;
+  element.textContent = message || "";
+  element.classList.toggle("error", !!error);
+}
+
+function populateNextRaceSelect(){
+  const select = document.getElementById("nextRaceSelect");
+  if(!select) return;
+
+  const rows = Array.isArray(crudRows.races) ? crudRows.races : [];
+  const selectedId = currentNextRace?.id != null
+    ? String(currentNextRace.id)
+    : "";
+
+  select.innerHTML = `
+    <option value="">Kein Next Race festgelegt</option>
+    ${rows.map(row => {
+      const id = crudSchemas.races?.identity ? row[crudSchemas.races.identity] : row.id;
+      return `<option value="${escapeHtml(String(id ?? ""))}" ${String(id ?? "") === selectedId ? "selected" : ""}>${escapeHtml(nextRaceLabel(row))}</option>`;
+    }).join("")}
+  `;
+}
+
+async function loadNextRaceAdmin(){
+  const select = document.getElementById("nextRaceSelect");
+  const code = document.getElementById("nextRaceCode");
+  if(!select || !code) return;
+
+  if(!hasPermission("races","view")){
+    return;
+  }
+
+  setNextRaceStatus("Next Race wird geladen...");
+
+  try{
+    if(!crudRows.races || !crudSchemas.races){
+      await loadCrudResource("races");
+    }
+
+    const response = await fetch("/api/admin/races/next",{
+      credentials:"same-origin",
+      cache:"no-store"
+    });
+
+    const data = await response.json().catch(()=>({}));
+
+    if(!response.ok || !data.ok){
+      throw new Error(data.error || "Next Race konnte nicht geladen werden.");
+    }
+
+    currentNextRace = data.race || null;
+    populateNextRaceSelect();
+    code.value = "";
+
+    if(currentNextRace){
+      setNextRaceStatus(
+        currentNextRace.has_access_code
+          ? `Aktuell: ${nextRaceLabel(currentNextRace)} · Zugangscode ist gesetzt.`
+          : `Aktuell: ${nextRaceLabel(currentNextRace)} · Noch kein Zugangscode gesetzt.`,
+        false
+      );
+    }else{
+      setNextRaceStatus("Aktuell ist kein Next Race festgelegt.");
+    }
+  }catch(error){
+    setNextRaceStatus(error.message || "Next Race konnte nicht geladen werden.", true);
+  }
+}
+
+function generateNextRaceCode(){
+  const input = document.getElementById("nextRaceCode");
+  if(!input) return;
+
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  let result = "JACKAL-";
+
+  for(const byte of bytes){
+    result += alphabet[byte % alphabet.length];
+  }
+
+  input.value = result;
+  input.focus();
+}
+
+async function saveNextRace(){
+  if(!hasPermission("races","edit")){
+    showToast("Keine Berechtigung, das Next Race zu ändern.",true);
+    return;
+  }
+
+  const select = document.getElementById("nextRaceSelect");
+  const code = document.getElementById("nextRaceCode");
+  const button = document.getElementById("saveNextRace");
+
+  const raceId = select?.value || "";
+  const accessCode = code?.value.trim() || "";
+
+  if(raceId){
+    const currentId = currentNextRace?.id != null ? String(currentNextRace.id) : "";
+    if(!accessCode && currentId !== String(raceId)){
+      setNextRaceStatus("Für ein neues Next Race musst du einen Zugangscode eingeben oder generieren.", true);
+      return;
+    }
+  }
+
+  button.disabled = true;
+  button.textContent = "Wird gespeichert...";
+  setNextRaceStatus("");
+
+  try{
+    const response = await fetch("/api/admin/races/next",{
+      method:"POST",
+      credentials:"same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        race_id: raceId,
+        access_code: accessCode
+      })
+    });
+
+    const data = await response.json().catch(()=>({}));
+
+    if(!response.ok || !data.ok){
+      throw new Error(data.error || "Next Race konnte nicht gespeichert werden.");
+    }
+
+    currentNextRace = data.race || null;
+    populateNextRaceSelect();
+    code.value = "";
+
+    if(currentNextRace){
+      setNextRaceStatus(`Next Race ist jetzt: ${nextRaceLabel(currentNextRace)}.`);
+      showToast("Next Race wurde gespeichert.");
+    }else{
+      setNextRaceStatus("Next Race wurde entfernt.");
+      showToast("Next Race wurde entfernt.");
+    }
+
+  }catch(error){
+    setNextRaceStatus(error.message || "Speichern fehlgeschlagen.", true);
+  }finally{
+    button.disabled = false;
+    button.textContent = "Next Race speichern";
+  }
+}
+
+async function clearNextRace(){
+  if(!hasPermission("races","edit")){
+    showToast("Keine Berechtigung, das Next Race zu ändern.",true);
+    return;
+  }
+
+  const select = document.getElementById("nextRaceSelect");
+  const code = document.getElementById("nextRaceCode");
+  if(select) select.value = "";
+  if(code) code.value = "";
+
+  await saveNextRace();
+}
+
+document.getElementById("generateNextRaceCode")?.addEventListener("click",generateNextRaceCode);
+document.getElementById("saveNextRace")?.addEventListener("click",saveNextRace);
+document.getElementById("clearNextRace")?.addEventListener("click",clearNextRace);
+
+document.getElementById("nextRaceSelect")?.addEventListener("change",()=>{
+  const select = document.getElementById("nextRaceSelect");
+  const selected = (crudRows.races || []).find(row=>{
+    const id = crudSchemas.races?.identity ? row[crudSchemas.races.identity] : row.id;
+    return String(id ?? "") === String(select?.value || "");
+  });
+  const code = document.getElementById("nextRaceCode");
+  if(code) code.value = "";
+  if(selected){
+    const currentId = currentNextRace?.id != null ? String(currentNextRace.id) : "";
+    if(currentId !== String(selected[crudSchemas.races?.identity] ?? selected.id ?? "")){
+      setNextRaceStatus("Neues Next Race ausgewählt. Bitte den Zugangscode festlegen.");
+    }else if(currentNextRace?.has_access_code){
+      setNextRaceStatus("Bestehendes Next Race ausgewählt. Feld leer lassen, um den bisherigen Zugangscode zu behalten.");
+    }
+  }else{
+    setNextRaceStatus("Next Race wird beim Speichern entfernt.");
+  }
+});
+
+/* =========================================================
    GENERIC CRUD
 ========================================================= */
 
 function visibleColumns(schema){
   return (schema.columns || []).filter(col =>
-    col.name !== "id" && col.name !== "created_at" && col.name !== "updated_at"
+    col.name !== "id" &&
+    col.name !== "created_at" &&
+    col.name !== "updated_at" &&
+    col.name !== "access_code_hash" &&
+    col.name !== "is_next"
   );
 }
 
@@ -4709,6 +5036,7 @@ async function loadCrudResource(resource){
     crudRows[resource]=Array.isArray(d.rows)?d.rows:[];
     if(resource === "results") await ensureResultLookups();
     renderCrudTable(resource);
+    if(resource === "races") await loadNextRaceAdmin();
   }catch(error){
     info.textContent="Fehler";
     container.innerHTML=`<div class="empty">${escapeHtml(error.message || "Fehler beim Laden.")}</div>`;
@@ -4962,11 +5290,13 @@ async function openCrudModal(resource,row=null){
       return `<div class="crud-checkbox"><input type="checkbox" name="${escapeHtml(col.name)}" ${checked?"checked":""}><span>${escapeHtml(label)}</span></div>`;
     }
 
-    if(col.name === "image_url" || col.name === "image"){
+    if(col.name === "image_url" || col.name === "image" || col.name === "track_image_url"){
+      const fileField = col.name === "track_image_url" ? "__track_image_file" : "__image_file";
+      const fieldTitle = col.name === "track_image_url" ? "Streckenbild" : label;
       const preview = value
         ? `<img class="image-upload-preview" style="display:block" src="${escapeHtml(String(value))}" alt="Bild" onerror="this.style.display='none'">`
         : `<img class="image-upload-preview" alt="Bildvorschau">`;
-      return `<div class="crud-field full"><label>${escapeHtml(label)}</label><div class="image-upload-box"><input type="text" name="${escapeHtml(col.name)}" value="${escapeHtml(String(value))}" placeholder="Bild-URL (optional)"><div class="image-upload-row"><input type="file" name="__image_file" accept="image/jpeg,image/png,image/webp,image/gif"></div>${preview}<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Die Datei wird beim Speichern automatisch in R2 hochgeladen.</div></div></div>`;
+      return `<div class="crud-field full"><label>${escapeHtml(fieldTitle)}</label><div class="image-upload-box"><input type="text" name="${escapeHtml(col.name)}" value="${escapeHtml(String(value))}" placeholder="Bild-URL (optional)"><div class="image-upload-row"><input type="file" name="${fileField}" accept="image/jpeg,image/png,image/webp,image/gif"></div>${preview}<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Die Datei wird beim Speichern automatisch in R2 hochgeladen.</div></div></div>`;
     }
 
     const textarea=/description|content|text|reason|message/i.test(col.name)||String(col.type||"").toUpperCase().includes("TEXT")&&String(value).length>80;
@@ -5020,18 +5350,43 @@ async function saveCrudForm(event){
       data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
     });
 
+    const uploadedImages = [];
+    const imageFields = [];
+
     const imageCol = imageColumnName(schema);
-    const imageFile = form.elements.namedItem("__image_file")?.files?.[0] || null;
-    if(imageCol && imageFile){
+    if(imageCol){
+      imageFields.push({
+        column:imageCol,
+        input:"__image_file"
+      });
+    }
+
+    if(schema.columns?.some(c=>c.name === "track_image_url")){
+      imageFields.push({
+        column:"track_image_url",
+        input:"__track_image_file"
+      });
+    }
+
+    for(const imageField of imageFields){
+      const imageFile = form.elements.namedItem(imageField.input)?.files?.[0] || null;
+      if(!imageFile) continue;
+
       try{
         const uploaded = await uploadImageFile(
           imageFile,
           resource,
           row !== null ? "edit" : "create"
         );
-        data[imageCol] = uploaded.url;
-        form.dataset.uploadedImageUrl = uploaded.url;
+        data[imageField.column] = uploaded.url;
+        uploadedImages.push({
+          column:imageField.column,
+          url:uploaded.url
+        });
       }catch(error){
+        for(const uploaded of uploadedImages){
+          await deleteImageUrl(uploaded.url, resource, "edit");
+        }
         message.textContent=error.message || "Bild konnte nicht hochgeladen werden.";
         message.classList.add("error");
         return;
@@ -5063,17 +5418,18 @@ async function saveCrudForm(event){
     const d=await r.json().catch(()=>({}));
 
     if(!r.ok||!d.ok){
-      const uploadedUrl = form.dataset.uploadedImageUrl || "";
-      if(uploadedUrl) await deleteImageUrl(uploadedUrl, resource, "edit");
+      for(const uploaded of uploadedImages){
+        await deleteImageUrl(uploaded.url, resource, "edit");
+      }
       throw new Error(d.error||"Speichern fehlgeschlagen.");
     }
 
-    const uploadedUrl = form.dataset.uploadedImageUrl || "";
-    if(row !== null && uploadedUrl){
-      const imageCol = imageColumnName(schema);
-      const oldUrl = imageCol ? String(row?.[imageCol] || "") : "";
-      if(oldUrl && oldUrl !== uploadedUrl){
-        await deleteImageUrl(oldUrl, resource, "edit");
+    if(row !== null){
+      for(const uploaded of uploadedImages){
+        const oldUrl = String(row?.[uploaded.column] || "");
+        if(oldUrl && oldUrl !== uploaded.url){
+          await deleteImageUrl(oldUrl, resource, "edit");
+        }
       }
     }
 
