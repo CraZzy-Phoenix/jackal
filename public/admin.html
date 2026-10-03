@@ -4971,6 +4971,8 @@ async function saveCrudForm(event){
   const message=document.getElementById("crudFormMessage");
   const button=document.getElementById("crudModalSave");
   const data={};
+  const uploadedImages = [];
+  const imageFields = [];
 
   if(resource === "results"){
     data.race_id=form.elements.namedItem("race_id")?.value || "";
@@ -4992,9 +4994,6 @@ async function saveCrudForm(event){
       if(!el)return;
       data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
     });
-
-    const uploadedImages = [];
-    const imageFields = [];
 
     const imageCol = imageColumnName(schema);
     if(imageCol){
@@ -5068,9 +5067,10 @@ async function saveCrudForm(event){
     }
 
     if(row !== null){
-      for(const uploaded of uploadedImages){
-        const oldUrl = String(row?.[uploaded.column] || "");
-        if(oldUrl && oldUrl !== uploaded.url){
+      for(const imageField of imageFields){
+        const oldUrl = String(row?.[imageField.column] || "").trim();
+        const newUrl = String(data?.[imageField.column] || "").trim();
+        if(oldUrl && oldUrl !== newUrl){
           await deleteImageUrl(oldUrl, resource, "edit");
         }
       }
@@ -5131,6 +5131,22 @@ document.addEventListener("change",event=>{
   if(!preview) return;
   if(file){
     preview.src=URL.createObjectURL(file);
+    preview.style.display="block";
+  }else{
+    preview.removeAttribute("src");
+    preview.style.display="none";
+  }
+});
+
+document.addEventListener("input",event=>{
+  const input=event.target.closest('input[type="text"][name="image_url"], input[type="text"][name="image"]');
+  if(!input) return;
+  const box=input.closest(".image-upload-box");
+  const preview=box?.querySelector(".image-upload-preview");
+  if(!preview) return;
+  const url=input.value.trim();
+  if(url){
+    preview.src=url;
     preview.style.display="block";
   }else{
     preview.removeAttribute("src");
