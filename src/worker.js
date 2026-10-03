@@ -63,7 +63,12 @@ async function createSession(env, username) {
   const expiresAt = now + SESSION_SECONDS;
 
   await env.DB.prepare(`
-    INSERT INTO admin_sessions (id, username, expires_at, created_at)
+    INSERT INTO admin_sessions (
+      id,
+      username,
+      expires_at,
+      created_at
+    )
     VALUES (?, ?, ?, ?)
   `).bind(
     sessionId,
@@ -267,12 +272,18 @@ async function requireSuperadmin(
   return auth;
 }
 
+
+/* =========================================================
+   HILFSFUNKTIONEN
+========================================================= */
+
 function bytesToHex(bytes) {
   return Array
     .from(bytes)
     .map(
       b =>
-        b.toString(16)
+        b
+          .toString(16)
           .padStart(
             2,
             "0"
@@ -341,6 +352,11 @@ function bytesToBase64(bytes) {
   return btoa(binary);
 }
 
+
+/* =========================================================
+   PASSWORT-HASHING
+========================================================= */
+
 async function derivePasswordHash(
   password,
   salt
@@ -387,7 +403,9 @@ async function hashPassword(
           saltHex
         )
       : crypto.getRandomValues(
-          new Uint8Array(16)
+          new Uint8Array(
+            16
+          )
         );
 
   const derived =
@@ -475,6 +493,11 @@ async function verifyPassword(
     };
   }
 }
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
 
 async function handleLogin(
   request,
@@ -765,6 +788,11 @@ async function handleMe(
     permissions
   });
 }
+
+
+/* =========================================================
+   BENUTZER
+========================================================= */
 
 async function handleAdminUsersGet(
   request,
@@ -1209,6 +1237,11 @@ async function handleAdminPermissionsUpdate(
   });
 }
 
+
+/* =========================================================
+   D1 SCHEMA
+========================================================= */
+
 async function getTableSchema(
   env,
   table
@@ -1320,24 +1353,30 @@ async function handleAdminSchema(
     (
       schema.results ||
       []
-    ).map(
-      col => ({
-        name:
-          col.name,
-        type:
-          col.type,
-        notnull:
-          Number(
-            col.notnull
-          ),
-        default:
-          col.dflt_value,
-        pk:
-          Number(
-            col.pk
-          )
-      })
-    );
+    )
+      .filter(
+        col =>
+          col.name !==
+          "access_code_hash"
+      )
+      .map(
+        col => ({
+          name:
+            col.name,
+          type:
+            col.type,
+          notnull:
+            Number(
+              col.notnull
+            ),
+          default:
+            col.dflt_value,
+          pk:
+            Number(
+              col.pk
+            )
+        })
+      );
 
   return json({
     ok: true,
@@ -1354,6 +1393,11 @@ async function handleAdminSchema(
     columns
   });
 }
+
+
+/* =========================================================
+   GENERISCHES CRUD
+========================================================= */
 
 function sanitizeData(
   data,
@@ -1470,7 +1514,9 @@ function normalizeDbValue(
     }
 
     const number =
-      Number(value);
+      Number(
+        value
+      );
 
     return Number.isFinite(
       number
@@ -1528,9 +1574,10 @@ async function handleAdminDataGet(
       []
     ).map(
       row => {
-        const safe = {
-          ...row
-        };
+        const safe =
+          {
+            ...row
+          };
 
         delete safe.password_hash;
         delete safe.password_salt;
@@ -1624,6 +1671,8 @@ async function handleAdminDataCreate(
           true
       }
     );
+
+  delete data.access_code_hash;
 
   const identity =
     getIdentityColumn(
@@ -1732,7 +1781,9 @@ async function handleAdminDataCreate(
 
   const placeholders =
     keys
-      .map(() => "?")
+      .map(
+        () => "?"
+      )
       .join(", ");
 
   const quotedKeys =
@@ -1845,6 +1896,7 @@ async function handleAdminDataUpdate(
       }
     );
 
+  delete data.access_code_hash;
   delete data[
     identity.name
   ];
@@ -2044,7 +2096,9 @@ async function handleAdminDataDelete(
           ].trim()
         ) {
           oldImageUrls.push(
-            row[field].trim()
+            row[
+              field
+            ].trim()
           );
         }
       }
@@ -2119,10 +2173,14 @@ const IMAGE_RESOURCES =
   ]);
 
 const IMAGE_TYPES = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif"
+  "image/jpeg":
+    "jpg",
+  "image/png":
+    "png",
+  "image/webp":
+    "webp",
+  "image/gif":
+    "gif"
 };
 
 const MAX_IMAGE_SIZE =
@@ -2784,14 +2842,11 @@ async function handleAdminNextRaceGet(
       SELECT
         id,
         name,
-        title,
-        city,
         location,
         date,
         time,
         description,
         status,
-        image,
         image_url,
         track_image_url,
         is_next,
@@ -2874,7 +2929,6 @@ async function handleAdminNextRaceSave(
     await env.DB.prepare(`
       SELECT
         id,
-        is_next,
         access_code_hash
       FROM races
       WHERE id = ?
@@ -2920,7 +2974,9 @@ async function handleAdminNextRaceSave(
       await hashAccessCode(
         accessCode
       );
-  } else if (!codeHash) {
+  }
+
+  if (!codeHash) {
     return json(
       {
         ok: false,
@@ -2931,35 +2987,31 @@ async function handleAdminNextRaceSave(
     );
   }
 
-  await env.DB.batch([
-    env.DB.prepare(
-      `UPDATE races SET is_next = 0 WHERE is_next = 1`
-    ),
-    env.DB.prepare(`
-      UPDATE races
-      SET
-        is_next = 1,
-        access_code_hash = ?
-      WHERE id = ?
-    `).bind(
-      codeHash,
-      raceId
-    )
-  ]);
+  await env.DB.prepare(
+    `UPDATE races SET is_next = 0`
+  ).run();
+
+  await env.DB.prepare(`
+    UPDATE races
+    SET
+      is_next = 1,
+      access_code_hash = ?
+    WHERE id = ?
+  `).bind(
+    codeHash,
+    raceId
+  ).run();
 
   const saved =
     await env.DB.prepare(`
       SELECT
         id,
         name,
-        title,
-        city,
         location,
         date,
         time,
         description,
         status,
-        image,
         image_url,
         track_image_url,
         is_next,
@@ -3085,14 +3137,11 @@ async function handlePublicData(
         [
           "id",
           "name",
-          "title",
-          "city",
           "location",
           "date",
           "time",
           "description",
           "status",
-          "image",
           "image_url",
           "is_next",
           "created_at"
@@ -3284,6 +3333,10 @@ async function handlePublicData(
 }
 
 
+/* =========================================================
+   ROUTER
+========================================================= */
+
 export default {
   async fetch(
     request,
@@ -3295,6 +3348,11 @@ export default {
       );
 
     try {
+
+      /* =========================
+         AUTH
+      ========================= */
+
       if (
         url.pathname ===
           "/api/login" &&
@@ -3331,6 +3389,11 @@ export default {
         );
       }
 
+
+      /* =========================
+         NEXT RACE
+      ========================= */
+
       if (
         url.pathname ===
           "/api/admin/races/next" &&
@@ -3354,6 +3417,11 @@ export default {
           env
         );
       }
+
+
+      /* =========================
+         R2 UPLOAD
+      ========================= */
 
       if (
         url.pathname ===
@@ -3379,6 +3447,11 @@ export default {
         );
       }
 
+
+      /* =========================
+         R2 PUBLIC MEDIA
+      ========================= */
+
       if (
         url.pathname.startsWith(
           "/media/"
@@ -3396,6 +3469,11 @@ export default {
         );
       }
 
+
+      /* =========================
+         PUBLIC WEBSITE API
+      ========================= */
+
       if (
         url.pathname ===
           "/api/public/data" &&
@@ -3406,6 +3484,11 @@ export default {
           env
         );
       }
+
+
+      /* =========================
+         ADMIN USERS
+      ========================= */
 
       if (
         url.pathname ===
@@ -3465,6 +3548,11 @@ export default {
         );
       }
 
+
+      /* =========================
+         ADMIN SCHEMA
+      ========================= */
+
       const schemaMatch =
         url.pathname.match(
           /^\/api\/admin\/schema\/([^/]+)$/
@@ -3481,6 +3569,11 @@ export default {
           schemaMatch[1]
         );
       }
+
+
+      /* =========================
+         ADMIN DATA
+      ========================= */
 
       const dataMatch =
         url.pathname.match(
@@ -3513,6 +3606,11 @@ export default {
           );
         }
       }
+
+
+      /* =========================
+         ADMIN DATA WITH ID
+      ========================= */
 
       const dataIdMatch =
         url.pathname.match(
@@ -3552,6 +3650,11 @@ export default {
           );
         }
       }
+
+
+      /* =========================
+         STATIC WEBSITE
+      ========================= */
 
       return env.ASSETS.fetch(
         request
