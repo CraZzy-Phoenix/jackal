@@ -2040,6 +2040,7 @@ async function handlePublicData(env) {
 
       publicRows(env, 'drivers', [
         'id',
+        'name',
         'nickname',
         'number',
         'team',
@@ -2178,8 +2179,8 @@ async function handlePublicData(env) {
 
       if (wins !== 0) return wins;
 
-      return String(a.nickname || '').localeCompare(
-        String(b.nickname || ''),
+      return String(a.name || '').localeCompare(
+        String(b.name || ''),
         'de-DE'
       );
     })
