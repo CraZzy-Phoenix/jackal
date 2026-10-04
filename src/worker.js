@@ -534,12 +534,32 @@ function quoteIdentifier(value) {
   return `"${value.replaceAll('"', '""')}"`;
 }
 
+async function ensureNewsContentColumns(env) {
+  const required = [
+    { name: "category", type: "TEXT NOT NULL DEFAULT 'ALLGEMEIN'" },
+    { name: "text", type: "TEXT NOT NULL DEFAULT ''" },
+    { name: "content", type: "TEXT NOT NULL DEFAULT ''" }
+  ];
+
+  const schema = await getTableSchema(env, "news");
+  const existing = new Set((schema.results || []).map(col => col.name));
+
+  for (const column of required) {
+    if (existing.has(column.name)) continue;
+    await env.DB.prepare(
+      `ALTER TABLE news ADD COLUMN ${quoteIdentifier(column.name)} ${column.type}`
+    ).run();
+  }
+}
+
 async function handleAdminSchema(request, env, resource) {
   const auth = await requirePermission(request, env, resource, "view");
   if (auth instanceof Response) return auth;
 
   const table = RESOURCES[resource];
   if (!table) return json({ ok: false, error: "Unbekannter Bereich." }, 404);
+
+  if (resource === "news") await ensureNewsContentColumns(env);
 
   const schema = await getTableSchema(env, table);
   const columns = (schema.results || []).map(col => ({
@@ -1304,7 +1324,7 @@ function normalizeNewsDashboardConfig(row) {
         )
       }))
       .filter(item => item.driver_id)
-      .slice(0, 5)
+      .slice(0, 20)
   };
 }
 
@@ -2223,7 +2243,12 @@ async function handlePublicData(env) {
         'date',
         'title',
         'text',
+        'teaser',
+        'short_text',
+        'summary',
         'content',
+        'long_text',
+        'body',
         'image',
         'image_url',
         'category',
