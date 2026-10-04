@@ -5889,6 +5889,7 @@ async function openCrudModal(resource,row=null){
   crudEditing={resource,row};
   const modal=document.getElementById("crudModal");
   const body=document.getElementById("crudFormBody");
+  document.getElementById("crudModalSave")?.classList.remove("hidden");
 
   if(resource === "news"){
     const schemaCols=schema.columns||[];
@@ -6414,6 +6415,42 @@ function openEmbedSpecialModal(title, subtitle, html, onSave){
 
 async function openNewsDashboardSpecial(kind){
   const dash=await fetchJson("/api/admin/news/dashboard");
+
+  if(kind==="news-archive"){
+    await loadCrudResource("news");
+    const rows=(crudRows.news||[]).slice().sort((a,b)=>String(b.date||b.created_at||"").localeCompare(String(a.date||a.created_at||"")));
+    const listHtml=rows.length ? rows.slice(0,50).map(row=>{
+      const id=row[crudSchemas.news?.identity||"id"];
+      const rawStatus=String(row.status||"").toLowerCase();
+      const archived=rawStatus==="archived" || (row.active!==undefined && Number(row.active)===0 && !["draft","inactive"].includes(rawStatus));
+      const label=archived?"ARCHIV":(rawStatus==="draft"?"ENTWURF":"ÖFFENTLICH");
+      const button=archived
+        ? `<button type="button" class="user-button embed-news-archive-action" data-id="${escapeHtml(String(id))}" data-archive="0">Wiederherstellen</button>`
+        : `<button type="button" class="user-button embed-news-archive-action" data-id="${escapeHtml(String(id))}" data-archive="1">Archivieren</button>`;
+      return `<div class="news-archive-row" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line,#2a2342)"><div><strong style="display:block;color:#fff">${escapeHtml(row.title||"Unbenannte News")}</strong><small style="color:#8f879e">${escapeHtml(String(row.date||row.created_at||"—"))}</small></div><span class="news-control-badge">${escapeHtml(newsNormalizeCategory(row.category))}</span><span class="news-muted">${label}</span>${button}</div>`;
+    }).join('') : '<div class="news-control-empty">Noch keine News vorhanden.</div>';
+
+    const html=`<div class="crud-field full"><div class="news-modal-help">Archivierte News bleiben in der Datenbank erhalten. Du kannst sie jederzeit wieder veröffentlichen.</div></div><div id="embeddedNewsArchiveList" style="max-height:50vh;overflow:auto;padding-right:4px">${listHtml}</div>`;
+    openEmbedSpecialModal("News archivieren","News",html,async()=>{});
+    document.getElementById("crudModalSave")?.classList.add("hidden");
+
+    document.querySelectorAll("#embeddedNewsArchiveList .embed-news-archive-action").forEach(button=>{
+      button.addEventListener("click",async()=>{
+        const id=button.dataset.id||"";
+        const archive=button.dataset.archive==="1";
+        button.disabled=true;
+        try{
+          await newsArchiveToggle(id,archive);
+          await openNewsDashboardSpecial("news-archive");
+        }catch(error){
+          showToast(error.message||"News konnte nicht geändert werden.",true);
+          button.disabled=false;
+        }
+      });
+    });
+    return;
+  }
+
   await loadCrudResource("races");
   await loadCrudResource("drivers");
   const races=crudRows.races||[];
