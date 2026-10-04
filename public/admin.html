@@ -6570,9 +6570,20 @@ checkSession();
     return crudRows?.[resource] || [];
   }
 
-  function openEdit(resource,row){
+  async function openEdit(resource,row){
     try{
-      if(typeof openCrudModal==='function') openCrudModal(resource,row ?? null);
+      // The public page can already show the authenticated controls while the
+      // admin iframe is still finishing its own session bootstrap. Do not open
+      // the admin login screen again in that case.
+      if(!currentUser?.username){
+        try{ await loadCurrentUser(); }catch(_){
+          showToast('Die Admin-Sitzung konnte nicht geladen werden. Bitte einmal neu anmelden.',true);
+          return;
+        }
+      }
+      loginScreen?.classList.add('hidden');
+      adminApp?.classList.remove('hidden');
+      if(typeof openCrudModal==='function') await openCrudModal(resource,row ?? null);
     }catch(error){ console.error(error); }
   }
 
@@ -6585,29 +6596,54 @@ checkSession();
     }catch(error){ console.error(error); }
   }
 
+  function stopPreviewEvent(event){
+    try{ event.preventDefault(); event.stopPropagation(); }catch(_){ }
+  }
+
   function addHeaderAction(doc, target, labelText, onClick, extraClass=''){
     if(!target) return;
-    if(target.querySelector('.preview-admin-actions')) return;
+    const old=target.querySelector('.preview-admin-actions');
+    if(old) old.remove();
     const wrap=doc.createElement('div');
     wrap.className='preview-admin-actions';
     const b=doc.createElement('button');
     b.type='button'; b.className='jackal-admin-btn '+extraClass; b.textContent=labelText;
-    b.addEventListener('click',onClick);
+    b.addEventListener('click',event=>{ stopPreviewEvent(event); onClick(event); });
     wrap.appendChild(b); target.appendChild(wrap);
   }
 
   function addCardActions(doc, card, resource, row){
-    if(!card || card.querySelector('.jackal-admin-row-actions')) return;
+    if(!card) return;
+    const old=card.querySelector('.jackal-admin-row-actions');
+    if(old) old.remove();
+
     const actions=doc.createElement('div');
     actions.className='jackal-admin-row-actions';
+
     if(permission(resource,'edit')){
-      const edit=doc.createElement('button'); edit.type='button'; edit.className='jackal-admin-btn'; edit.textContent='Bearbeiten';
-      edit.addEventListener('click',()=>openEdit(resource,row)); actions.appendChild(edit);
+      const edit=doc.createElement('button');
+      edit.type='button';
+      edit.className='jackal-admin-btn';
+      edit.textContent='Bearbeiten';
+      edit.addEventListener('click',event=>{
+        stopPreviewEvent(event);
+        void openEdit(resource,row);
+      });
+      actions.appendChild(edit);
     }
+
     if(permission(resource,'delete')){
-      const del=doc.createElement('button'); del.type='button'; del.className='jackal-admin-btn danger'; del.textContent='Löschen';
-      del.addEventListener('click',()=>removeRow(resource,rowIdentity(resource,row))); actions.appendChild(del);
+      const del=doc.createElement('button');
+      del.type='button';
+      del.className='jackal-admin-btn danger';
+      del.textContent='Löschen';
+      del.addEventListener('click',event=>{
+        stopPreviewEvent(event);
+        void removeRow(resource,rowIdentity(resource,row));
+      });
+      actions.appendChild(del);
     }
+
     if(actions.childElementCount) card.appendChild(actions);
   }
 
@@ -6743,7 +6779,7 @@ checkSession();
       let style=doc.getElementById('jackalAdminPreviewStyle');
       if(!style){
         style=doc.createElement('style'); style.id='jackalAdminPreviewStyle';
-        style.textContent='.topbar{display:none!important;}';
+        style.textContent='.topbar{display:none!important;}html[data-jackal-admin-preview] .jackal-login-overlay{display:none!important}html[data-jackal-admin-preview] .login-link{display:none!important}';
         doc.head?.appendChild(style);
       }
     }catch(_){ }
