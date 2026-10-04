@@ -1170,7 +1170,9 @@ function parseJsonArray(value) {
 }
 
 function normalizeNewsDashboardConfig(row) {
+  const displayMode = String(row?.display_mode || "next_race");
   return {
+    display_mode: ["next_race", "next_event", "last_race"].includes(displayMode) ? displayMode : "next_race",
     next_race_id: String(row?.next_race_id ?? ""),
     latest_news_ids: parseJsonArray(row?.latest_news_ids)
       .map(String)
@@ -1200,6 +1202,7 @@ function normalizeNewsDashboardConfig(row) {
 }
 
 async function handleAdminNewsDashboardGet(request, env) {
+  await ensureNewsDashboardDisplayMode(env);
   const auth = await requirePermission(
     request,
     env,
@@ -1214,6 +1217,7 @@ async function handleAdminNewsDashboardGet(request, env) {
       .prepare(`
         SELECT
           id,
+          display_mode,
           next_race_id,
           latest_news_ids,
           featured_news_id,
@@ -1251,6 +1255,7 @@ async function handleAdminNewsDashboardGet(request, env) {
 }
 
 async function handleAdminNewsDashboardSave(request, env) {
+  await ensureNewsDashboardDisplayMode(env);
   const auth = await requirePermission(
     request,
     env,
@@ -1336,7 +1341,9 @@ async function handleAdminNewsDashboardSave(request, env) {
     );
   }
 
+  const displayMode = String(body?.display_mode || "next_race");
   const config = {
+    display_mode: ["next_race", "next_event", "last_race"].includes(displayMode) ? displayMode : "next_race",
     next_race_id: String(body?.next_race_id ?? ""),
     latest_news_ids: latestNewsIds,
     featured_news_id: String(
@@ -1363,6 +1370,7 @@ async function handleAdminNewsDashboardSave(request, env) {
       .prepare(`
         INSERT INTO news_dashboard (
           id,
+          display_mode,
           next_race_id,
           latest_news_ids,
           featured_news_id,
@@ -1373,9 +1381,10 @@ async function handleAdminNewsDashboardSave(request, env) {
           poll_options,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id)
         DO UPDATE SET
+          display_mode = excluded.display_mode,
           next_race_id = excluded.next_race_id,
           latest_news_ids = excluded.latest_news_ids,
           featured_news_id = excluded.featured_news_id,
@@ -1388,6 +1397,7 @@ async function handleAdminNewsDashboardSave(request, env) {
       `)
       .bind(
         1,
+        config.display_mode,
         config.next_race_id,
         JSON.stringify(config.latest_news_ids),
         config.featured_news_id,
@@ -2014,7 +2024,21 @@ function isPublicActive(value) {
   );
 }
 
+async function ensureNewsDashboardDisplayMode(env) {
+  try {
+    const schema = await env.DB.prepare(`PRAGMA table_info(news_dashboard)`).all();
+    const hasColumn = (schema.results || []).some(col => col.name === "display_mode");
+    if (!hasColumn) {
+      await env.DB.prepare(`ALTER TABLE news_dashboard ADD COLUMN display_mode TEXT NOT NULL DEFAULT 'next_race'`).run();
+    }
+  } catch (error) {
+    console.error("news_dashboard display_mode migration failed:", error);
+  }
+}
+
 async function handlePublicData(env) {
+  await ensureNewsDashboardDisplayMode(env);
+
   const [
     races,
     drivers,
@@ -2119,6 +2143,7 @@ async function handlePublicData(env) {
 
       publicRows(env, 'news_dashboard', [
         'id',
+        'display_mode',
         'next_race_id',
         'latest_news_ids',
         'featured_news_id',
