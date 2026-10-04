@@ -1044,6 +1044,46 @@ a { color: inherit; text-decoration: none; }
 .news-archive-cta h3{font:800 22px var(--f-head);font-style:italic;text-transform:uppercase;color:#fff}.news-archive-cta p{margin-top:3px;color:var(--muted);font:600 12px var(--f-body)}
 .news-archive-cta .btn{flex:0 0 auto}.change{position:relative;padding-bottom:42px;border-color:color-mix(in srgb,var(--category-color,#4d86ff) 40%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--category-color,#4d86ff) 18%,transparent),rgba(10,10,30,.35))}.change .change-head svg{color:var(--category-color,#4d86ff)}.change time{color:color-mix(in srgb,var(--category-color,#4d86ff) 70%,#fff)}.change li::before{color:var(--category-color,#4d86ff);background:var(--category-color,#4d86ff);border:0}.change .change-link{color:var(--category-color,#4d86ff)}.change-category{position:absolute;left:14px;bottom:12px;padding:4px 7px;border-radius:4px;font:800 9px var(--f-body);letter-spacing:.08em;text-transform:uppercase}
 .news-archive-overlay{position:fixed;inset:0;z-index:6000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(4,3,10,.28);backdrop-filter:blur(8px)}.news-archive-overlay.open{display:flex}.news-archive-modal{width:min(980px,94vw);max-height:88vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,var(--card-2),var(--card));box-shadow:0 30px 90px rgba(0,0,0,.55)}.news-archive-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px;border-bottom:1px solid var(--line)}.news-archive-modal-head h2{font:800 30px var(--f-head);font-style:italic;text-transform:uppercase;color:#fff}.news-archive-modal-head p{margin-top:4px;color:var(--muted);font:600 12px var(--f-body)}.news-archive-close{width:34px;height:34px;border:1px solid var(--line);border-radius:3px;color:#d8d0e8;background:#0f0c18;font:700 18px var(--f-head);cursor:pointer}.news-archive-list{display:grid;gap:9px;padding:16px}.news-archive-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:6px;background:#0e0b17}.news-archive-item strong{display:block;color:#fff;font:800 16px var(--f-head);text-transform:uppercase}.news-archive-item small{display:block;margin-top:2px;color:#756d80;font:600 10px var(--f-body)}.news-archive-item .category{padding:4px 7px;border-radius:4px;font:800 9px var(--f-body);letter-spacing:.08em;text-transform:uppercase}.news-archive-empty{padding:30px;text-align:center;color:#766e82;font:700 12px var(--f-body);text-transform:uppercase}@media(max-width:700px){.news-archive-cta{flex-direction:column;align-items:flex-start}.news-archive-item{grid-template-columns:1fr}.news-archive-item .category,.news-archive-item .btn{justify-self:start}}
+
+
+
+/* JACKAL RESPONSIVE LARGE-MONITOR SCALING – stable viewport based layout */
+@media (min-width: 961px){
+  .grid-news{
+    width:min(94vw,2200px)!important;
+    max-width:none!important;
+    padding-left:0!important;
+    padding-right:0!important;
+    grid-template-columns:minmax(0,1.55fr) minmax(0,1.15fr) minmax(0,1fr);
+  }
+  .row-2{grid-template-columns:minmax(0,1.18fr) minmax(0,1fr)}
+}
+@media (min-width: 1440px){
+  .grid-news{gap:clamp(14px,0.8vw,20px);margin-top:clamp(6px,0.5vw,12px)}
+  .big-head{padding:clamp(14px,0.75vw,20px) clamp(18px,0.9vw,24px) clamp(10px,0.55vw,14px);gap:clamp(18px,0.8vw,22px)}
+  .big-icon{width:clamp(52px,2.7vw,66px);height:clamp(52px,2.7vw,66px)}
+  .big-title{font-size:clamp(30px,1.5vw,42px)}
+  .big-sub{font-size:clamp(18px,0.95vw,24px)}
+  .tbl{font-size:clamp(15px,0.82vw,18px)}
+  .tbl th{font-size:clamp(11px,0.6vw,13px)}
+  .tbl .driver{font-size:clamp(16px,0.9vw,20px)}
+  .change-head h3{font-size:clamp(20px,1.05vw,26px)}
+  .winner-name{font-size:clamp(28px,1.5vw,36px)}
+}
+@media (min-width: 1800px){
+  .grid-news{width:min(94vw,2600px)!important}
+  .card-foot{padding:16px 22px 20px}
+  .changes-list{padding:0 16px 18px;gap:14px}
+  .race-body{min-height:clamp(330px,18vw,430px);padding:22px}
+  .winner-img{min-height:clamp(260px,16vw,360px)}
+  .news-detail-modal{width:min(1600px,90vw)}
+  .news-archive-modal{width:min(1800px,90vw)}
+}
+@media (min-width: 2400px){
+  .grid-news{width:min(92vw,3200px)!important}
+  .news-detail-modal{width:min(2200px,88vw)}
+  .news-archive-modal{width:min(2200px,88vw)}
+}
 </style>
 
 </head>
