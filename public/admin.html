@@ -959,7 +959,7 @@ button,input,textarea,select{font-family:var(--f-body);}
 .news-status.off{color:#a9a3b0;border:1px solid #3b3743;background:rgba(90,86,100,.10);}
 .news-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
 .news-modal-grid .full{grid-column:1/-1;}
-.news-modal-help{font-size:9px;color:#6e6878;line-height:1.5;margin-top:5px;}
+.news-modal-help{font-size:9px;color:#6e6878;line-height:1.5;margin-top:5px;}.news-longtext-box{border:1px solid #2a2342;border-radius:7px;background:#0e0b17;padding:10px}.news-longtext-box summary{cursor:pointer;color:#d9d3ec;font:800 12px var(--f-head);text-transform:uppercase}.news-longtext-box textarea{margin-top:9px}.news-admin-note{color:#7d748c;font-size:10px;line-height:1.45;}
 .news-image-preview{max-width:100%;height:170px;object-fit:cover;border-radius:7px;border:1px solid #33294a;margin-top:10px;display:none;background:#080610;}
 .news-image-box{border:1px dashed #4c2870;background:#0b0913;border-radius:8px;padding:11px;}
 .news-image-box input[type=file]{margin-top:8px;width:100%;font-size:10px;color:#8f879c;}
@@ -2252,22 +2252,50 @@ async function loadCurrentUser(){
 
 async function checkSession(){
   adminApp.classList.remove("hidden");
-  try{
-    await loadCurrentUser();
-    showAdmin();
 
-    if(embedMode){
-      await startEmbedEditor();
-      return;
+  // Authentication failure is handled separately from editor errors.
+  let authError=null;
+  const attempts=embedMode?4:1;
+  for(let attempt=0;attempt<attempts;attempt++){
+    try{
+      await loadCurrentUser();
+      authError=null;
+      break;
+    }catch(error){
+      authError=error;
+      if(attempt<attempts-1) await new Promise(resolve=>setTimeout(resolve,180));
     }
+  }
 
+  if(authError){
+    showLogin();
+    return;
+  }
+
+  showAdmin();
+
+  if(embedMode){
+    try{
+      await startEmbedEditor();
+    }catch(error){
+      console.error("Embed editor error:",error);
+      const message=document.getElementById("crudFormMessage");
+      if(message){
+        message.textContent=error?.message||"Der Verwaltungsbereich konnte nicht geladen werden.";
+        message.classList.add("error");
+      }
+    }
+    return;
+  }
+
+  try{
     // Normal admin page = only settings and user management.
     const settingsButton=document.querySelector('.menu button[data-page="settings"]');
     settingsButton?.click();
     await loadCrudResource("settings");
     await loadUsers();
   }catch(error){
-    showLogin();
+    console.error("Admin data error:",error);
   }
 }
 
@@ -5923,7 +5951,7 @@ async function openCrudModal(resource,row=null){
         </select></div>`:""}
         ${has("active")?`<div class="crud-checkbox full"><input id="newsActiveField" name="active" type="checkbox" ${active?"checked":""}><span>News öffentlich anzeigen</span></div>`:""}
         ${textCol?`<div class="crud-field full"><label>Kurztext / Teaser</label><textarea rows="3" maxlength="300" name="${escapeHtml(textCol)}" id="newsTeaserField" placeholder="Kurzer Text für Karten und Vorschauen...">${escapeHtml(String(value(textCol,"")))}</textarea><div class="news-char-count" id="newsCharCount"></div></div>`:""}
-        ${has("content") && textCol!=="content"?`<div class="crud-field full"><label>Vollständiger Inhalt</label><textarea rows="8" name="content" placeholder="Der vollständige News-Text...">${escapeHtml(String(value("content","")))}</textarea></div>`:""}
+        ${has("content") && textCol!=="content"?`<div class="crud-field full"><div class="news-longtext-box"><details open><summary>Vollständiger News-Text</summary><textarea rows="10" name="content" placeholder="Der vollständige Text, den Besucher beim Öffnen sehen...">${escapeHtml(String(value("content","")))}</textarea><div class="news-admin-note">Dieser Text wird erst beim Öffnen der News angezeigt.</div></details></div></div>`:""}
         ${imageCol?`<div class="crud-field full"><label>Titelbild (optional)</label><div class="news-image-box"><input type="text" name="${escapeHtml(imageCol)}" id="newsImageUrl" value="${escapeHtml(String(value(imageCol,"")))}" placeholder="Bild-URL (optional)"><input type="file" name="__image_file" accept="image/jpeg,image/png,image/webp,image/gif"><img class="news-image-preview" id="newsImagePreview" src="${escapeHtml(String(value(imageCol,"")))}" alt="Vorschau" style="${value(imageCol,"")?"display:block":"display:none"}"><div class="news-modal-help">JPG, PNG, WEBP oder GIF · maximal 10 MB. Das Titelbild ist optional. Eine ausgewählte Datei wird beim Speichern automatisch in R2 hochgeladen.</div></div></div>`:""}
       </div>`;
 
@@ -6420,6 +6448,7 @@ async function saveNewsDashboardPatch(patch){
   });
 }
 
+function adminNewsLabel(n){return `${n?.title||'Unbenannte News'}${n?.date?` · ${String(n.date).slice(0,10)}`:''}`;}
 function adminRaceLabel(r){
   return `${r?.name||'Rennen'} · ${String(r?.date||'—').slice(0,10)}${r?.time?` · ${String(r.time).slice(0,5)}`:''}`;
 }
@@ -6438,9 +6467,10 @@ async function openNewsDashboardSpecial(kind){
       const label=archived?'ARCHIV':(active?'ÖFFENTLICH':'AUSGEBLENDET');
       const edit=can(currentUser||{},'news','edit')?`<button type="button" class="user-button embed-news-edit" data-id="${escapeHtml(String(id))}">Bearbeiten</button>`:'';
       const del=can(currentUser||{},'news','delete')?`<button type="button" class="user-button danger embed-news-delete" data-id="${escapeHtml(String(id))}">Löschen</button>`:'';
+      const view=can(currentUser||{},'news','view')?`<button type="button" class="user-button embed-news-view" data-id="${escapeHtml(String(id))}">Langtext</button>`:'';
       const vis=!archived?`<button type="button" class="user-button embed-news-visibility-action" data-id="${escapeHtml(String(id))}" data-visible="${active?'0':'1'}">${active?'Ausblenden':'Einblenden'}</button>`:'';
       const arc=archived?`<button type="button" class="user-button embed-news-archive-action" data-id="${escapeHtml(String(id))}" data-action="restore">Wiederherstellen</button>`:`<button type="button" class="user-button embed-news-archive-action" data-id="${escapeHtml(String(id))}" data-action="archive">Archivieren</button>`;
-      return `<div class="news-archive-row" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line,#2a2342)"><div><strong style="display:block;color:#fff">${escapeHtml(row.title||'Unbenannte News')}</strong><small style="color:#8f879e">${escapeHtml(String(row.date||row.created_at||'—'))}</small></div><span class="news-control-badge">${escapeHtml(newsNormalizeCategory(row.category))}</span><span class="news-muted">${label}</span><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${edit}${vis}${arc}${del}</div></div>`;
+      return `<div class="news-archive-row" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line,#2a2342)"><div><strong style="display:block;color:#fff">${escapeHtml(row.title||'Unbenannte News')}</strong><small style="color:#8f879e">${escapeHtml(String(row.date||row.created_at||'—'))}</small></div><span class="news-control-badge">${escapeHtml(newsNormalizeCategory(row.category))}</span><span class="news-muted">${label}</span><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${view}${edit}${vis}${arc}${del}</div></div>`;
     }).join('') : '<div class="news-control-empty">Noch keine News vorhanden.</div>';
     const create=kind==='news-manage' && can(currentUser||{},'news','create')?'<button type="button" class="action-button" id="embeddedNewsCreate">+ Neue News</button>':'';
     const html=`${create}<div class="crud-field full"><div class="news-modal-help">News verwalten: Sichtbarkeit, Archiv, Bearbeiten und Löschen. Archivierte News bleiben in D1 erhalten.</div></div><div id="embeddedNewsArchiveList" style="max-height:58vh;overflow:auto;padding-right:4px">${list}</div>`;
@@ -6458,6 +6488,7 @@ async function openNewsDashboardSpecial(kind){
       if(schema?.columns?.some(c=>c.name==='status')) payload.status=visible?'published':'inactive';
       try{await fetchJson(`/api/admin/data/news/${encodeURIComponent(id)}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});await openNewsDashboardSpecial(kind);}catch(e){showToast(e.message||'Sichtbarkeit konnte nicht geändert werden.',true);btn.disabled=false;}
     }));
+    document.querySelectorAll('#embeddedNewsArchiveList .embed-news-view').forEach(btn=>btn.addEventListener('click',()=>{const row=(crudRows.news||[]).find(x=>String(x[crudSchemas.news?.identity||'id'])===String(btn.dataset.id||''));if(!row)return;const text=escapeHtml(String(row.content||row.long_text||row.body||row.text||'').trim()||'Kein Langtext vorhanden.');openEmbedSpecialModal('Langtext anzeigen','News',`<div class="crud-field full"><div style="white-space:pre-wrap;line-height:1.6;color:#ddd">${text}</div></div>`,async()=>{});document.getElementById('crudModalSave')?.classList.add('hidden');}));
     document.querySelectorAll('#embeddedNewsArchiveList .embed-news-edit').forEach(btn=>btn.addEventListener('click',()=>{closeCrudModal();setTimeout(()=>openEditor(`embed=crud&resource=news&action=edit&id=${encodeURIComponent(btn.dataset.id||'')}`),30);}));
     document.querySelectorAll('#embeddedNewsArchiveList .embed-news-delete').forEach(btn=>btn.addEventListener('click',async()=>{try{await deleteResource('news',btn.dataset.id||'','News');await openNewsDashboardSpecial(kind);}catch(e){showToast(e.message||'News konnte nicht gelöscht werden.',true);}}));
     return;
@@ -6478,8 +6509,15 @@ async function openNewsDashboardSpecial(kind){
   if(kind==='news-event'){
     const selected=String(dash.config?.display_race_id||dash.config?.next_race_id||'');
     const mode=String(dash.config?.display_mode||'next_race');
-    const html=`<div class="crud-field"><label>Was soll angezeigt werden?</label><select name="display_mode"><option value="next_race" ${mode==='next_race'?'selected':''}>Nächstes Rennen</option><option value="last_race" ${mode==='last_race'?'selected':''}>Letztes Rennen</option><option value="next_event" ${mode==='next_event'?'selected':''}>Nächstes Event</option><option value="last_event" ${mode==='last_event'?'selected':''}>Letztes Event</option><option value="current_event" ${mode==='current_event'?'selected':''}>Aktuelles Event</option></select></div><div class="crud-field"><label>Konkretes Rennen / Event</label><select name="display_race_id"><option value="">Automatisch bestimmen</option>${races.map(r=>`<option value="${escapeHtml(String(r.id))}" ${String(r.id)===selected?'selected':''}>${escapeHtml(adminRaceLabel(r))}</option>`).join('')}</select></div><div class="crud-field full"><div class="news-modal-help">Eine konkrete Auswahl hat Vorrang. So kannst du jederzeit exakt festlegen, welches Event die Karte zeigen soll.</div></div>`;
-    openEmbedSpecialModal('Event-Bereich verwalten','News',html,async form=>{await saveNewsDashboardPatch({display_mode:form.elements.namedItem('display_mode')?.value||'next_race',display_race_id:form.elements.namedItem('display_race_id')?.value||''});});
+    const eventSource=String(dash.config?.event_source||'race');
+    const eventNewsId=String(dash.config?.event_news_id||'');
+    const eventCustomTitle=String(dash.config?.event_custom_title||'');
+    const eventCustomText=String(dash.config?.event_custom_text||'');
+    const eventNews=(crudRows.news||[]).filter(n=>{const c=String(n.category||'').trim().toLowerCase();return ['events','event'].includes(c)||c.includes('event');}).filter(n=>newsIsActive(n));
+    const newsOptions=eventNews.map(n=>`<option value="${escapeHtml(String(n.id))}" ${String(n.id)===eventNewsId?'selected':''}>${escapeHtml(adminNewsLabel(n))}</option>`).join('');
+    const html=`<div class="crud-field"><label>Was soll angezeigt werden?</label><select name="display_mode"><option value="next_race" ${mode==='next_race'?'selected':''}>Nächstes Rennen</option><option value="last_race" ${mode==='last_race'?'selected':''}>Letztes Rennen</option><option value="next_event" ${mode==='next_event'?'selected':''}>Nächstes Event</option><option value="last_event" ${mode==='last_event'?'selected':''}>Letztes Event</option><option value="current_event" ${mode==='current_event'?'selected':''}>Aktuelles Event</option></select></div><div class="crud-field"><label>Konkretes Rennen / Event</label><select name="display_race_id"><option value="">Automatisch bestimmen</option>${races.map(r=>`<option value="${escapeHtml(String(r.id))}" ${String(r.id)===selected?'selected':''}>${escapeHtml(adminRaceLabel(r))}</option>`).join('')}</select></div><div class="crud-field full"><label>Event-Inhalt</label><select name="event_source" id="newsEventSource"><option value="race" ${eventSource==='race'?'selected':''}>Rennen/Events automatisch verwenden</option><option value="custom" ${eventSource==='custom'?'selected':''}>Eigenen Event-Text verwenden</option><option value="news" ${eventSource==='news'?'selected':''}>News aus der Kategorie EVENTS verwenden</option></select></div><div class="crud-field full" id="newsEventCustomFields" style="display:${eventSource==='custom'?'grid':'none'}"><label>Eigener Event-Text</label><input name="event_custom_title" value="${escapeHtml(eventCustomTitle)}" placeholder="Event-Titel"><textarea rows="4" name="event_custom_text" placeholder="Kurzer Text zum Event...">${escapeHtml(eventCustomText)}</textarea></div><div class="crud-field full" id="newsEventNewsField" style="display:${eventSource==='news'?'block':'none'}"><label>EVENT-News auswählen</label><select name="event_news_id"><option value="">Keine News ausgewählt</option>${newsOptions}</select><div class="news-modal-help">Es werden nur aktive News aus der Kategorie EVENTS angeboten.</div></div><div class="crud-field full"><div class="news-modal-help">Bei EVENT-Modi kannst du entweder normale Renn-/Event-Daten, einen eigenen Text oder eine vorhandene EVENT-News verwenden.</div></div>`;
+    openEmbedSpecialModal('Event-Bereich verwalten','News',html,async form=>{await saveNewsDashboardPatch({display_mode:form.elements.namedItem('display_mode')?.value||'next_race',display_race_id:form.elements.namedItem('display_race_id')?.value||'',event_source:form.elements.namedItem('event_source')?.value||'race',event_news_id:form.elements.namedItem('event_news_id')?.value||'',event_custom_title:form.elements.namedItem('event_custom_title')?.value||'',event_custom_text:form.elements.namedItem('event_custom_text')?.value||''});});
+    document.getElementById('newsEventSource')?.addEventListener('change',e=>{const v=e.target.value;const c=document.getElementById('newsEventCustomFields');const n=document.getElementById('newsEventNewsField');if(c)c.style.display=v==='custom'?'grid':'none';if(n)n.style.display=v==='news'?'block':'none';});
     return;
   }
 
@@ -6492,14 +6530,19 @@ async function openNewsDashboardSpecial(kind){
 
   const winner=String(dash.config?.hearts_winner_driver_id||'');
   const pollOptions=Array.isArray(dash.config?.poll_options)?dash.config.poll_options:[];
-  const optionFields=Array.from({length:5},(_,i)=>{const o=pollOptions[i]||{};const id=String(o.driver_id||'');const pct=Number(o.percent)||0;return `<div class="crud-field"><label>Kandidat ${i+1}</label><select name="poll_driver_${i}"><option value="">Keiner</option>${drivers.map(d=>`<option value="${escapeHtml(String(d.id))}" ${String(d.id)===id?'selected':''}>${escapeHtml(d.nickname||d.name||'Fahrer')}</option>`).join('')}</select></div><div class="crud-field"><label>Prozent</label><input type="number" min="0" max="100" name="poll_percent_${i}" value="${pct}"></div>`;}).join('');
 
   if(kind==='poll'){
-    const html=`<div class="crud-field full"><label>Abstimmungsfrage</label><input name="poll_question" value="${escapeHtml(dash.config?.poll_question||'Wer war dein Sieger der Herzen?')}"></div><div class="crud-field full"><label>Abstimmung aktiv</label><div class="crud-checkbox"><input type="checkbox" name="poll_active" ${Number(dash.config?.poll_active)===1?'checked':''}><span>Abstimmung öffentlich anzeigen</span></div></div>${optionFields}`;
-    openEmbedSpecialModal('Abstimmung verwalten','News',html,async form=>{const poll_options=[];for(let i=0;i<5;i++){const id=form.elements.namedItem(`poll_driver_${i}`)?.value||'';if(id)poll_options.push({driver_id:id,percent:Number(form.elements.namedItem(`poll_percent_${i}`)?.value||0)});}await saveNewsDashboardPatch({poll_active:!!form.elements.namedItem('poll_active')?.checked,poll_question:form.elements.namedItem('poll_question')?.value||'Wer war dein Sieger der Herzen?',poll_options});});
+    const pollRows=pollOptions.length?pollOptions:[{},{}];
+    const optionFields=pollRows.map((o,i)=>`<div class="poll-option-row" data-poll-row style="display:grid;grid-template-columns:1fr 130px auto;gap:8px;align-items:end;margin-bottom:10px"><div class="crud-field"><label>Kandidat ${i+1}</label><select name="poll_driver_${i}"><option value="">Keiner</option>${drivers.map(d=>`<option value="${escapeHtml(String(d.id))}" ${String(d.id)===String(o.driver_id||'')?'selected':''}>${escapeHtml(d.nickname||d.name||'Fahrer')}</option>`).join('')}</select></div><div class="crud-field"><label>Prozent</label><input type="number" min="0" max="100" name="poll_percent_${i}" value="${Number(o.percent)||0}"></div><button type="button" class="user-button danger poll-remove-row">Entfernen</button></div>`).join('');
+    const html=`<div class="crud-field full"><label>Abstimmungsfrage</label><input name="poll_question" value="${escapeHtml(dash.config?.poll_question||'Wer war dein Sieger der Herzen?')}"></div><div class="crud-field full"><label>Abstimmung aktiv</label><div class="crud-checkbox"><input type="checkbox" name="poll_active" ${Number(dash.config?.poll_active)===1?'checked':''}><span>Abstimmung öffentlich anzeigen</span></div></div><div class="crud-field full"><div id="pollOptionsEditor">${optionFields}</div><button type="button" class="action-button" id="pollAddOption">+ Kandidat hinzufügen</button><div class="news-modal-help">Maximal 20 Kandidaten. Bei aktiver Abstimmung müssen die Prozentwerte zusammen 100 % ergeben.</div></div>`;
+    openEmbedSpecialModal('Abstimmung verwalten','News',html,async form=>{const poll_options=[];document.querySelectorAll('#pollOptionsEditor [data-poll-row]').forEach(row=>{const id=row.querySelector('select')?.value||'';if(id)poll_options.push({driver_id:id,percent:Math.max(0,Math.min(100,Number(row.querySelector('input[type=number]')?.value||0)))});});await saveNewsDashboardPatch({poll_active:!!form.elements.namedItem('poll_active')?.checked,poll_question:form.elements.namedItem('poll_question')?.value||'Wer war dein Sieger der Herzen?',poll_options});});
+    const editor=document.getElementById('pollOptionsEditor');
+    const add=document.getElementById('pollAddOption');
+    const createRow=(i)=>{const row=document.createElement('div');row.className='poll-option-row';row.dataset.pollRow='';row.style='display:grid;grid-template-columns:1fr 130px auto;gap:8px;align-items:end;margin-bottom:10px';const options=drivers.map(d=>`<option value="${escapeHtml(String(d.id))}">${escapeHtml(d.nickname||d.name||'Fahrer')}</option>`).join('');row.innerHTML=`<div class="crud-field"><label>Kandidat ${i}</label><select><option value="">Keiner</option>${options}</select></div><div class="crud-field"><label>Prozent</label><input type="number" min="0" max="100" value="0"></div><button type="button" class="user-button danger poll-remove-row">Entfernen</button>`;row.querySelector('.poll-remove-row')?.addEventListener('click',()=>row.remove());return row;};
+    editor?.querySelectorAll('.poll-remove-row').forEach(btn=>btn.addEventListener('click',()=>btn.closest('[data-poll-row]')?.remove()));
+    add?.addEventListener('click',()=>{if((editor?.querySelectorAll('[data-poll-row]').length||0)>=20)return;editor?.appendChild(createRow((editor?.querySelectorAll('[data-poll-row]').length||0)+1));});
     return;
   }
-
   const html=`<div class="crud-field full"><label>Sieger der Herzen</label><select name="hearts_winner_id"><option value="">Noch nicht festgelegt</option>${drivers.map(d=>`<option value="${escapeHtml(String(d.id))}" ${String(d.id)===winner?'selected':''}>${escapeHtml(d.nickname||d.name||'Fahrer')}</option>`).join('')}</select></div><div class="crud-field full"><label>Beitrag / Zitat</label><textarea rows="4" name="hearts_quote">${escapeHtml(dash.config?.hearts_quote||'')}</textarea></div>`;
   openEmbedSpecialModal('Sieger der Herzen verwalten','News',html,async form=>{await saveNewsDashboardPatch({hearts_winner_driver_id:form.elements.namedItem('hearts_winner_id')?.value||'',hearts_quote:form.elements.namedItem('hearts_quote')?.value||''});});
 }

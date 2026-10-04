@@ -369,7 +369,7 @@
 
     const hearts=document.querySelector('.hearts');
     if(hearts && can(auth,'news','edit')){
-      const head=hearts.querySelector('.card-head');
+      const head=hearts.querySelector('.hearts-left .big-head,.big-head,.card-head');
       if(head) addButton(head,'Sieger der Herzen verwalten','embed=special&special=hearts-poll',{key:'news-hearts'});
     }
 
@@ -387,9 +387,10 @@
     }
 
     const laps=document.querySelector('.laps');
-    if(laps && can(auth,'results','edit')) addHeadButton(laps,'Rundenzeiten verwalten','embed=special&special=news-laps','news-laps');
-
-    fetch('/api/admin/news/categories',{credentials:'same-origin',cache:'no-store'}).catch(()=>{});
+    if(laps && can(auth,'results','edit')){
+      const host=laps.querySelector('.card-foot') || laps.querySelector('.table-wrap');
+      if(host) addButton(host,'Rundenzeiten verwalten','embed=special&special=news-laps',{key:'news-laps'});
+    }
 
     document.querySelectorAll('.news-read-link[data-news-id]').forEach(link=>{
       const id=link.dataset.newsId; if(!id || link.dataset.jackalAdminWired==='1') return;
