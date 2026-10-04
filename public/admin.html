@@ -2215,38 +2215,73 @@ async function loadCurrentUser(){
 }
 
 
+const IS_EMBEDDED_ADMIN = (() => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+});
+
+async function waitForAdminSession(attempts = 6, delay = 250){
+  let lastError = null;
+
+  for(let attempt = 0; attempt < attempts; attempt++){
+    try{
+      await loadCurrentUser();
+      return true;
+    }catch(error){
+      lastError = error;
+      if(attempt < attempts - 1){
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  if(lastError) console.warn("JACKAL Admin: Session konnte nicht geladen werden.", lastError);
+  return false;
+}
+
 async function checkSession(){
+
+  /*
+   * admin.html wird auf der Website als eingebettetes Verwaltungsfenster
+   * verwendet. In diesem Modus darf der interne Login-Screen niemals
+   * aufblitzen. Die öffentliche Seite übernimmt das Login.
+   */
+  if(IS_EMBEDDED_ADMIN){
+    loginScreen.classList.add("hidden");
+  }
 
   adminApp.classList.remove("hidden");
 
-  try{
+  const authenticated =
+    await waitForAdminSession(
+      IS_EMBEDDED_ADMIN ? 8 : 1,
+      250
+    );
 
-    const response =
-      await fetch(
-        "/api/me",
-        {
-          credentials:"same-origin"
-        }
-      );
+  if(authenticated){
 
-    if(response.ok){
+    showAdmin();
+    loadAllVisibleCrud();
+    loadBlacklist();
+    loadDashboardOverview();
 
-      await loadCurrentUser();
-      showAdmin();
-      loadAllVisibleCrud();
-      loadBlacklist();
-      loadDashboardOverview();
-
-    }else{
-
-      showLogin();
-
-    }
-
-  }catch(error){
+  }else if(!IS_EMBEDDED_ADMIN){
 
     showLogin();
 
+  }else{
+
+    /*
+     * Eingebettet: keinen zweiten Login anzeigen.
+     * Die öffentliche Seite bleibt für die Authentifizierung zuständig.
+     */
+    adminApp.classList.add("hidden");
+    loginScreen.classList.add("hidden");
+    currentUser = null;
+    currentPermissions = {};
   }
 
 }
@@ -6572,19 +6607,39 @@ checkSession();
 
   async function openEdit(resource,row){
     try{
-      // The public page can already show the authenticated controls while the
-      // admin iframe is still finishing its own session bootstrap. Do not open
-      // the admin login screen again in that case.
+      /*
+       * Niemals den internen Login-Dialog aus einem Bearbeiten-Klick öffnen.
+       * Ist die Session beim ersten Laden noch nicht vollständig verfügbar,
+       * wird sie hier nur still nachgeladen.
+       */
       if(!currentUser?.username){
-        try{ await loadCurrentUser(); }catch(_){
-          showToast('Die Admin-Sitzung konnte nicht geladen werden. Bitte einmal neu anmelden.',true);
+        const ok = await waitForAdminSession(
+          IS_EMBEDDED_ADMIN ? 4 : 1,
+          200
+        );
+
+        if(!ok){
+          showToast(
+            'Die Admin-Sitzung ist nicht aktiv. Bitte oben über LOGIN anmelden.',
+            true
+          );
           return;
         }
       }
+
       loginScreen?.classList.add('hidden');
       adminApp?.classList.remove('hidden');
-      if(typeof openCrudModal==='function') await openCrudModal(resource,row ?? null);
-    }catch(error){ console.error(error); }
+
+      if(typeof openCrudModal==='function'){
+        await openCrudModal(resource,row ?? null);
+      }
+    }catch(error){
+      console.error(error);
+      showToast(
+        error?.message || 'Der Editor konnte nicht geöffnet werden.',
+        true
+      );
+    }
   }
 
   async function removeRow(resource,id){
@@ -6632,7 +6687,17 @@ checkSession();
       actions.appendChild(edit);
     }
 
-    if(permission(resource,'delete')){
+    const canDelete =
+      permission(resource,'delete') ||
+      Boolean(
+        currentUser &&
+        (
+          currentUser.is_superadmin === true ||
+          Number(currentUser.is_superadmin) === 1
+        )
+      );
+
+    if(canDelete){
       const del=doc.createElement('button');
       del.type='button';
       del.className='jackal-admin-btn danger';
