@@ -11,6 +11,7 @@
     .jackal-admin-auth-btn svg{width:15px;height:15px;flex:0 0 auto}
     .jackal-admin-edit{display:inline-flex;align-items:center;justify-content:center;gap:7px;margin-left:auto;padding:7px 11px;border:1px solid rgba(178,102,255,.65);border-radius:3px;color:#fff;background:linear-gradient(180deg,#5c22c4,#4e18ae 60%,#43149a);box-shadow:0 0 12px rgba(168,85,255,.24);font:800 13px 'Saira Condensed',sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
     .jackal-admin-edit:hover{filter:brightness(1.12);box-shadow:0 0 18px rgba(178,102,255,.42)}
+    .next-race .jackal-admin-edit{position:absolute;top:16px;right:24px;z-index:6;margin-left:0}
     .jackal-admin-row-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
     .jackal-admin-inline{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid rgba(178,102,255,.55);border-radius:3px;color:#fff;background:rgba(78,24,174,.72);font:800 12px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}
     .jackal-admin-inline.danger{border-color:rgba(255,80,110,.45);background:rgba(120,20,50,.42);color:#ffd5df}
@@ -215,7 +216,17 @@
 
   function addHeadButton(card,label,params,key){
     const head=card?.querySelector('.head,.card-head,.card-header');
-    if(head)addButton(head,label,params,{key});
+    if(head){
+      addButton(head,label,params,{key});
+      return;
+    }
+
+    // Home: the Next Race card has no standard card header.
+    // Put its admin action into the content area instead.
+    if(card?.classList?.contains('next-race')){
+      const host=card.querySelector('.next-race-content');
+      if(host) addButton(host,label,params,{key});
+    }
   }
 
   function createHomeModal(title, subtitle, bodyHtml, onSave, saveLabel='Speichern'){
@@ -303,7 +314,7 @@
   function setupIndex(auth){
     if(!auth) return;
     const next=document.querySelector('.next-race');
-    if(next && can(auth,'races','edit') && can(auth,'news','edit')) addHeadButton(next,'Next Race verwalten','home-next-race','home-next-race');
+    if(next && can(auth,'races','edit')) addHeadButton(next,'Next Race verwalten','home-next-race','home-next-race');
     const news=document.querySelector('section.card.news');
     if(news && can(auth,'news','edit')) addHeadButton(news,'News verwalten','home-news-manager','home-news-manager');
     const hearts=document.querySelector('.hearts');
