@@ -1272,94 +1272,37 @@ a { color: inherit; text-decoration: none; }
 
   
 <script>
-(function(){
-
-function escapeHtml(value){
-  return String(value ?? '')
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#039;');
+function escapeHtml(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function imageSlot(url,label,alt='',cls=''){return url?`<div class="img-slot ${cls}" data-label="${escapeHtml(label)}"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}"></div>`:`<div class="img-slot ${cls}" data-label="${escapeHtml(label)}"></div>`;}
+function wireImageSlots(root=document){root.querySelectorAll('.img-slot img').forEach(img=>{const slot=img.closest('.img-slot');const ok=()=>{slot?.classList.add('loaded');slot?.classList.remove('missing')};const fail=()=>{slot?.classList.add('missing');slot?.classList.remove('loaded')};if(img.complete)(img.naturalWidth>0?ok:fail)();img.addEventListener('load',ok);img.addEventListener('error',fail);});}
+function loadJackalData(){if(window.__JACKAL_DATA_PROMISE)return window.__JACKAL_DATA_PROMISE;window.__JACKAL_DATA_PROMISE=fetch('/api/public/data',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Website-Daten konnten nicht geladen werden.');return r.json()}).then(d=>{if(!d.ok)throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');window.__JACKAL_DATA=d;return d});return window.__JACKAL_DATA_PROMISE;}
+function formatDateDe(value){if(!value)return'—';const raw=String(value).slice(0,10),m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}.${m[2]}.${m[1]}`:String(value)}
+function formatDateShort(value){if(!value)return'—';const raw=String(value).slice(0,10),m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/),months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];return m?`${m[3]}. ${months[Number(m[2])-1]||m[2]} ${m[1]}`:String(value)}
+function raceDateTime(race){if(!race||!race.date)return null;const d=new Date(String(race.date).slice(0,10)+'T'+String(race.time||'00:00').slice(0,5)+':00');return Number.isNaN(d.getTime())?null:d;}
+function isPastRace(race){const d=raceDateTime(race);return d?d.getTime()<Date.now():false;}
+function driverMap(data){const m=new Map();(data.drivers||[]).forEach(d=>m.set(String(d.id),d));return m;}
+function teamIcon(team){const label=(String(team||'K').trim()[0]||'K').toUpperCase();return `<span class="img-slot team-ico" data-label="${escapeHtml(label)}"></span>`;}
+function chooseNews(data){const all=[...(data.news||[])];const byId=new Map(all.map(n=>[String(n.id),n]));const dash=data.newsDashboard||{};const result=[];const seen=new Set();if(dash.featured_news_id&&byId.has(String(dash.featured_news_id))){result.push(byId.get(String(dash.featured_news_id)));seen.add(String(dash.featured_news_id));}(dash.latest_news_ids||[]).forEach(id=>{const key=String(id);if(byId.has(key)&&!seen.has(key)){result.push(byId.get(key));seen.add(key);}});all.sort((a,b)=>String(b.date||b.created_at||'').localeCompare(String(a.date||a.created_at||'')));all.forEach(n=>{const key=String(n.id);if(!seen.has(key)&&result.length<3){result.push(n);seen.add(key);}});return result.slice(0,3);}
+function render(data){
+ const dmap=driverMap(data);
+ const past=(data.races||[]).filter(isPastRace).sort((a,b)=>(raceDateTime(b)?.getTime()||0)-(raceDateTime(a)?.getTime()||0));
+ const latest=past[0]||null;
+ const latestResults=(data.results||[]).filter(r=>latest&&String(r.race_id)===String(latest.id)).sort((a,b)=>(Number(a.position)||999)-(Number(b.position)||999));
+ const next=data.nextRace||null;
+ const bestBody=document.querySelector('.bestlist tbody');
+ if(bestBody){bestBody.innerHTML=latestResults.length?latestResults.slice(0,8).map((r,i)=>{const d=dmap.get(String(r.driver_id))||{};return `<tr><td><span class="pos ${i<3?'pos-'+(i+1):''}">${escapeHtml(String(r.position??i+1))}</span></td><td class="driver"><span>${teamIcon(d.team)}${escapeHtml(d.nickname||'Unbekannter Fahrer')}</span></td><td class="team"><span>${teamIcon(d.team)}${escapeHtml(d.team||'—')}</span></td><td>${escapeHtml(r.vehicle||r.car||d.car||'—')}</td><td class="time">${escapeHtml(r.time||r.best_lap||r.bestlap||'—')}</td><td class="pts">${escapeHtml(String(r.points??'—'))}</td></tr>`;}).join(''):'<tr><td colspan="6">Noch keine Ergebnisse vom letzten Rennen.</td></tr>';wireImageSlots(bestBody);}
+ const raceCard=document.querySelector('.race-card');
+ if(raceCard){const bg=raceCard.querySelector('.race-bg'),title=raceCard.querySelector('.big-title'),name=raceCard.querySelector('.race-name'),dateNode=raceCard.querySelector('.race-date div'),facts=raceCard.querySelector('.race-facts');if(next){if(bg){bg.innerHTML=next.image_url?`<img src="${escapeHtml(next.image_url)}" alt="${escapeHtml(next.name||'')}">`:'';}if(title)title.textContent='Nächstes Rennen';if(name)name.textContent=next.name||'Rennen';if(dateNode)dateNode.innerHTML=`${escapeHtml(formatDateShort(next.date))}<small>${escapeHtml(next.time||'—')} Uhr</small>`;if(facts){const arr=[];if(next.location)arr.push(`<li><span>${escapeHtml(next.location)}</span></li>`);if(next.description)arr.push(`<li><span>${escapeHtml(next.description)}</span></li>`);facts.innerHTML=arr.join('')||'<li><span>Weitere Renndaten folgen.</span></li>';} }else{if(name)name.textContent='Kein nächstes Rennen';if(facts)facts.innerHTML='<li><span>Aktuell ist kein nächstes Rennen festgelegt.</span></li>';}wireImageSlots(raceCard);}
+ const changes=document.querySelector('.changes-list');if(changes){const items=chooseNews(data);changes.innerHTML=items.length?items.slice(0,2).map(n=>`<article class="change ${String(n.category||'').toLowerCase().includes('blacklist')?'change-red':'change-blue'}"><div class="change-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><h3>${escapeHtml(n.title||'News')}</h3><time>${escapeHtml(formatDateShort(n.date||n.created_at))}</time></div><ul><li>${escapeHtml(String(n.text||n.content||'').slice(0,220))}</li></ul><a class="change-link" href="/news">Mehr lesen <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></article>`).join(''):'<div class="empty">Noch keine News vorhanden.</div>';}
+ const winnerId=String((data.newsDashboard||{}).hearts_winner_driver_id||'');const winner=winnerId?dmap.get(winnerId):null;const heartWrap=document.querySelector('.hearts');
+ if(heartWrap){const winnerName=heartWrap.querySelector('.winner-name'),winnerTeam=heartWrap.querySelector('.winner-team'),quote=heartWrap.querySelector('.winner-quote'),img=heartWrap.querySelector('.winner-img'),dash=data.newsDashboard||{};if(winner){if(img){img.innerHTML=winner.image_url?`<img src="${escapeHtml(winner.image_url)}" alt="${escapeHtml(winner.nickname||'')}">`:'';img.dataset.label='sieger-herzen.jpg';}if(winnerName){winnerName.innerHTML=`<svg viewBox="0 0 24 24"><path d="m2 7 5 4 5-7 5 7 5-4-2 12H4L2 7Zm2 14h16v2H4v-2Z"/></svg>${escapeHtml(winner.nickname||'Unbekannt')}`;}if(winnerTeam)winnerTeam.innerHTML=`${teamIcon(winner.team)}${escapeHtml(winner.team||'Kein Team')}`;}if(quote)quote.textContent=dash.hearts_quote?`„${dash.hearts_quote}“`:'';wireImageSlots(heartWrap);}
+ const poll=document.getElementById('poll'),opts=dashPoll(data);if(poll){const q=poll.querySelector('.poll-q'),list=poll.querySelector('.poll-list'),submit=poll.querySelector('.poll-foot .btn');if(q)q.textContent=opts.question;if(list){list.innerHTML=opts.options.length?opts.options.map((o,i)=>`<li><label class="poll-opt"><input type="radio" name="vote" value="${escapeHtml(o.driverId)}" ${i===0?'checked':''}><span class="bar" style="width:${Math.max(0,Math.min(100,o.percent))}%"></span><span class="radio"></span><span class="label">${escapeHtml(dmap.get(o.driverId)?.nickname||o.label||'Unbekannt')}</span><span class="pct">${Math.round(o.percent)}%</span></label></li>`).join(''):'<li class="empty">Aktuell ist keine Abstimmung eingerichtet.</li>';}if(submit)submit.disabled=!opts.active||!opts.options.length;if(!opts.active)poll.classList.add('inactive');else poll.classList.remove('inactive');}
+ const lapTable=document.querySelector('#lapTable tbody'),filter=document.getElementById('lapFilter');if(lapTable){const cars=[...new Set(latestResults.map(r=>r.vehicle||r.car||dmap.get(String(r.driver_id))?.car||'').filter(Boolean))];if(filter){filter.innerHTML='<option value="">Alle Fahrzeuge</option>';cars.forEach(v=>filter.add(new Option(v,v)));}const renderLaps=()=>{const wanted=filter?.value||'';const rows=latestResults.slice(0,5).filter(r=>!wanted||(r.vehicle||r.car||dmap.get(String(r.driver_id))?.car)===wanted);lapTable.innerHTML=rows.length?rows.map((r,i)=>{const d=dmap.get(String(r.driver_id))||{};const car=r.vehicle||r.car||d.car||'—';return `<tr data-car="${escapeHtml(car)}"><td><span class="pos ${i<3?'pos-'+(i+1):''}">${escapeHtml(String(r.position??i+1))}</span></td><td class="driver"><span>${teamIcon(d.team)}${escapeHtml(d.nickname||'—')}</span></td><td>${escapeHtml(car)}</td><td class="time">${escapeHtml(r.best_lap||r.bestlap||r.time||'—')}</td><td class="time">${escapeHtml(r.time||'—')}</td><td>–</td></tr>`;}).join(''):'<tr><td colspan="6">Noch keine Rundenzeiten vorhanden.</td></tr>';};renderLaps();if(filter)filter.onchange=renderLaps;wireImageSlots(lapTable);}
 }
-
-function imageSlot(url, label, alt='', cls=''){
-  if(url){
-    return `<div class="img-slot ${cls}" data-label="${escapeHtml(label)}"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}"></div>`;
-  }
-  return `<div class="img-slot ${cls}" data-label="${escapeHtml(label)}"></div>`;
-}
-
-function wireImageSlots(root=document){
-  root.querySelectorAll('.img-slot img').forEach(function(img){
-    var slot = img.closest('.img-slot');
-    function ok(){ if(slot){ slot.classList.add('loaded'); slot.classList.remove('missing'); } }
-    function fail(){ if(slot){ slot.classList.add('missing'); slot.classList.remove('loaded'); } }
-    if(img.complete) img.naturalWidth > 0 ? ok() : fail();
-    img.addEventListener('load', ok);
-    img.addEventListener('error', fail);
-  });
-}
-
-async function loadJackalData(){
-  if(window.__JACKAL_DATA_PROMISE) return window.__JACKAL_DATA_PROMISE;
-  window.__JACKAL_DATA_PROMISE = fetch('/api/public/data', {cache:'no-store'})
-    .then(function(r){ if(!r.ok) throw new Error('Website-Daten konnten nicht geladen werden.'); return r.json(); })
-    .then(function(d){ if(!d.ok) throw new Error(d.error || 'Website-Daten konnten nicht geladen werden.'); window.__JACKAL_DATA=d; return d; });
-  return window.__JACKAL_DATA_PROMISE;
-}
-
-function raceDateTime(race){
-  if(!race || !race.date) return null;
-  var time = race.time || '00:00';
-  var d = new Date(String(race.date).slice(0,10) + 'T' + String(time).slice(0,5) + ':00');
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function formatDateDe(value){
-  if(!value) return '—';
-  var raw=String(value).slice(0,10);
-  var m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if(!m) return String(value);
-  return `${m[3]}.${m[2]}.${m[1]}`;
-}
-
-function formatDateShort(value){
-  if(!value) return '—';
-  var raw=String(value).slice(0,10);
-  var m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if(!m) return String(value);
-  var months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-  return `${m[3]}. ${months[Number(m[2])-1] || m[2]} ${m[1]}`;
-}
-
-function isPastRace(race){
-  var d=raceDateTime(race);
-  return d ? d.getTime() < Date.now() : !Number(race && race.is_next);
-}
-
-function driverMap(data){
-  var map=new Map();
-  (data.drivers || []).forEach(function(d){ map.set(String(d.id),d); });
-  return map;
-}
-
-  function teamIcon(team){var label=(String(team||'K').trim()[0]||'K').toUpperCase();return `<span class="img-slot team-ico" data-label="${escapeHtml(label)}"></span>`;}
-  function render(data){
-    var dmap=driverMap(data);
-    var past=(data.races||[]).filter(isPastRace).sort(function(a,b){return (raceDateTime(b)?.getTime()||0)-(raceDateTime(a)?.getTime()||0);});
-    var latest=past[0]||null;
-    var latestResults=(data.results||[]).filter(function(r){return latest&&String(r.race_id)===String(latest.id);}).sort(function(a,b){return (Number(a.position)||999)-(Number(b.position)||999);});
-    var bestBody=document.querySelector('.bestlist tbody');
-    if(bestBody){bestBody.innerHTML=latestResults.slice(0,8).map(function(r,i){var d=dmap.get(String(r.driver_id));return `<tr><td><span class="pos ${i<3?'pos-'+(i+1):''}">${escapeHtml(String(r.position??i+1))}</span></td><td class="driver"><span>${teamIcon(d?.team)}${escapeHtml(d?.name||'Unbekannter Fahrer')}</span></td><td class="team"><span>${teamIcon(d?.team)}${escapeHtml(d?.team||'—')}</span></td><td>${escapeHtml(r.vehicle||r.car||d?.car||'—')}</td><td class="time">${escapeHtml(r.time||r.best_lap||r.bestlap||'—')}</td><td class="pts">${escapeHtml(String(r.points??'—'))}</td></tr>`;}).join('') || '<tr><td colspan="6">Keine Rennergebnisse vorhanden.</td></tr>';wireImageSlots(bestBody);}
-    var raceCard=document.querySelector('.race-card');
-    if(raceCard && latest){raceCard.querySelector('.race-bg').innerHTML=latest.image_url?`<img src="${escapeHtml(latest.image_url)}" alt="${escapeHtml(latest.name||'')}">`:'';raceCard.querySelector('.big-title').textContent='Nächstes Rennen';raceCard.querySelector('.race-name').textContent=latest.name||'Rennen';raceCard.querySelector('.race-date div').innerHTML=`${escapeHtml(formatDateShort(latest.date))}<small>${escapeHtml(latest.time||'—')} Uhr</small>`;raceCard.querySelector('.race-facts').innerHTML=`<li><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg><span>${escapeHtml(latest.location||'—')}</span></li><li><svg viewBox="0 0 24 24"><path d="M3 20 9 9l3 5 3-3 6 9H3Z"/></svg><span>${escapeHtml(String(latest.description||'').slice(0,90)||'Rennen')}</span></li>`;var btn=raceCard.querySelector('.race-track .btn');if(btn){btn.href='index.html';btn.textContent='Race Details';}wireImageSlots(raceCard);}
-    var changes=document.querySelector('.changes');if(changes){var title=changes.querySelector('.big-title');if(title)title.textContent='Neueste News';var sub=changes.querySelector('.big-sub');if(sub)sub.textContent='Aktuelle Neuigkeiten';var list=changes.querySelector('.changes-list');var items=(data.news||[]).slice().sort(function(a,b){return String(b.date||b.created_at||'').localeCompare(String(a.date||a.created_at||''));}).slice(0,2);if(list)list.innerHTML=items.map(function(n){return `<article class="change change-${n.category==='Blacklist'?'red':'blue'}"><div class="change-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><h3>${escapeHtml(n.title||'News')}</h3><time>${escapeHtml(formatDateShort(n.date||n.created_at))}</time></div><ul><li>${escapeHtml(String(n.text||n.content||'').slice(0,220))}</li></ul><a class="change-link" href="news.html">Mehr lesen <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></article>`;}).join('');}
-    var lapTable=document.querySelector('#lapTable tbody');if(lapTable){var opts=document.getElementById('lapFilter');if(opts){opts.innerHTML='<option value="">Alle Fahrzeuge</option>';[...new Set(latestResults.map(function(r){return r.vehicle||r.car||dmap.get(String(r.driver_id))?.car||'';}).filter(Boolean))].forEach(function(v){opts.add(new Option(v,v));});}lapTable.innerHTML=latestResults.slice(0,5).map(function(r,i){var d=dmap.get(String(r.driver_id));var car=r.vehicle||r.car||d?.car||'—';return `<tr data-car="${escapeHtml(car)}"><td><span class="pos ${i<3?'pos-'+(i+1):''}">${escapeHtml(String(r.position??i+1))}</span></td><td class="driver"><span>${teamIcon(d?.team)}${escapeHtml(d?.name||'—')}</span></td><td>${escapeHtml(car)}</td><td class="time">${escapeHtml(r.best_lap||r.bestlap||r.time||'—')}</td><td class="time">${escapeHtml(r.time||'—')}</td><td>–</td></tr>`;}).join('');if(opts)opts.onchange=function(){lapTable.querySelectorAll('tr').forEach(function(tr){tr.style.display=!opts.value||tr.dataset.car===opts.value?'':'none';});};}
-  }
-  function init(){loadJackalData().then(render).catch(console.error);wireImageSlots();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
-})();
+function dashPoll(data){const d=data.newsDashboard||{};return{active:Number(d.poll_active)===1,question:d.poll_question||'Wer war dein Sieger der Herzen?',options:(d.poll_options||[]).map(o=>({driverId:String(o.driver_id||''),percent:Number(o.percent)||0,label:''})).filter(o=>o.driverId)};}
+function init(){loadJackalData().then(render).catch(e=>{console.error(e);});wireImageSlots();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.querySelector('.nav')?.classList.toggle('open'));
 </script>
 
 <script>document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.querySelector('.nav')?.classList.toggle('open'));</script>

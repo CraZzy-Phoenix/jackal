@@ -84,22 +84,39 @@ a{color:inherit;text-decoration:none}
 <script>
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const media=v=>{if(!v)return'';v=String(v);if(v.startsWith('/media/'))return v;if(v.startsWith('media/'))return'/'+v;if(/^https?:/i.test(v))return v;return'/media/'+v.split('/').map(encodeURIComponent).join('/')};
+const gridEl=document.getElementById('grid');
+const searchEl=document.getElementById('search');
+const teamEl=document.getElementById('team');
+const carEl=document.getElementById('car');
+const statDrivers=document.getElementById('sDrivers');
+const statCars=document.getElementById('sCars');
+const statRaces=document.getElementById('sRaces');
+const statWins=document.getElementById('sWins');
 (async()=>{
 try{
-const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!d.ok)throw 0;
-let drivers=(d.drivers||[]).filter(x=>String(x.status||'').toLowerCase()!=='inactive').sort((a,b)=>(Number(b.points)||0)-(Number(a.points)||0)||(Number(b.wins)||0)-(Number(a.wins)||0)||String(a.name||'').localeCompare(String(b.name||''),'de-DE'));
-const teams=[...new Set(drivers.map(x=>x.team).filter(Boolean))].sort(),cars=[...new Set(drivers.map(x=>x.car).filter(Boolean))].sort();
-teams.forEach(x=>team.add(new Option(x,x)));cars.forEach(x=>car.add(new Option(x,x)));
-function render(){
-let q=search.value.toLowerCase().trim(),t=team.value,c=car.value;
-let list=drivers.filter(x=>(!q||[x.name,x.nickname,x.team,x.car].join(' ').toLowerCase().includes(q))&&(!t||x.team===t)&&(!c||x.car===c));
-grid.innerHTML=list.length?list.map((x,i)=>`<article class="driver"><div class="number">#${String(x.number??i+1).padStart(2,'0')}</div><div class="driver-main"><h3>${esc(x.nickname||x.name||'Unbekannt')}</h3><div class="team">${esc(x.team||'Kein Team')}</div><div class="car">${esc(x.car||'Kein Fahrzeug')}</div><small>${Number(x.points)||0} Punkte · ${Number(x.wins)||0} Siege · ${Number(x.races)||0} Rennen</small></div><div class="avatar">${x.image_url||x.image?`<img src="${esc(media(x.image_url||x.image))}" alt="">`:''}</div></article>`).join(''):'<div class="empty">Kein Fahrer gefunden.</div>';
-}
-render();search.oninput=render;team.onchange=render;car.onchange=render;
-sDrivers.textContent=drivers.length;sCars.textContent=cars.length;sRaces.textContent=(d.races||[]).length;sWins.textContent=drivers.reduce((s,x)=>s+(Number(x.wins)||0),0);
-}catch(e){grid.innerHTML='<div class="empty">Fahrer konnten nicht geladen werden.</div>'}
+  const r=await fetch('/api/public/data',{cache:'no-store'});
+  const d=await r.json();
+  if(!r.ok||!d.ok) throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');
+  const drivers=(d.drivers||[])
+    .filter(x=>String(x.status||'').toLowerCase()!=='inactive')
+    .sort((a,b)=>(Number(b.points)||0)-(Number(a.points)||0)||(Number(b.wins)||0)-(Number(a.wins)||0)||String(a.nickname||'').localeCompare(String(b.nickname||''),'de-DE'));
+  const teams=[...new Set(drivers.map(x=>x.team).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE'));
+  const cars=[...new Set(drivers.map(x=>x.car).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE'));
+  teams.forEach(x=>teamEl.add(new Option(x,x)));
+  cars.forEach(x=>carEl.add(new Option(x,x)));
+  function render(){
+    const q=searchEl.value.toLowerCase().trim(),t=teamEl.value,c=carEl.value;
+    const list=drivers.filter(x=>(!q||[x.nickname,x.team,x.car].join(' ').toLowerCase().includes(q))&&(!t||x.team===t)&&(!c||x.car===c));
+    gridEl.innerHTML=list.length?list.map((x,i)=>`<article class="driver"><div class="number">#${String(x.number??i+1).padStart(2,'0')}</div><div class="driver-main"><h3>${esc(x.nickname||'Unbekannt')}</h3><div class="team">${esc(x.team||'Kein Team')}</div><div class="car">${esc(x.car||'Kein Fahrzeug')}</div><small>${Number(x.points)||0} Punkte · ${Number(x.wins)||0} Siege · ${Number(x.races)||0} Rennen</small></div><div class="avatar">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div></article>`).join(''):'<div class="empty">Kein Fahrer gefunden.</div>';
+  }
+  render();searchEl.oninput=render;teamEl.onchange=render;carEl.onchange=render;
+  statDrivers.textContent=drivers.length;
+  statCars.textContent=cars.length;
+  statRaces.textContent=(d.races||[]).length;
+  statWins.textContent=drivers.reduce((s,x)=>s+(Number(x.wins)||0),0);
+}catch(e){console.error(e);gridEl.innerHTML='<div class="empty">Fahrer konnten nicht geladen werden.</div>';}
 })();
-document.querySelector('.nav-toggle').onclick=()=>document.querySelector('.nav').classList.toggle('open');
+document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.querySelector('.nav')?.classList.toggle('open'));
 </script>
 
 <div class="jackal-login-overlay" id="jackalLoginOverlay" aria-hidden="true">

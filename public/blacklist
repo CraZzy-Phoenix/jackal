@@ -58,20 +58,18 @@
 <script>
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const media=v=>{if(!v)return'';v=String(v);if(v.startsWith('/media/'))return v;if(v.startsWith('media/'))return'/'+v;if(/^https?:/i.test(v))return v;return'/media/'+v.split('/').map(encodeURIComponent).join('/')};
+const gridEl=document.getElementById('grid'),searchEl=document.getElementById('search'),statusEl=document.getElementById('status'),countEl=document.getElementById('count'),reasonsEl=document.getElementById('reasons'),brandsEl=document.getElementById('brands');
 (async()=>{
 try{
-const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!d.ok)throw 0;
-const items=(d.blacklist||[]).filter(x=>String(x.status||'').toLowerCase()!=='inactive');
-const statuses=[...new Set(items.map(x=>x.status).filter(Boolean))].sort();statuses.forEach(x=>status.add(new Option(x,x)));
-function render(){
-let q=search.value.toLowerCase().trim(),s=status.value,list=items.filter(x=>(!q||[x.vehicle_name,x.reason,x.status].join(' ').toLowerCase().includes(q))&&(!s||x.status===s));
-grid.innerHTML=list.length?list.map((x,i)=>`<article class="item"><div class="img">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div><div class="body"><div class="number">#${String(i+1).padStart(3,'0')}</div><h2 class="name">${esc(x.vehicle_name||'Unbekannt')}</h2><div class="status">${esc(x.status||'Gesperrt')}</div><p class="reason">${esc(x.reason||'Keine Begründung hinterlegt.')}</p></div></article>`).join(''):'<div class="empty">Keine Fahrzeuge gefunden.</div>';
-}
-render();search.oninput=render;status.onchange=render;
-count.textContent=items.length;reasons.textContent=new Set(items.map(x=>x.reason).filter(Boolean)).size;brands.textContent=new Set(items.map(x=>String(x.vehicle_name||'').split(/\s+/)[0]).filter(Boolean)).size;
-}catch(e){grid.innerHTML='<div class="empty">Blacklist konnte nicht geladen werden.</div>'}
+ const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');
+ const items=(d.blacklist||[]).filter(x=>String(x.status||'').toLowerCase()!=='inactive');
+ [...new Set(items.map(x=>x.status).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE')).forEach(x=>statusEl.add(new Option(x,x)));
+ function render(){const q=searchEl.value.toLowerCase().trim(),s=statusEl.value,list=items.filter(x=>(!q||[x.vehicle_name,x.reason,x.status].join(' ').toLowerCase().includes(q))&&(!s||x.status===s));gridEl.innerHTML=list.length?list.map((x,i)=>`<article class="item"><div class="img">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div><div class="body"><div class="number">#${String(i+1).padStart(3,'0')}</div><h2 class="name">${esc(x.vehicle_name||'Unbekannt')}</h2><div class="status">${esc(x.status||'Gesperrt')}</div><p class="reason">${esc(x.reason||'Keine Begründung hinterlegt.')}</p></div></article>`).join(''):'<div class="empty">Keine Fahrzeuge gefunden.</div>';}
+ render();searchEl.oninput=render;statusEl.onchange=render;
+ countEl.textContent=items.length;reasonsEl.textContent=new Set(items.map(x=>x.reason).filter(Boolean)).size;brandsEl.textContent=new Set(items.map(x=>String(x.vehicle_name||'').split(/\s+/)[0]).filter(Boolean)).size;
+}catch(e){console.error(e);gridEl.innerHTML='<div class="empty">Blacklist konnte nicht geladen werden.</div>'}
 })();
-document.querySelector('.nav-toggle').onclick=()=>document.querySelector('.nav').classList.toggle('open');
+document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.querySelector('.nav')?.classList.toggle('open'));
 </script>
 
 <div class="jackal-login-overlay" id="jackalLoginOverlay" aria-hidden="true">

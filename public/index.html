@@ -3549,6 +3549,18 @@ a {
      HOME NEWS
   ===================================================== */
 
+  function chooseHomeNews(data){
+    var all=(data.news||[]).slice();
+    var byId=new Map(all.map(function(n){return [String(n.id),n];}));
+    var dash=data.newsDashboard||{};
+    var out=[],seen=new Set();
+    if(dash.featured_news_id && byId.has(String(dash.featured_news_id))){out.push(byId.get(String(dash.featured_news_id)));seen.add(String(dash.featured_news_id));}
+    (dash.latest_news_ids||[]).forEach(function(id){var key=String(id);if(byId.has(key)&&!seen.has(key)){out.push(byId.get(key));seen.add(key);}});
+    all.sort(function(a,b){return String(b.date||b.created_at||'').localeCompare(String(a.date||a.created_at||''));});
+    all.forEach(function(n){var key=String(n.id);if(!seen.has(key)&&out.length<3){out.push(n);seen.add(key);}});
+    return out.slice(0,3);
+  }
+
   function renderHomeNews(
     items
   ){
@@ -3738,7 +3750,7 @@ a {
                 champion.image_url
               )}"
               alt="${escapeHtml(
-                champion.name ||
+                champion.nickname ||
                 ''
               )}">
           `
@@ -3790,7 +3802,7 @@ a {
     if(name){
 
       name.textContent =
-        champion.name ||
+        champion.nickname ||
         '—';
 
     }
@@ -3856,8 +3868,7 @@ a {
 
 
           renderHomeNews(
-            data.news ||
-            []
+            chooseHomeNews(data)
           );
 
 

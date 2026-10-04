@@ -56,24 +56,22 @@
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const media=v=>{if(!v)return'';v=String(v);if(v.startsWith('/media/'))return v;if(v.startsWith('media/'))return'/'+v;if(/^https?:/i.test(v))return v;return'/media/'+v.split('/').map(encodeURIComponent).join('/')};
 const date=v=>{if(!v)return'—';let d=new Date(v);return isNaN(d)?String(v):new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d)};
+const gridEl=document.getElementById('grid'),searchEl=document.getElementById('search'),sortEl=document.getElementById('sort'),tabsEl=document.getElementById('tabs'),lightboxEl=document.getElementById('lightbox'),lightboxImgEl=document.getElementById('lightboxImg'),closeEl=document.getElementById('lightboxClose');
 (async()=>{
 try{
-const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!d.ok)throw 0;
-let items=(d.gallery||[]).filter(x=>String(x.status||'').toLowerCase()!=='inactive');
-let categories=[...new Set(items.map(x=>x.category).filter(Boolean))].sort();tabs.innerHTML='<button class="tab active" data-cat="">Alle</button>'+categories.map(x=>`<button class="tab" data-cat="${esc(x)}">${esc(x)}</button>`).join('');
-let current='';
-function render(){
-let q=search.value.toLowerCase().trim(),s=sort.value,list=items.filter(x=>(!q||[x.title,x.description,x.category,x.event,x.car,x.driver].join(' ').toLowerCase().includes(q))&&(!current||String(x.category||'').split('|').includes(current)));
-list.sort((a,b)=>s==='likes'?(Number(b.likes)||0)-(Number(a.likes)||0):s==='old'?new Date(a.date||a.created_at)-new Date(b.date||b.created_at):new Date(b.date||b.created_at)-new Date(a.date||a.created_at);
-grid.innerHTML=list.length?list.map(x=>`<figure class="tile" data-src="${esc(media(x.image_url||x.image))}"><div class="img">${x.image_url||x.image?`<img src="${esc(media(x.image_url||x.image))}" alt="">`:''}</div><figcaption class="caption"><div class="title">${esc(x.title||'Gallery')}</div><div class="meta">${esc(date(x.date||x.created_at))} · ${esc(x.category||x.event||'Gallery')}</div>${x.description?`<p class="desc">${esc(x.description)}</p>`:''}</figcaption></figure>`).join(''):'<div class="empty">Keine Fotos gefunden.</div>';
-}
-render();search.oninput=render;sort.onchange=render;
-tabs.onclick=e=>{let b=e.target.closest('.tab');if(!b)return;document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');current=b.dataset.cat||'';render()};
-grid.onclick=e=>{let t=e.target.closest('.tile');if(!t||!t.dataset.src)return;lightboxImg.src=t.dataset.src;lightbox.classList.add('open')};
-close.onclick=()=>lightbox.classList.remove('open');lightbox.onclick=e=>{if(e.target===lightbox)lightbox.classList.remove('open')};
-}catch(e){grid.innerHTML='<div class="empty">Gallery konnte nicht geladen werden.</div>'}
+ const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');
+ const items=(d.gallery||[]).filter(x=>String(x.status||'').toLowerCase()!=='inactive');
+ const categories=[...new Set(items.map(x=>x.category).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE'));
+ tabsEl.innerHTML='<button class="tab active" data-cat="">Alle</button>'+categories.map(x=>`<button class="tab" data-cat="${esc(x)}">${esc(x)}</button>`).join('');
+ let current='';
+ function render(){const q=searchEl.value.toLowerCase().trim(),s=sortEl.value;let list=items.filter(x=>(!q||[x.title,x.description,x.category,x.event,x.car,x.driver].join(' ').toLowerCase().includes(q))&&(!current||String(x.category||'').split('|').includes(current)));list.sort((a,b)=>{if(s==='likes')return (Number(b.likes)||0)-(Number(a.likes)||0);if(s==='old')return new Date(a.date||a.created_at)-new Date(b.date||b.created_at);return new Date(b.date||b.created_at)-new Date(a.date||a.created_at);});gridEl.innerHTML=list.length?list.map(x=>`<figure class="tile" data-src="${esc(media(x.image_url||x.image))}"><div class="img">${x.image_url||x.image?`<img src="${esc(media(x.image_url||x.image))}" alt="">`:''}</div><figcaption class="caption"><div class="title">${esc(x.title||'Gallery')}</div><div class="meta">${esc(date(x.date||x.created_at))} · ${esc(x.category||x.event||'Gallery')}</div>${x.description?`<p class="desc">${esc(x.description)}</p>`:''}</figcaption></figure>`).join(''):'<div class="empty">Keine Fotos gefunden.</div>';}
+ render();searchEl.oninput=render;sortEl.onchange=render;
+ tabsEl.onclick=e=>{const b=e.target.closest('.tab');if(!b)return;tabsEl.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');current=b.dataset.cat||'';render();};
+ gridEl.onclick=e=>{const t=e.target.closest('.tile');if(!t||!t.dataset.src)return;lightboxImgEl.src=t.dataset.src;lightboxEl.classList.add('open');};
+ closeEl?.addEventListener('click',()=>lightboxEl.classList.remove('open'));lightboxEl?.addEventListener('click',e=>{if(e.target===lightboxEl)lightboxEl.classList.remove('open')});
+}catch(e){console.error(e);gridEl.innerHTML='<div class="empty">Gallery konnte nicht geladen werden.</div>';}
 })();
-document.querySelector('.nav-toggle').onclick=()=>document.querySelector('.nav').classList.toggle('open');
+document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.querySelector('.nav')?.classList.toggle('open'));
 </script>
 
 <div class="jackal-login-overlay" id="jackalLoginOverlay" aria-hidden="true">

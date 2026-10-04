@@ -51,24 +51,26 @@
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const media=v=>{if(!v)return'';v=String(v);if(v.startsWith('/media/'))return v;if(v.startsWith('media/'))return'/'+v;if(/^https?:/i.test(v))return v;return'/media/'+v.split('/').map(encodeURIComponent).join('/')};
 const date=v=>{if(!v)return'—';let d=new Date(v);return isNaN(d)?String(v):new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'short',year:'numeric'}).format(d)};
+const gridEl=document.getElementById('grid'),searchEl=document.getElementById('search'),locationEl=document.getElementById('location');
 (async()=>{
 try{
-const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!d.ok)throw 0;
-const now=Date.now(),drivers=d.drivers||[],results=d.results||[];
-const races=(d.races||[]).filter(x=>Number(x.is_next)!==1).filter(x=>{let ts=new Date(String(x.date||'')+(x.time?'T'+x.time:'T23:59:59')).getTime();let st=String(x.status||'').toLowerCase();return ['completed','finished','past','abgeschlossen','beendet'].includes(st)||(!isNaN(ts)&&ts<now)}).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
-const locs=[...new Set(races.map(x=>x.location||x.city).filter(Boolean))].sort();locs.forEach(x=>location.add(new Option(x,x)));
-const map={};drivers.forEach(x=>map[String(x.id)]=x);
-function render(){
-let q=search.value.toLowerCase().trim(),l=location.value;
-let list=races.filter(x=>(!q||[x.name,x.title,x.location,x.city,x.description].join(' ').toLowerCase().includes(q))&&(!l||(x.location||x.city)===l));
-grid.innerHTML=list.length?list.map(x=>{
-let rr=results.filter(y=>String(y.race_id)===String(x.id)).sort((a,b)=>(Number(a.position)||999)-(Number(b.position)||999)).slice(0,5);
-return `<article class="race"><div class="race-img">${x.image_url||x.image?`<img src="${esc(media(x.image_url||x.image))}" alt="">`:''}</div><div class="race-body"><h2 class="race-title">${esc(x.name||x.title||'Rennen')}</h2><div class="date">${esc(date(x.date))}${x.time?' · '+esc(x.time)+' Uhr':''}</div><div class="loc">${esc(x.location||x.city||'—')}</div><p class="desc">${esc(x.description||'')}</p><div class="results">${rr.map((y,i)=>{let d=map[String(y.driver_id)]||{};return `<div class="results-row"><b>${Number(y.position)||i+1}</b><span>${esc(d.name||'Fahrer')}</span><span>${esc(y.vehicle||y.car||d.car||'—')}</span></div>`}).join('')}</div></div></article>`}).join(''):'<div class="empty">Keine vergangenen Rennen gefunden.</div>';
-}
-render();search.oninput=render;location.onchange=render;
-}catch(e){grid.innerHTML='<div class="empty">Rennen konnten nicht geladen werden.</div>'}
+ const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');
+ const now=Date.now(),drivers=d.drivers||[],results=d.results||[];
+ const races=(d.races||[]).filter(x=>Number(x.is_next)!==1).filter(x=>{const raw=String(x.date||'');const ts=new Date(raw+(x.time?'T'+String(x.time).slice(0,5):'T23:59:59')).getTime();const st=String(x.status||'').toLowerCase();return ['completed','finished','past','abgeschlossen','beendet'].includes(st)||(!Number.isNaN(ts)&&ts<now)}).sort((a,b)=>new Date(String(b.date||'1970-01-01'))-new Date(String(a.date||'1970-01-01')));
+ const locs=[...new Set(races.map(x=>x.location).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE'));locs.forEach(x=>locationEl.add(new Option(x,x)));
+ const map={};drivers.forEach(x=>map[String(x.id)]=x);
+ function render(){
+   const q=searchEl.value.toLowerCase().trim(),l=locationEl.value;
+   const list=races.filter(x=>(!q||[x.name,x.location,x.description].join(' ').toLowerCase().includes(q))&&(!l||x.location===l));
+   gridEl.innerHTML=list.length?list.map(x=>{
+      const rr=results.filter(y=>String(y.race_id)===String(x.id)).sort((a,b)=>(Number(a.position)||999)-(Number(b.position)||999)).slice(0,5);
+      return `<article class="race"><div class="race-img">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div><div class="race-body"><h2 class="race-title">${esc(x.name||'Rennen')}</h2><div class="date">${esc(date(x.date))}${x.time?' · '+esc(x.time)+' Uhr':''}</div><div class="loc">${esc(x.location||'—')}</div>${x.description?`<p class="desc">${esc(x.description)}</p>`:''}<div class="results">${rr.length?rr.map((y,i)=>{const drv=map[String(y.driver_id)]||{};return `<div class="results-row"><b>${Number(y.position)||i+1}</b><span>${esc(drv.nickname||'Fahrer')}</span><span>${esc(y.vehicle||y.car||drv.car||'—')}</span></div>`}).join(''):'<div class="empty">Keine Rennergebnisse vorhanden.</div>'}</div></div></article>`;
+   }).join(''):'<div class="empty">Keine vergangenen Rennen gefunden.</div>';
+ }
+ render();searchEl.oninput=render;locationEl.onchange=render;
+}catch(e){console.error(e);gridEl.innerHTML='<div class="empty">Rennen konnten nicht geladen werden.</div>'}
 })();
-document.querySelector('.nav-toggle').onclick=()=>document.querySelector('.nav').classList.toggle('open');
+document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.querySelector('.nav')?.classList.toggle('open'));
 </script>
 
 <div class="jackal-login-overlay" id="jackalLoginOverlay" aria-hidden="true">

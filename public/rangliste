@@ -60,14 +60,16 @@ table{width:100%;border-collapse:separate;border-spacing:0 4px}.table{overflow:a
 
 <script>
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const bodyEl=document.getElementById('body');
 (async()=>{
 try{
-const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!d.ok)throw 0;
-const rows=d.ranking||[];
-body.innerHTML=rows.length?rows.map((x,i)=>{const p=Number(x.place)||i+1;let cls=p===1?'gold':p===2?'silver':p===3?'bronze':'';return `<tr><td class="place ${cls}">${p}</td><td><strong>${esc(x.name||x.nickname||'Unbekannt')}</strong></td><td>${esc(x.team||'—')}</td><td>${esc(x.car||'—')}</td><td class="points">${Number(x.points)||0}</td><td>${Number(x.wins)||0}</td><td>${Number(x.races)||0}</td></tr>`}).join(''):'<tr><td colspan="7" class="empty">Noch keine Rangliste vorhanden.</td></tr>';
-}catch(e){body.innerHTML='<tr><td colspan="7" class="empty">Rangliste konnte nicht geladen werden.</td></tr>'}
+ const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();
+ if(!r.ok||!d.ok) throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');
+ const rows=d.ranking||[];
+ bodyEl.innerHTML=rows.length?rows.map((x,i)=>{const p=Number(x.place)||i+1;const cls=p===1?'gold':p===2?'silver':p===3?'bronze':'';return `<tr><td class="place ${cls}">${p}</td><td><strong>${esc(x.nickname||'Unbekannt')}</strong></td><td>${esc(x.team||'—')}</td><td>${esc(x.car||'—')}</td><td class="points">${Number(x.points)||0}</td><td>${Number(x.wins)||0}</td><td>${Number(x.races)||0}</td></tr>`}).join(''):'<tr><td colspan="7" class="empty">Noch keine Rangliste vorhanden.</td></tr>';
+}catch(e){console.error(e);bodyEl.innerHTML='<tr><td colspan="7" class="empty">Rangliste konnte nicht geladen werden.</td></tr>';}
 })();
-document.querySelector('.nav-toggle').onclick=()=>document.querySelector('.nav').classList.toggle('open');
+document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.querySelector('.nav')?.classList.toggle('open'));
 </script>
 
 <div class="jackal-login-overlay" id="jackalLoginOverlay" aria-hidden="true">
