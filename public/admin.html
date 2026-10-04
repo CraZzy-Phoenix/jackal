@@ -1007,6 +1007,298 @@ button,input,textarea,select{font-family:var(--f-body);}
 @media(max-width:1100px){.news-control-grid{grid-template-columns:1fr}.news-control-row.five{grid-template-columns:1fr 1fr}.news-category-row{grid-template-columns:1fr 1fr 70px 70px auto}.news-archive-row{grid-template-columns:1fr auto auto}}
 @media(max-width:700px){.news-control-row,.news-control-row.three,.news-control-row.five{grid-template-columns:1fr}.news-category-row{grid-template-columns:1fr 1fr}.news-archive-row{grid-template-columns:1fr auto}.news-archive-row>*:nth-child(3),.news-archive-row>*:nth-child(4){grid-column:2}}
 
+
+/* =========================================================
+   JACKAL ADMIN – FINAL PUBLIC SITE LOOK
+   Keeps the existing admin functionality/IDs untouched.
+========================================================= */
+#adminApp{
+  min-height:100vh;
+  background:var(--bg);
+}
+#adminApp>.admin-topbar{
+  height:58px;
+  padding:0 36px;
+  gap:24px;
+  background:rgba(8,7,14,.94);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 8px 28px rgba(0,0,0,.22);
+}
+#adminApp>.admin-topbar .admin-brand{
+  display:flex;
+  align-items:center;
+  flex:0 0 auto;
+  min-width:max-content;
+}
+#adminApp>.admin-topbar .brand-text{
+  display:inline-flex;
+  align-items:baseline;
+  gap:8px;
+  margin:0;
+  padding:0;
+  font-family:var(--f-brush);
+  font-size:30px;
+  line-height:1;
+  font-weight:400;
+  letter-spacing:0;
+  text-transform:none;
+  color:#fff;
+  transform:skew(-8deg);
+  text-shadow:0 0 12px rgba(178,102,255,.8),2px 2px 0 var(--purple);
+}
+#adminApp>.admin-topbar .brand-admin-word{
+  font-family:var(--f-head);
+  font-size:16px;
+  font-style:italic;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--purple-2);
+  text-shadow:0 0 10px rgba(168,85,255,.45);
+  transform:skew(0deg);
+}
+#adminApp>.admin-topbar .menu{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex:0 1 auto;
+  overflow-x:auto;
+  scrollbar-width:none;
+  white-space:nowrap;
+}
+#adminApp>.admin-topbar .menu::-webkit-scrollbar{display:none}
+#adminApp>.admin-topbar .menu button{
+  position:relative;
+  width:auto;
+  margin:0;
+  padding:20px 15px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:#d9d3ec;
+  font-family:var(--f-body);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:color .2s,background .2s;
+}
+#adminApp>.admin-topbar .menu button:hover,
+#adminApp>.admin-topbar .menu button.active{
+  color:#fff;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+}
+#adminApp>.admin-topbar .menu button.active::after{
+  content:"";
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:5px;
+  height:2px;
+  border-radius:99px;
+  background:var(--accent);
+  box-shadow:0 0 10px var(--neon);
+}
+#adminApp>.admin-topbar .admin-top-actions{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex:0 0 auto;
+}
+#adminApp>.admin-topbar .status{
+  display:inline-flex;
+  align-items:center;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#75e29b;
+  font-family:var(--f-body);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.08em;
+  white-space:nowrap;
+}
+#adminApp>.admin-topbar .admin-site-link,
+#adminApp>.admin-topbar .logout{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+  padding:0 13px;
+  border:1px solid var(--line);
+  border-radius:4px;
+  background:rgba(14,11,23,.72);
+  color:#d9d3ec;
+  font-family:var(--f-body);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  text-decoration:none;
+  transition:color .2s,border-color .2s,box-shadow .2s,background .2s;
+}
+#adminApp>.admin-topbar .admin-site-link:hover,
+#adminApp>.admin-topbar .logout:hover{
+  color:#fff;
+  border-color:var(--purple-2);
+  background:rgba(168,85,255,.08);
+  box-shadow:0 0 12px rgba(168,85,255,.22);
+}
+#adminApp>.admin-topbar .logout{position:static;width:auto;margin:0;cursor:pointer;}
+
+#adminApp .hero-admin{
+  height:230px;
+  border-bottom:1px solid var(--line);
+}
+#adminApp .hero-admin .hero-content{padding-bottom:12px}
+#adminApp .hero-admin .hero-title{
+  font-family:var(--f-brush);
+  font-weight:400;
+  color:#ecebf2;
+  text-shadow:4px 4px 0 var(--purple),0 0 30px rgba(168,85,255,.9),0 0 60px rgba(168,85,255,.5);
+}
+#adminApp .page{
+  max-width:1500px;
+  margin:6px auto 0;
+  padding:0 18px 36px;
+}
+#adminApp .stats{gap:14px;margin-bottom:14px}
+#adminApp .stat,
+#adminApp .card,
+#adminApp .news-control-card,
+#adminApp .news-admin-stat{
+  background:linear-gradient(180deg,var(--card-2),var(--card));
+  border-color:var(--line);
+  border-radius:var(--radius);
+  box-shadow:0 10px 30px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.03);
+}
+#adminApp .card-header,
+#adminApp .card-head{
+  background:linear-gradient(100deg,rgba(168,85,255,.09),transparent 52%);
+  border-bottom:1px solid var(--line);
+}
+#adminApp .card-header h2,
+#adminApp .card-head h2,
+#adminApp .news-control-head h3{
+  font-family:var(--f-head);
+  font-style:italic;
+  font-weight:800;
+  text-transform:uppercase;
+  color:#fff;
+}
+#adminApp .card-header h2,
+#adminApp .card-head h2{font-size:23px}
+#adminApp .card-header span{color:var(--muted)}
+#adminApp .action-button,
+#adminApp .user-button,
+#adminApp .crud-button,
+#adminApp .news-filter,
+#adminApp .news-control-actions button,
+#adminApp .dashboard-preview-actions button{
+  border:1px solid var(--line);
+  border-radius:4px;
+  background:#0e0b17;
+  color:#ddd6ee;
+  font-family:var(--f-body);
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  transition:.2s;
+}
+#adminApp .action-button:hover,
+#adminApp .user-button:hover,
+#adminApp .crud-button:hover,
+#adminApp .news-filter:hover,
+#adminApp .news-filter.active,
+#adminApp .news-control-actions button:hover,
+#adminApp .dashboard-preview-actions button:hover{
+  color:#fff;
+  border-color:var(--purple-2);
+  background:rgba(168,85,255,.10);
+  box-shadow:0 0 14px rgba(168,85,255,.18);
+}
+#adminApp input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+#adminApp textarea,
+#adminApp select{
+  background:#0e0b17;
+  border:1px solid var(--line);
+  border-radius:4px;
+  color:#fff;
+  outline:none;
+}
+#adminApp input:not([type="checkbox"]):not([type="radio"]):focus,
+#adminApp textarea:focus,
+#adminApp select:focus{
+  border-color:var(--purple-2);
+  box-shadow:0 0 0 2px rgba(168,85,255,.10),0 0 14px rgba(168,85,255,.10);
+}
+#adminApp .crud-table-wrap,
+#adminApp .ranking-table-wrap{
+  border-color:var(--line);
+  border-radius:var(--radius);
+  background:#0e0b17;
+}
+#adminApp .crud-table th,
+#adminApp .ranking-table th{
+  background:#0d0b18;
+  color:var(--purple-2);
+  border-bottom-color:var(--line);
+  font-family:var(--f-body);
+  font-weight:800;
+  letter-spacing:.08em;
+}
+#adminApp .crud-table td,
+#adminApp .ranking-table td{
+  color:#ddd7e9;
+  border-bottom-color:rgba(42,35,66,.7);
+}
+#adminApp .crud-table tr:hover td,
+#adminApp .ranking-table tr:hover td{background:rgba(168,85,255,.045)}
+#adminApp .modal-overlay{
+  background:rgba(4,3,9,.78);
+  backdrop-filter:blur(7px);
+}
+#adminApp .modal,
+#adminApp .ranking-modal{
+  border-color:var(--line);
+  border-radius:var(--radius);
+  background:linear-gradient(180deg,#171329,#0f0c1a);
+  box-shadow:0 24px 70px rgba(0,0,0,.65),0 0 34px rgba(168,85,255,.10);
+}
+
+@media(max-width:1200px){
+  #adminApp>.admin-topbar .menu{gap:2px}
+  #adminApp>.admin-topbar .menu button{padding-left:10px;padding-right:10px;font-size:12px}
+  #adminApp>.admin-topbar .status{display:none}
+}
+@media(max-width:960px){
+  #adminApp>.admin-topbar{flex-wrap:wrap;height:auto;min-height:58px;padding:7px 16px;gap:10px}
+  #adminApp>.admin-topbar .menu{position:static;left:auto;transform:none;order:3;flex-basis:100%;justify-content:flex-start;border-top:1px solid var(--line);padding-top:2px}
+  #adminApp>.admin-topbar .menu button{padding:12px 11px}
+  #adminApp .hero-admin{height:250px}
+}
+@media(max-width:700px){
+  #adminApp .page{padding:0 12px 22px}
+  #adminApp .hero-admin{height:220px}
+  #adminApp .hero-admin .hero-title{font-size:clamp(48px,16vw,82px)}
+  #adminApp>.admin-topbar .brand-text{font-size:26px}
+  #adminApp>.admin-topbar .brand-admin-word{font-size:13px}
+  #adminApp>.admin-topbar .admin-site-link{display:none}
+}
+@media(max-width:480px){
+  #adminApp>.admin-topbar .brand-admin-word{font-size:12px}
+  #adminApp>.admin-topbar .logout{padding:0 10px;font-size:10px}
+  #adminApp .hero-admin{height:200px}
+}
+
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/></head>
 <body>
@@ -1039,10 +1331,9 @@ button,input,textarea,select{font-family:var(--f-body);}
      ADMIN APP
 ========================================================= -->
 <div class="hidden" id="adminApp"><header class="topbar admin-topbar">
-<div class="brand">
-<a class="brand-text" href="/">JACKAL</a>
-<span class="admin-chip">ADMIN</span>
-</div>
+<a class="brand admin-brand" href="/" aria-label="Jackal Admin – zur Website">
+<span class="brand-text">Jackal <span class="brand-admin-word">Admin</span></span>
+</a>
 <nav aria-label="Admin navigation" class="menu">
 <button class="active" data-page="dashboard">Dashboard</button>
 <button data-page="races">Rennen</button>
@@ -1055,6 +1346,7 @@ button,input,textarea,select{font-family:var(--f-body);}
 </nav>
 <div class="admin-top-actions">
 <span class="status">● SYSTEM ONLINE</span>
+<a class="admin-site-link" href="/" aria-label="Öffentliche Website öffnen">Website</a>
 <button class="logout" id="logoutButton">Abmelden</button>
 </div>
 </header>
