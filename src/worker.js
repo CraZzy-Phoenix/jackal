@@ -1274,12 +1274,8 @@ async function ensureDefaultNewsCategories(env) {
     ).bind(slug).first();
 
     if (existing) {
-      await env.DB.prepare(`
-        UPDATE news_categories
-        SET name = ?, color = ?, text_color = ?, active = 1,
-            sort_order = ?, updated_at = ?
-        WHERE id = ?
-      `).bind(name, color, textColor, sortOrder, now, existing.id).run();
+      // Bestehende Kategorien NICHT überschreiben: individuelle Farben/Namen
+      // werden ausschließlich über die Kategorieverwaltung gepflegt.
     } else {
       await env.DB.prepare(`
         INSERT INTO news_categories
