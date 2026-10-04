@@ -331,6 +331,106 @@
     document.querySelector('.jackal-direct-news-manager')?.remove();
   }
 
+  function showNewsCategoryManager(auth, initialCategories){
+    const old=document.querySelector('.jackal-news-category-manager');
+    old?.remove();
+    let categories=Array.isArray(initialCategories)?initialCategories:[];
+    const overlay=document.createElement('div');
+    overlay.className='jackal-news-category-manager';
+    overlay.innerHTML=`<div class="jncm-window" role="dialog" aria-modal="true" aria-label="News-Kategorien verwalten">
+      <div class="jncm-head">
+        <div><div class="jncm-kicker">JACKAL ADMIN</div><h2>KATEGORIEN VERWALTEN</h2><p>Farben der bestehenden Kategorien ändern oder eine eigene Kategorie anlegen.</p></div>
+        <button type="button" class="jncm-close jncm-close-btn" aria-label="Fenster schließen">×</button>
+      </div>
+      <div class="jncm-body">
+        ${can(auth,'news','create') ? `<section class="jncm-add"><div class="jncm-section-title">NEUE KATEGORIE</div><div class="jncm-add-grid"><label><span>Name</span><input id="jncm-new-name" maxlength="60" placeholder="z. B. Community"></label><label><span>Farbe</span><div class="jncm-color-pair"><input id="jncm-new-color" type="color" value="#A855FF"><input id="jncm-new-color-text" value="#A855FF" maxlength="7"></div></label><label><span>Textfarbe</span><div class="jncm-color-pair"><input id="jncm-new-text-color" type="color" value="#FFFFFF"><input id="jncm-new-text-color-text" value="#FFFFFF" maxlength="7"></div></label><div class="jncm-add-action"><button type="button" class="jncm-primary" id="jncm-create">+ KATEGORIE HINZUFÜGEN</button></div></div><div class="jncm-msg" id="jncm-new-msg"></div></section>`:''}
+        <section><div class="jncm-section-bar"><div><div class="jncm-section-title">BESTEHENDE KATEGORIEN</div><div class="jncm-section-help">Ändere Name, Farbe oder Textfarbe direkt und speichere nur die betreffende Kategorie.</div></div><div class="jncm-count" id="jncm-count"></div></div><div class="jncm-list" id="jncm-list"></div></section>
+      </div>
+      <div class="jncm-foot"><button type="button" class="jncm-secondary jncm-close-btn">SCHLIESSEN</button></div>
+    </div>`;
+    document.body.appendChild(overlay);
+
+    const styleId='jackalNewsCategoryStyle';
+    if(!document.getElementById(styleId)){
+      const st=document.createElement('style');st.id=styleId;st.textContent=`
+        .jackal-news-category-manager{position:fixed;inset:0;z-index:9700;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(4,3,10,.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+        .jackal-news-category-manager .jncm-window{width:min(1120px,94vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(180deg,#171329,#110e1f);border:1px solid #4b2f8a;border-radius:10px;box-shadow:0 30px 100px rgba(0,0,0,.5),0 0 35px rgba(168,85,255,.16)}
+        .jncm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:20px 24px;border-bottom:1px solid #2a2342;flex:0 0 auto}
+        .jncm-kicker{font:800 11px 'Rajdhani',sans-serif;color:#b266ff;letter-spacing:.14em;text-transform:uppercase}.jncm-head h2{margin:2px 0 0;font:800 32px 'Saira Condensed',sans-serif;font-style:italic;color:#fff;text-transform:uppercase}.jncm-head p{margin:3px 0 0;color:#a49cbc;font:600 12px 'Rajdhani',sans-serif}
+        .jncm-close{width:42px;height:42px;flex:0 0 42px;border:1px solid #5a3b8c;border-radius:4px;color:#fff;background:linear-gradient(180deg,#171229,#0f0c18);font:800 20px 'Saira Condensed',sans-serif;cursor:pointer;box-shadow:0 0 12px rgba(168,85,255,.12)}.jncm-close:hover{border-color:#b266ff;box-shadow:0 0 18px rgba(168,85,255,.28)}
+        .jncm-body{overflow:auto;padding:18px 24px 20px}.jncm-add{padding:16px;border:1px solid #352654;border-radius:8px;background:#0e0b17;margin-bottom:18px}.jncm-section-title{font:800 13px 'Saira Condensed',sans-serif;color:#fff;letter-spacing:.05em;text-transform:uppercase}.jncm-section-help{margin-top:3px;color:#756d80;font:600 11px 'Rajdhani',sans-serif}.jncm-add-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:10px;align-items:end;margin-top:12px}.jncm-add-grid label,.jncm-row-field{display:grid;gap:6px}.jncm-add-grid label>span,.jncm-row-field>span{font:800 10px 'Rajdhani',sans-serif;color:#81788f;text-transform:uppercase;letter-spacing:.08em}.jncm-add-grid input[type=text],.jncm-add-grid input:not([type]),.jncm-add-grid input[type=color],.jncm-row-field input[type=text],.jncm-row-field input:not([type]),.jncm-row-field input[type=color]{width:100%;min-height:38px;border:1px solid #2d2740;border-radius:5px;background:#0d0b16;color:#f2eefc;padding:8px 10px;outline:none;font:600 13px 'Rajdhani',sans-serif}.jncm-add-grid input[type=color],.jncm-row-field input[type=color]{padding:3px;cursor:pointer}.jncm-color-pair{display:grid;grid-template-columns:44px 1fr;gap:7px}.jncm-add-action{display:flex;align-items:end;height:100%}.jncm-primary,.jncm-secondary,.jncm-save,.jncm-delete{padding:10px 13px;border:1px solid #b266ff;border-radius:3px;color:#fff;background:#0f0c18;font:800 12px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer;white-space:nowrap}.jncm-primary{background:linear-gradient(180deg,#5c22c4,#4e18ae 60%,#43149a);box-shadow:0 0 14px rgba(168,85,255,.22)}.jncm-secondary{border-color:#4b2f8a}.jncm-delete{border-color:#6d2941;color:#ffb7c4}.jncm-delete:hover{border-color:#ff5d7d;color:#fff}.jncm-section-bar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}.jncm-count{font:700 11px 'Rajdhani',sans-serif;color:#9e91b8}.jncm-list{display:grid;gap:9px}.jncm-row{display:grid;grid-template-columns:minmax(0,1.35fr) 210px 210px auto;gap:12px;align-items:end;padding:13px;border:1px solid #2a2342;border-radius:7px;background:#0e0b17}.jncm-row-name{display:grid;gap:6px}.jncm-row-meta{font:700 9px 'Rajdhani',sans-serif;color:#635c6e;text-transform:uppercase;letter-spacing:.06em}.jncm-row-actions{display:flex;justify-content:flex-end;align-items:end;gap:7px}.jncm-status-toggle{display:flex;align-items:center;gap:7px;height:38px;padding:0 10px;border:1px solid #2d2740;border-radius:5px;background:#0d0b16;color:#bdb5ca;font:700 11px 'Rajdhani',sans-serif}.jncm-status-toggle input{accent-color:#a855ff}.jncm-msg{min-height:18px;margin-top:9px;color:#ff8798;font:700 11px 'Rajdhani',sans-serif}.jncm-msg.ok{color:#9ff4c1}
+        .jackal-direct-news-manager .jdnm-window{width:min(1320px,94vw);max-height:90vh}.jackal-direct-news-manager .jdnm-head{padding:20px 24px;flex:0 0 auto}.jackal-direct-news-manager .jdnm-close{width:42px;height:42px;flex:0 0 42px;border:1px solid #5a3b8c;box-shadow:0 0 12px rgba(168,85,255,.12)}.jackal-direct-news-manager .jdnm-list{flex:1 1 auto;min-height:0}.jackal-direct-news-manager .jdnm-foot{position:sticky;bottom:0;z-index:3;justify-content:space-between;align-items:center;background:linear-gradient(180deg,rgba(17,14,31,.95),#110e1f);padding:14px 22px;box-shadow:0 -8px 20px rgba(0,0,0,.16);flex:0 0 auto}.jackal-direct-news-manager .jdnm-foot .jdnm-secondary{border-color:#6c4ca3;background:#171229;color:#fff;font-size:14px;min-width:128px}.jackal-direct-news-manager .jdnm-foot .jdnm-secondary:hover{border-color:#b266ff;box-shadow:0 0 14px rgba(168,85,255,.22)}
+        @media(max-width:900px){.jncm-add-grid{grid-template-columns:1fr 1fr}.jncm-add-action{grid-column:1/-1}.jncm-row{grid-template-columns:1fr 1fr}.jncm-row-actions{grid-column:1/-1;justify-content:flex-start}}
+        @media(max-width:620px){.jncm-add-grid,.jncm-row{grid-template-columns:1fr}.jncm-add-action{grid-column:auto}.jncm-row-actions{grid-column:auto}.jackal-direct-news-manager .jdnm-window{width:96vw}.jackal-direct-news-manager .jdnm-head{padding:16px}.jackal-direct-news-manager .jdnm-foot{padding:12px 14px}}
+      `;document.head.appendChild(st);
+    }
+
+    const list=overlay.querySelector('#jncm-list'), count=overlay.querySelector('#jncm-count');
+    const escColor=v=>/^#[0-9A-Fa-f]{6}$/.test(String(v||''))?String(v).toUpperCase():'#A855FF';
+    const close=()=>overlay.remove();
+    overlay.querySelectorAll('.jncm-close-btn').forEach(b=>b.addEventListener('click',close));
+
+    function render(){
+      if(count) count.textContent=`${categories.length} Kategorien`;
+      list.innerHTML=categories.length?categories.map(c=>{
+        const color=escColor(c.color),tc=escColor(c.text_color||'#FFFFFF');
+        return `<article class="jncm-row" data-id="${esc(c.id)}">
+          <div class="jncm-row-name"><div class="jncm-row-field"><span>Name</span><input type="text" data-role="name" value="${esc(c.name||'')}" maxlength="60"></div><div class="jncm-row-meta">Slug: ${esc(c.slug||'—')}</div></div>
+          <div class="jncm-row-field"><span>Farbe</span><div class="jncm-color-pair"><input type="color" data-role="color" value="${color}"><input type="text" data-role="color-text" value="${color}" maxlength="7"></div></div>
+          <div class="jncm-row-field"><span>Textfarbe</span><div class="jncm-color-pair"><input type="color" data-role="text-color" value="${tc}"><input type="text" data-role="text-color-text" value="${tc}" maxlength="7"></div></div>
+          <div class="jncm-row-actions"><label class="jncm-status-toggle"><input type="checkbox" data-role="active" ${Number(c.active)!==0?'checked':''}> Aktiv</label><button type="button" class="jncm-save" data-act="save">Speichern</button>${can(auth,'news','delete')?'<button type="button" class="jncm-delete" data-act="delete">Löschen</button>':''}</div>
+        </article>`;
+      }).join(''):'<div class="empty">Noch keine Kategorien vorhanden.</div>';
+    }
+    render();
+
+    overlay.addEventListener('input',e=>{
+      const row=e.target.closest('.jncm-row');if(!row)return;
+      const role=e.target.dataset.role;
+      if(role==='color'){const t=row.querySelector('[data-role="color-text"]');if(t)t.value=e.target.value.toUpperCase();}
+      if(role==='color-text'){const v=String(e.target.value||'').toUpperCase();if(/^#[0-9A-F]{6}$/.test(v)){const p=row.querySelector('[data-role="color"]');if(p)p.value=v;}}
+      if(role==='text-color'){const t=row.querySelector('[data-role="text-color-text"]');if(t)t.value=e.target.value.toUpperCase();}
+      if(role==='text-color-text'){const v=String(e.target.value||'').toUpperCase();if(/^#[0-9A-F]{6}$/.test(v)){const p=row.querySelector('[data-role="text-color"]');if(p)p.value=v;}}
+    });
+
+    overlay.addEventListener('click',async e=>{
+      const b=e.target.closest('button[data-act]');if(!b)return;
+      const row=b.closest('.jncm-row');const id=row?.dataset.id||'';const act=b.dataset.act;
+      if(act==='save'&&row){
+        const name=String(row.querySelector('[data-role="name"]')?.value||'').trim();
+        const color=escColor(row.querySelector('[data-role="color-text"]')?.value);
+        const textColor=escColor(row.querySelector('[data-role="text-color-text"]')?.value||'#FFFFFF');
+        const active=!!row.querySelector('[data-role="active"]')?.checked;
+        if(!name){alert('Bitte einen Kategorienamen eingeben.');return;}
+        b.disabled=true;
+        try{const r=await fetch(`/api/admin/news/categories/${encodeURIComponent(id)}`,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,color,text_color:textColor,active})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Kategorie konnte nicht gespeichert werden.');const target=categories.find(c=>String(c.id)===String(id)); if(target&&d.category) Object.assign(target,d.category); render();}catch(err){alert(err.message||'Kategorie konnte nicht gespeichert werden.');}finally{b.disabled=false;}
+      }
+      if(act==='delete'&&row){
+        const cat=categories.find(c=>String(c.id)===String(id));
+        if(!confirm(`Kategorie "${cat?.name||''}" wirklich löschen?`))return;
+        b.disabled=true;
+        try{const r=await fetch(`/api/admin/news/categories/${encodeURIComponent(id)}`,{method:'DELETE',credentials:'same-origin'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Kategorie konnte nicht gelöscht werden.');const idx=categories.findIndex(c=>String(c.id)===String(id)); if(idx>=0) categories.splice(idx,1); render();}catch(err){alert(err.message||'Kategorie konnte nicht gelöscht werden.');}finally{b.disabled=false;}
+      }
+    });
+
+    const createBtn=overlay.querySelector('#jncm-create');
+    createBtn?.addEventListener('click',async()=>{
+      const msg=overlay.querySelector('#jncm-new-msg');
+      const name=String(overlay.querySelector('#jncm-new-name')?.value||'').trim();
+      const color=escColor(overlay.querySelector('#jncm-new-color-text')?.value);
+      const textColor=escColor(overlay.querySelector('#jncm-new-text-color-text')?.value||'#FFFFFF');
+      if(!name){if(msg)msg.textContent='Bitte einen Kategorienamen eingeben.';return;}
+      createBtn.disabled=true;if(msg){msg.textContent='';msg.classList.remove('ok');}
+      try{const r=await fetch('/api/admin/news/categories',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,color,text_color:textColor,active:true})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Kategorie konnte nicht angelegt werden.');categories.push(d.category);render();if(msg){msg.textContent='Kategorie erfolgreich angelegt.';msg.classList.add('ok');}overlay.querySelector('#jncm-new-name').value='';}catch(err){if(msg)msg.textContent=err.message||'Kategorie konnte nicht angelegt werden.';}finally{createBtn.disabled=false;}
+    });
+
+    overlay.querySelector('#jncm-new-color')?.addEventListener('input',e=>{const x=overlay.querySelector('#jncm-new-color-text');if(x)x.value=e.target.value.toUpperCase();});
+    overlay.querySelector('#jncm-new-text-color')?.addEventListener('input',e=>{const x=overlay.querySelector('#jncm-new-text-color-text');if(x)x.value=e.target.value.toUpperCase();});
+    overlay.querySelector('#jncm-new-color-text')?.addEventListener('input',e=>{const v=String(e.target.value||'').toUpperCase();if(/^#[0-9A-F]{6}$/.test(v)){const x=overlay.querySelector('#jncm-new-color');if(x)x.value=v;}});
+    overlay.querySelector('#jncm-new-text-color-text')?.addEventListener('input',e=>{const v=String(e.target.value||'').toUpperCase();if(/^#[0-9A-F]{6}$/.test(v)){const x=overlay.querySelector('#jncm-new-text-color');if(x)x.value=v;}});
+    return overlay;
+  }
+
   async function openDirectNewsManager(mode='manage'){
     const auth=currentAuth || await getAuth();
     if(!auth){ setAuthUi(null); openLogin(); return; }
@@ -352,15 +452,13 @@
       categories=Array.isArray(catData.categories)?catData.categories:[];
     }catch(e){ window.alert(e.message||'News konnten nicht geladen werden.'); return; }
 
-    const old=document.querySelector('.jackal-direct-news-manager');
-    old?.remove();
-    const overlay=document.createElement('div');
-    overlay.className='jackal-direct-news-manager';
+    const old=document.querySelector('.jackal-direct-news-manager'); old?.remove();
+    const overlay=document.createElement('div'); overlay.className='jackal-direct-news-manager';
     overlay.innerHTML=`<div class="jdnm-window" role="dialog" aria-modal="true" aria-label="News ${mode==='archive'?'Archiv':'Verwaltung'}">
-      <div class="jdnm-head"><div><div class="jdnm-kicker">JACKAL ADMIN</div><h2>${mode==='archive'?'NEWS ARCHIV':'NEWS VERWALTEN'}</h2><p>${mode==='archive'?'Archivierte und vergangene Meldungen verwalten.':'News einblenden, ausblenden, bearbeiten oder archivieren.'}</p></div><button type="button" class="jdnm-close">×</button></div>
+      <div class="jdnm-head"><div><div class="jdnm-kicker">JACKAL ADMIN</div><h2>${mode==='archive'?'NEWS ARCHIV':'NEWS VERWALTEN'}</h2><p>${mode==='archive'?'Archivierte und vergangene Meldungen verwalten.':'News einblenden, ausblenden, bearbeiten oder archivieren.'}</p></div><button type="button" class="jdnm-close" aria-label="Fenster schließen">×</button></div>
       <div class="jdnm-toolbar"><input type="search" class="jdnm-search" placeholder="News durchsuchen..."><div class="jdnm-count"></div></div>
       <div class="jdnm-list"></div>
-      <div class="jdnm-foot"><button type="button" class="jdnm-secondary jdnm-close">Schließen</button>${mode==='manage'&&can(auth,'news','create')?'<button type="button" class="jdnm-primary" id="jdnm-new">+ Neue News</button>':''}</div>
+      <div class="jdnm-foot"><button type="button" class="jdnm-secondary jdnm-close">SCHLIESSEN</button><div class="jdnm-foot-actions">${mode==='manage'&&can(auth,'news','edit')?'<button type="button" class="jdnm-secondary" id="jdnm-categories">KATEGORIEN</button>':''}${mode==='manage'&&can(auth,'news','create')?'<button type="button" class="jdnm-primary" id="jdnm-new">+ NEUE NEWS</button>':''}</div></div>
     </div>`;
     document.body.appendChild(overlay);
 
@@ -368,9 +466,9 @@
     if(!document.getElementById(styleId)){
       const st=document.createElement('style');st.id=styleId;st.textContent=`
       .jackal-direct-news-manager{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(4,3,10,.18);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
-      .jackal-direct-news-manager .jdnm-window{width:min(1180px,94vw);max-height:88vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#171329,#110e1f);border:1px solid #4b2f8a;border-radius:10px;box-shadow:0 30px 100px rgba(0,0,0,.45),0 0 35px rgba(168,85,255,.15);overflow:hidden}
-      .jdnm-head{display:flex;justify-content:space-between;gap:18px;padding:20px 22px;border-bottom:1px solid #2a2342}.jdnm-kicker{font:800 11px 'Rajdhani',sans-serif;color:#b266ff;letter-spacing:.14em;text-transform:uppercase}.jdnm-head h2{margin:2px 0 0;font:800 32px 'Saira Condensed',sans-serif;font-style:italic;color:#fff;text-transform:uppercase}.jdnm-head p{margin:3px 0 0;color:#a49cbc;font:600 12px 'Rajdhani',sans-serif}.jdnm-close{width:34px;height:34px;border:1px solid #2a2342;border-radius:3px;color:#ddd5eb;background:#0f0c18;font:700 18px 'Saira Condensed',sans-serif;cursor:pointer}.jdnm-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-bottom:1px solid #241d36}.jdnm-search{flex:1;max-width:520px;height:40px;padding:0 12px;border:1px solid #2a2342;border-radius:4px;background:#0e0b17;color:#fff;font:600 13px 'Rajdhani',sans-serif;outline:none}.jdnm-list{overflow:auto;padding:8px 22px 14px}.jdnm-row{display:grid;grid-template-columns:minmax(0,1.7fr) 150px 120px minmax(0,1.2fr);gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #2a2342}.jdnm-title{font:800 17px 'Saira Condensed',sans-serif;color:#fff;text-transform:uppercase}.jdnm-meta{margin-top:3px;font:600 10px 'Rajdhani',sans-serif;color:#756d80}.jdnm-cat{display:inline-flex;justify-self:start;padding:4px 7px;border-radius:4px;font:800 9px 'Rajdhani',sans-serif;text-transform:uppercase;letter-spacing:.07em}.jdnm-status{font:700 10px 'Rajdhani',sans-serif;color:#b266ff;text-transform:uppercase}.jdnm-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px}.jdnm-actions button{padding:7px 9px;border:1px solid #3a2c56;border-radius:3px;background:#0f0c18;color:#ddd5eb;font:800 11px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}.jdnm-actions button:hover{border-color:#b266ff;color:#fff}.jdnm-actions .danger{border-color:#6d2941;color:#ffb7c4}.jdnm-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;border-top:1px solid #2a2342}.jdnm-primary,.jdnm-secondary{padding:10px 14px;border:1px solid #b266ff;border-radius:3px;color:#fff;background:#0f0c18;font:800 13px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}.jdnm-primary{background:linear-gradient(180deg,#5c22c4,#4e18ae 60%,#43149a);box-shadow:0 0 14px rgba(168,85,255,.22)}
-      @media(max-width:800px){.jdnm-row{grid-template-columns:1fr}.jdnm-actions{justify-content:flex-start}.jdnm-toolbar{align-items:stretch;flex-direction:column}.jdnm-search{max-width:none;width:100%}}
+      .jackal-direct-news-manager .jdnm-window{width:min(1320px,94vw);max-height:90vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#171329,#110e1f);border:1px solid #4b2f8a;border-radius:10px;box-shadow:0 30px 100px rgba(0,0,0,.45),0 0 35px rgba(168,85,255,.15);overflow:hidden}
+      .jdnm-head{display:flex;justify-content:space-between;gap:18px;padding:20px 22px;border-bottom:1px solid #2a2342;flex:0 0 auto}.jdnm-kicker{font:800 11px 'Rajdhani',sans-serif;color:#b266ff;letter-spacing:.14em;text-transform:uppercase}.jdnm-head h2{margin:2px 0 0;font:800 32px 'Saira Condensed',sans-serif;font-style:italic;color:#fff;text-transform:uppercase}.jdnm-head p{margin:3px 0 0;color:#a49cbc;font:600 12px 'Rajdhani',sans-serif}.jdnm-close{width:42px;height:42px;flex:0 0 42px;border:1px solid #5a3b8c;border-radius:4px;color:#fff;background:#0f0c18;font:800 20px 'Saira Condensed',sans-serif;cursor:pointer;box-shadow:0 0 12px rgba(168,85,255,.12)}.jdnm-close:hover{border-color:#b266ff;box-shadow:0 0 18px rgba(168,85,255,.28)}.jdnm-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-bottom:1px solid #241d36;flex:0 0 auto}.jdnm-search{flex:1;max-width:620px;height:40px;padding:0 12px;border:1px solid #2a2342;border-radius:4px;background:#0e0b17;color:#fff;font:600 13px 'Rajdhani',sans-serif;outline:none}.jdnm-list{overflow:auto;padding:8px 22px 14px;flex:1 1 auto;min-height:0}.jdnm-row{display:grid;grid-template-columns:minmax(0,1.7fr) 150px 120px minmax(0,1.4fr);gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #2a2342}.jdnm-title{font:800 17px 'Saira Condensed',sans-serif;color:#fff;text-transform:uppercase}.jdnm-meta{margin-top:3px;font:600 10px 'Rajdhani',sans-serif;color:#756d80}.jdnm-cat{display:inline-flex;justify-self:start;padding:4px 7px;border-radius:4px;font:800 9px 'Rajdhani',sans-serif;text-transform:uppercase;letter-spacing:.07em}.jdnm-status{font:700 10px 'Rajdhani',sans-serif;color:#b266ff;text-transform:uppercase}.jdnm-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px}.jdnm-actions button{padding:7px 9px;border:1px solid #3a2c56;border-radius:3px;background:#0f0c18;color:#ddd5eb;font:800 11px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}.jdnm-actions button:hover{border-color:#b266ff;color:#fff}.jdnm-actions .danger{border-color:#6d2941;color:#ffb7c4}.jdnm-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 22px;border-top:1px solid #2a2342;background:linear-gradient(180deg,rgba(17,14,31,.95),#110e1f);box-shadow:0 -8px 20px rgba(0,0,0,.16);flex:0 0 auto}.jdnm-foot-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.jdnm-primary,.jdnm-secondary{padding:10px 14px;border:1px solid #b266ff;border-radius:3px;color:#fff;background:#0f0c18;font:800 13px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}.jdnm-primary{background:linear-gradient(180deg,#5c22c4,#4e18ae 60%,#43149a);box-shadow:0 0 14px rgba(168,85,255,.22)}.jdnm-foot .jdnm-secondary{border-color:#6c4ca3;background:#171229;min-width:128px}.jdnm-foot .jdnm-secondary:hover{border-color:#b266ff;box-shadow:0 0 14px rgba(168,85,255,.22)}
+      @media(max-width:800px){.jdnm-row{grid-template-columns:1fr}.jdnm-actions{justify-content:flex-start}.jdnm-toolbar{align-items:stretch;flex-direction:column}.jdnm-search{max-width:none;width:100%}.jdnm-foot{align-items:stretch;flex-direction:column}.jdnm-foot-actions{justify-content:flex-start}}
       `;document.head.appendChild(st);
     }
     const list=overlay.querySelector('.jdnm-list'), count=overlay.querySelector('.jdnm-count'), search=overlay.querySelector('.jdnm-search');
@@ -379,44 +477,22 @@
     const labelCat=r=>String(r.category||'ALLGEMEIN').toUpperCase();
     const render=()=>{
       const q=String(search?.value||'').trim().toLowerCase();
-      const filtered=rows.filter(r=>{
-        if(mode==='archive' && !isArchived(r)) return false;
-        if(mode==='manage' && isArchived(r)) return false;
-        return !q || [r.title,r.text,r.content,r.category].map(v=>String(v||'').toLowerCase()).join(' ').includes(q);
-      });
+      const filtered=rows.filter(r=>{ if(mode==='archive'&&!isArchived(r))return false; if(mode==='manage'&&isArchived(r))return false; return !q||[r.title,r.text,r.content,r.category].map(v=>String(v||'').toLowerCase()).join(' ').includes(q); });
       if(count) count.textContent=`${filtered.length} News`;
-      list.innerHTML=filtered.length?filtered.map(r=>{
-        const id=r.id??r._id??''; const archived=isArchived(r); const active=isActive(r); const c=categories.find(x=>String(x.name||'').toUpperCase()===labelCat(r)); const color=c?.color||'#9E91B8'; const tc=c?.text_color||'#FFFFFF';
-        const actions=[];
-        if(can(auth,'news','view')) actions.push(`<button type="button" data-act="long" data-id="${esc(id)}">Langtext</button>`);
-        if(can(auth,'news','edit')) actions.push(`<button type="button" data-act="edit" data-id="${esc(id)}">Bearbeiten</button>`);
-        if(!archived&&can(auth,'news','edit')) actions.push(`<button type="button" data-act="visible" data-id="${esc(id)}">${active?'Ausblenden':'Einblenden'}</button>`);
-        if(can(auth,'news','edit')) actions.push(`<button type="button" data-act="archive" data-id="${esc(id)}">${archived?'Wiederherstellen':'Archivieren'}</button>`);
-        if(can(auth,'news','delete')) actions.push(`<button type="button" class="danger" data-act="delete" data-id="${esc(id)}">Löschen</button>`);
-        return `<article class="jdnm-row"><div><div class="jdnm-title">${esc(r.title||'Unbenannte News')}</div><div class="jdnm-meta">${esc(String(r.date||r.created_at||'—'))}</div></div><span class="jdnm-cat" style="background:${esc(color)};color:${esc(tc)}">${esc(labelCat(r))}</span><span class="jdnm-status">${archived?'ARCHIV':active?'ÖFFENTLICH':'AUSGEBLENDET'}</span><div class="jdnm-actions">${actions.join('')}</div></article>`;
-      }).join(''):'<div class="empty">Keine News vorhanden.</div>';
+      list.innerHTML=filtered.length?filtered.map(r=>{ const id=r.id??r._id??'';const archived=isArchived(r);const active=isActive(r);const c=categories.find(x=>String(x.name||'').toUpperCase()===labelCat(r));const color=c?.color||'#9E91B8';const tc=c?.text_color||'#FFFFFF';const actions=[];if(can(auth,'news','view'))actions.push(`<button type="button" data-act="long" data-id="${esc(id)}">Langtext</button>`);if(can(auth,'news','edit'))actions.push(`<button type="button" data-act="edit" data-id="${esc(id)}">Bearbeiten</button>`);if(!archived&&can(auth,'news','edit'))actions.push(`<button type="button" data-act="visible" data-id="${esc(id)}">${active?'Ausblenden':'Einblenden'}</button>`);if(can(auth,'news','edit'))actions.push(`<button type="button" data-act="archive" data-id="${esc(id)}">${archived?'Wiederherstellen':'Archivieren'}</button>`);if(can(auth,'news','delete'))actions.push(`<button type="button" class="danger" data-act="delete" data-id="${esc(id)}">Löschen</button>`);return `<article class="jdnm-row"><div><div class="jdnm-title">${esc(r.title||'Unbenannte News')}</div><div class="jdnm-meta">${esc(String(r.date||r.created_at||'—'))}</div></div><span class="jdnm-cat" style="background:${esc(color)};color:${esc(tc)}">${esc(labelCat(r))}</span><span class="jdnm-status">${archived?'ARCHIV':active?'ÖFFENTLICH':'AUSGEBLENDET'}</span><div class="jdnm-actions">${actions.join('')}</div></article>`; }).join(''):'<div class="empty">Keine News vorhanden.</div>';
     };
     const find=id=>rows.find(r=>String(r.id??r._id??'')===String(id));
     const close=()=>overlay.remove();
     overlay.querySelectorAll('.jdnm-close').forEach(b=>b.addEventListener('click',close));
     search?.addEventListener('input',render);
+    overlay.querySelector('#jdnm-categories')?.addEventListener('click',()=>showNewsCategoryManager(auth,categories));
     overlay.querySelector('#jdnm-new')?.addEventListener('click',()=>{close();setTimeout(()=>openEditor('embed=crud&resource=news&action=new'),30);});
     list.addEventListener('click',async e=>{
-      const b=e.target.closest('button[data-act]');if(!b)return; const id=b.dataset.id||'';const row=find(id);if(!row)return; const act=b.dataset.act;
+      const b=e.target.closest('button[data-act]');if(!b)return;const id=b.dataset.id||'';const row=find(id);if(!row)return;const act=b.dataset.act;
       if(act==='edit'){close();setTimeout(()=>openEditor(`embed=crud&resource=news&action=edit&id=${encodeURIComponent(id)}`),30);return;}
       if(act==='long'){const text=String(row.content||row.long_text||row.body||row.text||'').trim()||'Kein Langtext vorhanden.';const o=document.createElement('div');o.className='jackal-direct-news-manager';o.innerHTML=`<div class="jdnm-window" style="max-width:900px"><div class="jdnm-head"><div><div class="jdnm-kicker">NEWS</div><h2>LANGTEXT</h2><p>${esc(row.title||'News')}</p></div><button type="button" class="jdnm-close">×</button></div><div style="padding:22px;overflow:auto;color:#ddd;white-space:pre-wrap;line-height:1.65;font:600 15px 'Rajdhani',sans-serif">${esc(text)}</div></div>`;document.body.appendChild(o);o.querySelector('.jdnm-close').addEventListener('click',()=>o.remove());return;}
       if(act==='delete'){if(!confirm(`"${row.title||'News'}" wirklich löschen?`))return;await deleteResource('news',id,row.title||'News');close();return;}
-      if(act==='visible' || act==='archive'){
-        b.disabled=true;
-        const archived=isArchived(row);const nowActive=isActive(row);
-        let payload={};
-        if(act==='visible'){
-          const next=!nowActive;payload={active:next?1:0,status:next?'published':'inactive'};
-        }else{
-          const restore=archived;payload={status:restore?'published':'archived',active:restore?1:0};
-        }
-        try{const r=await fetch(`/api/admin/data/news/${encodeURIComponent(id)}`,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'News konnte nicht geändert werden.');const nr=await fetch('/api/admin/data/news',{credentials:'same-origin',cache:'no-store'});const nd=await nr.json().catch(()=>({}));rows=Array.isArray(nd.rows)?nd.rows:[];render();}catch(err){alert(err.message||'News konnte nicht geändert werden.');b.disabled=false;}
-      }
+      if(act==='visible'||act==='archive'){b.disabled=true;const archived=isArchived(row);const nowActive=isActive(row);let payload={};if(act==='visible'){const next=!nowActive;payload={active:next?1:0,status:next?'published':'inactive'};}else{const restore=archived;payload={status:restore?'published':'archived',active:restore?1:0};}try{const r=await fetch(`/api/admin/data/news/${encodeURIComponent(id)}`,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'News konnte nicht geändert werden.');const nr=await fetch('/api/admin/data/news',{credentials:'same-origin',cache:'no-store'});const nd=await nr.json().catch(()=>({}));rows=Array.isArray(nd.rows)?nd.rows:[];render();}catch(err){alert(err.message||'News konnte nicht geändert werden.');b.disabled=false;}}
     });
     render();
   }
