@@ -81,6 +81,7 @@ a{color:inherit;text-decoration:none}
 
 <footer class="footer"><span>Jackal Racing League</span><span class="footer-center">We are Jackal. We are racing.</span><span class="footer-right">Los Santos · Est. 2026</span></footer>
 
+<style>.driver.is-selected{border-color:#b266ff!important;box-shadow:0 0 24px rgba(168,85,255,.38);transform:translateY(-2px)}</style>
 <script>
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const media=v=>{if(!v)return'';v=String(v);if(v.startsWith('/media/'))return v;if(v.startsWith('media/'))return'/'+v;if(/^https?:/i.test(v))return v;return'/media/'+v.split('/').map(encodeURIComponent).join('/')};
@@ -107,9 +108,11 @@ try{
   function render(){
     const q=searchEl.value.toLowerCase().trim(),t=teamEl.value,c=carEl.value;
     const list=drivers.filter(x=>(!q||[x.nickname,x.team,x.car].join(' ').toLowerCase().includes(q))&&(!t||x.team===t)&&(!c||x.car===c));
-    gridEl.innerHTML=list.length?list.map((x,i)=>`<article class="driver"><div class="number">#${String(x.number??i+1).padStart(2,'0')}</div><div class="driver-main"><h3>${esc(x.nickname||'Unbekannt')}</h3><div class="team">${esc(x.team||'Kein Team')}</div><div class="car">${esc(x.car||'Kein Fahrzeug')}</div><small>${Number(x.points)||0} Punkte · ${Number(x.wins)||0} Siege · ${Number(x.races)||0} Rennen</small></div><div class="avatar">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div></article>`).join(''):'<div class="empty">Kein Fahrer gefunden.</div>';
+    gridEl.innerHTML=list.length?list.map((x,i)=>`<article class="driver" data-driver-id="${esc(String(x.id||''))}"><div class="number">#${String(x.number??i+1).padStart(2,'0')}</div><div class="driver-main"><h3>${esc(x.nickname||'Unbekannt')}</h3><div class="team">${esc(x.team||'Kein Team')}</div><div class="car">${esc(x.car||'Kein Fahrzeug')}</div><small>${Number(x.points)||0} Punkte · ${Number(x.wins)||0} Siege · ${Number(x.races)||0} Rennen</small></div><div class="avatar">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div></article>`).join(''):'<div class="empty">Kein Fahrer gefunden.</div>';
   }
   render();searchEl.oninput=render;teamEl.onchange=render;carEl.onchange=render;
+  const driverParam=new URLSearchParams(location.search).get('driver');
+  if(driverParam){const safeId=String(driverParam).replace(/[^a-zA-Z0-9_-]/g,'');const target=document.querySelector(`[data-driver-id="${safeId}"]`);if(target){target.classList.add('is-selected');requestAnimationFrame(()=>target.scrollIntoView({behavior:'smooth',block:'center'}));}}
   statDrivers.textContent=drivers.length;
   statCars.textContent=cars.length;
   statRaces.textContent=(d.races||[]).length;
