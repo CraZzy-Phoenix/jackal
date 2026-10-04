@@ -1050,7 +1050,7 @@ a { color: inherit; text-decoration: none; }
 /* JACKAL RESPONSIVE LARGE-MONITOR SCALING – stable viewport based layout */
 @media (min-width: 961px){
   .grid-news{
-    width:min(94vw,2200px)!important;
+    width:min(91vw,1900px)!important;
     max-width:none!important;
     padding-left:0!important;
     padding-right:0!important;
@@ -1071,7 +1071,7 @@ a { color: inherit; text-decoration: none; }
   .winner-name{font-size:clamp(28px,1.5vw,36px)}
 }
 @media (min-width: 1800px){
-  .grid-news{width:min(94vw,2600px)!important}
+  .grid-news{width:min(91vw,1950px)!important}
   .card-foot{padding:16px 22px 20px}
   .changes-list{padding:0 16px 18px;gap:14px}
   .race-body{min-height:clamp(330px,18vw,430px);padding:22px}
@@ -1080,7 +1080,7 @@ a { color: inherit; text-decoration: none; }
   .news-archive-modal{width:min(1800px,90vw)}
 }
 @media (min-width: 2400px){
-  .grid-news{width:min(92vw,3200px)!important}
+  .grid-news{width:min(90vw,2100px)!important}
   .news-detail-modal{width:min(2200px,88vw)}
   .news-archive-modal{width:min(2200px,88vw)}
 }
