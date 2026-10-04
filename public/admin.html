@@ -1476,7 +1476,14 @@ body.embed-mode .crud-form{grid-template-columns:repeat(2,minmax(0,1fr));}
 body.embed-mode .crud-form .full{grid-column:1/-1;}
 @media(max-width:700px){body:not(.embed-mode) .editor-drawer{width:calc(100vw - 24px);margin-top:18px}body:not(.embed-mode) .editor-drawer-head h1{font-size:44px}body.embed-mode .crud-form{grid-template-columns:1fr}body.embed-mode .crud-form .full{grid-column:auto}body.embed-mode .modal{width:calc(100vw - 18px);max-height:90vh}}
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/></head>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/><style id="jackalAdminResponsiveLayout">
+html,body{overflow-x:hidden}
+@media (min-width:961px){.page{width:min(calc(100% - 48px),1800px);max-width:1800px;margin-left:auto;margin-right:auto}.admin-topbar .menu button{font-size:clamp(12px,.7vw,15px);padding-left:clamp(9px,.75vw,16px);padding-right:clamp(9px,.75vw,16px)}}
+@media (min-width:1440px){.page{padding-left:24px;padding-right:24px}.card{border-radius:12px}.card-header{padding:16px 22px}.crud-table th,.crud-table td,.ranking-table th,.ranking-table td{padding-left:16px;padding-right:16px}}
+@media (min-width:1800px){.page{width:min(calc(100% - 80px),1950px);max-width:1950px}.admin-topbar{padding-left:48px!important;padding-right:48px!important}.card-header h2{font-size:clamp(23px,1.25vw,34px)}}
+@media (min-width:2400px){.page{width:min(calc(100% - 100px),2100px);max-width:2100px}}
+</style>
+</head>
 <body>
 <!-- =========================================================
      LOGIN

@@ -18,7 +18,7 @@
     .jackal-admin-inline.danger:hover{border-color:#ff5d7d;box-shadow:0 0 12px rgba(255,80,110,.20);color:#fff}
     .jackal-admin-row-actions .jackal-admin-inline{margin-left:0}
     .jackal-admin-home-modal{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,3,10,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-    .jackal-home-admin-window{width:min(720px,94vw);max-height:min(760px,92vh);overflow:auto;border:1px solid rgba(178,102,255,.42);border-radius:10px;background:rgba(17,14,31,.96);box-shadow:0 30px 100px rgba(0,0,0,.45),0 0 38px rgba(168,85,255,.16)}
+    .jackal-home-admin-window{width:min(1240px,90vw);max-height:min(860px,90vh);overflow:auto;border:1px solid rgba(178,102,255,.42);border-radius:10px;background:rgba(17,14,31,.96);box-shadow:0 30px 100px rgba(0,0,0,.45),0 0 38px rgba(168,85,255,.16)}
     .jackal-home-admin-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid rgba(42,35,66,.9)}
     .jackal-home-admin-kicker{font:800 11px 'Saira Condensed',sans-serif;letter-spacing:.16em;color:#b266ff;text-transform:uppercase}
     .jackal-home-admin-head h2{margin:3px 0 0;font:800 30px 'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;color:#fff}
@@ -202,11 +202,13 @@
     s.textContent=`
       .jackal-admin-edit-overlay{position:fixed;inset:0;z-index:7000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(4,3,10,.10);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
       .jackal-admin-edit-overlay.open{display:flex}
-      .jackal-admin-edit-window{position:relative;width:min(920px,96vw);height:min(760px,92vh);border:1px solid rgba(178,102,255,.42);border-radius:10px;overflow:hidden;background:rgba(13,10,22,.78);box-shadow:0 30px 100px rgba(0,0,0,.40),0 0 38px rgba(168,85,255,.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+      .jackal-admin-edit-window{position:relative;width:min(1600px,92vw);height:min(900px,90vh);border:1px solid rgba(178,102,255,.42);border-radius:10px;overflow:hidden;background:rgba(13,10,22,.78);box-shadow:0 30px 100px rgba(0,0,0,.40),0 0 38px rgba(168,85,255,.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
       .jackal-admin-edit-overlay.management-mode{padding:0;align-items:stretch;justify-content:stretch;background:rgba(4,3,10,.16)}
       .jackal-admin-edit-overlay.management-mode .jackal-admin-edit-window{width:100vw;height:100vh;border:0;border-radius:0;background:rgba(13,10,22,.94);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
       .jackal-admin-edit-window iframe{width:100%;height:100%;display:block;border:0;background:transparent}
       .jackal-admin-edit-close{position:absolute;top:9px;right:9px;z-index:5;width:34px;height:34px;border:1px solid rgba(75,47,138,.7);border-radius:3px;color:#ddd5eb;background:rgba(15,12,24,.78);font:700 19px 'Saira Condensed',sans-serif;cursor:pointer}
+      @media(min-width:1800px){.jackal-admin-edit-window{width:min(1850px,90vw);height:min(980px,90vh)}.jackal-home-admin-window{width:min(1500px,90vw);}}
+      @media(min-width:2400px){.jackal-admin-edit-window{width:min(2000px,88vw)}.jackal-home-admin-window{width:min(1800px,88vw)}}
       .jackal-admin-edit-close:hover{color:#fff;border-color:#b266ff;box-shadow:0 0 12px rgba(168,85,255,.28)}
     `;
     document.head.appendChild(s);

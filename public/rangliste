@@ -34,6 +34,39 @@ table{width:100%;border-collapse:separate;border-spacing:0 4px}.table{overflow:a
 @media(max-width:960px){.jackal-login-modal{padding:22px}.jackal-login-title{font-size:30px}}
 </style>
 
+
+<style id="jackalResponsiveLayout">
+/* JACKAL RESPONSIVE CANVAS
+   One visual system for 1080p / 1440p / 2160p desktop sizes.
+   Content grows with the viewport instead of staying trapped in a small fixed column. */
+html,body{overflow-x:hidden}
+.nav a{font-size:clamp(12px,.7vw,15px);padding-left:clamp(10px,.75vw,16px);padding-right:clamp(10px,.75vw,16px)}
+@media (min-width:961px){
+  .page{width:min(calc(100% - 48px),1800px);max-width:1800px;margin-left:auto;margin-right:auto}
+  .grid{width:min(calc(100% - 48px),1800px);max-width:1800px}
+  .hero-title{font-size:clamp(72px,5.25vw,112px)}
+  .footer{font-size:clamp(12px,.70vw,16px)}
+}
+@media (min-width:1440px){
+  .topbar{padding-left:40px;padding-right:40px}
+  .page{padding-left:22px;padding-right:22px}
+  .grid{gap:20px}
+  .grid .card{border-radius:12px}
+}
+@media (min-width:1800px){
+  .head{padding:22px 24px}
+  .head h2{font-size:clamp(30px,1.45vw,38px)}
+  .toolbar{padding-left:24px;padding-right:24px}
+  .grid{gap:20px;padding-left:22px;padding-right:22px}
+  .name,.race-title,.title{font-size:clamp(24px,1.35vw,32px)}
+}
+@media (min-width:2400px){
+  .topbar{padding-left:54px;padding-right:54px}
+  .page{width:min(calc(100% - 80px),2000px);max-width:2000px}
+  .grid{width:min(calc(100% - 80px),2000px);max-width:2000px}
+}
+</style>
+
 </head>
 <body>
 <header class="topbar">
