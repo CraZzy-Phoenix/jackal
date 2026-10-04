@@ -1286,6 +1286,18 @@ body{
   transition:opacity .18s ease,visibility .18s ease;
 }
 
+/* JACKAL ADMIN: Inhalte werden direkt in der Live-Vorschau verwaltet. */
+.admin-topbar .menu{display:none!important;}
+.admin-workspace .editor-drawer .editor-page-stack .page{display:none!important;}
+.admin-workspace .editor-drawer .editor-page-stack #page-settings{display:block!important;}
+.admin-workspace .editor-drawer{width:min(980px,96vw)!important;}
+.preview-admin-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-left:auto;}
+.preview-admin-actions .jackal-admin-btn{font:700 10px var(--f-head);letter-spacing:.6px;text-transform:uppercase;border:1px solid rgba(168,85,255,.45);border-radius:4px;padding:5px 8px;color:#fff;background:linear-gradient(180deg,rgba(92,34,196,.92),rgba(67,20,154,.96));box-shadow:0 0 10px rgba(168,85,255,.22);cursor:pointer;}
+.preview-admin-actions .jackal-admin-btn:hover{filter:brightness(1.12);}
+.preview-admin-actions .jackal-admin-btn.danger{border-color:rgba(255,82,112,.5);background:linear-gradient(180deg,rgba(132,32,60,.92),rgba(92,17,39,.96));}
+.jackal-admin-row-actions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.jackal-admin-card-action{display:flex!important;align-items:flex-end!important;justify-content:flex-end!important;}
+
 .editor-drawer{
   position:fixed;
   top:58px;
@@ -1496,7 +1508,7 @@ body{
   </nav>
 
   <div class="admin-top-actions">
-    <button class="editor-toggle" id="editorOpen" type="button">Bearbeiten</button>
+    <button class="editor-toggle" id="editorOpen" type="button">Verwaltung</button>
     <a class="site-link" href="/" target="_blank" rel="noopener">Live-Seite</a>
     <button class="logout" id="logoutButton" type="button">Abmelden</button>
   </div>
@@ -1518,8 +1530,8 @@ body{
     <div class="editor-drawer-head">
       <div>
         <div class="editor-eyebrow">JACKAL ADMIN</div>
-        <h1 id="pageTitle">Home</h1>
-        <p id="pageSubtitle">Website-Inhalte verwalten</p>
+        <h1 id="pageTitle">Verwaltung</h1>
+        <p id="pageSubtitle">Benutzer &amp; Systemeinstellungen</p>
       </div>
       <button class="editor-close" id="editorClose" type="button" aria-label="Bearbeitung schließen">×</button>
     </div>
@@ -6493,116 +6505,249 @@ checkSession();
     gallery:'/gallery',
     settings:'/'
   };
-
   const previewNames = {
-    dashboard:'Home',
-    news:'News',
-    drivers:'Drivers',
-    ranking:'Rangliste',
-    races:'Races',
-    blacklist:'Blacklist',
-    gallery:'Gallery',
-    settings:'Einstellungen'
+    dashboard:'Home', news:'News', drivers:'Drivers', ranking:'Rangliste',
+    races:'Races', blacklist:'Blacklist', gallery:'Gallery', settings:'Verwaltung'
   };
 
-  let currentPage = 'dashboard';
-  let previewReloadTimer = null;
+  let currentPage='dashboard';
+  let previewReloadTimer=null;
+  let decorateTimer=null;
 
   function setPreview(page, forceReload){
-    currentPage = page || 'dashboard';
-    const route = previewRoutes[currentPage] || '/';
-    const name = previewNames[currentPage] || 'Home';
-    if(label) label.textContent = name;
+    currentPage=page||'dashboard';
+    const route=previewRoutes[currentPage]||'/';
+    const name=previewNames[currentPage]||'Home';
+    if(label) label.textContent=name;
     if(!preview) return;
-    const target = new URL(route, window.location.origin).href;
-    if(forceReload || preview.contentWindow?.location?.href !== target){
-      preview.src = route;
+    const target=new URL(route,window.location.origin).href;
+    if(forceReload || preview.contentWindow?.location?.href!==target){
+      preview.src=route;
     }else{
-      try{ preview.contentWindow.location.reload(); }catch(_){ preview.src = route; }
+      try{preview.contentWindow.location.reload();}catch(_){preview.src=route;}
     }
   }
 
   function openEditor(){
+    // Verwaltung now only contains system settings / users.
+    try{ if(typeof window.showPage==='function') window.showPage('settings'); }catch(_){ }
     workspace?.classList.add('editor-open');
     if(editorOpen) editorOpen.setAttribute('aria-expanded','true');
   }
-
   function closeEditor(){
     workspace?.classList.remove('editor-open');
     if(editorOpen) editorOpen.setAttribute('aria-expanded','false');
   }
 
-  function goToPage(page){
-    currentPage = page;
-    setPreview(page, false);
-    openEditor();
+  editorOpen?.addEventListener('click',openEditor);
+  editorClose?.addEventListener('click',closeEditor);
+  editorBackdrop?.addEventListener('click',closeEditor);
+
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape' && workspace?.classList.contains('editor-open')) closeEditor();
+  });
+
+  function escapeForAttr(value){
+    return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   }
 
-  editorOpen?.addEventListener('click', openEditor);
-  editorClose?.addEventListener('click', closeEditor);
-  editorBackdrop?.addEventListener('click', closeEditor);
+  function normalizeText(v){ return String(v??'').trim().toLowerCase(); }
+  function rowIdentity(resource,row){
+    const schema=crudSchemas?.[resource];
+    const idCol=schema?.identity || 'id';
+    return row?.[idCol];
+  }
+  function permission(resource,action){
+    try{return typeof hasPermission==='function' ? hasPermission(resource,action) : false;}catch(_){return false;}
+  }
 
-  document.addEventListener('keydown', event => {
-    if(event.key === 'Escape' && workspace?.classList.contains('editor-open')){
-      closeEditor();
-    }
-  });
-
-  document.querySelectorAll('.menu button[data-page]').forEach(button => {
-    button.addEventListener('click', () => {
-      goToPage(button.dataset.page || 'dashboard');
-    });
-  });
-
-  document.querySelectorAll('[data-go-page]').forEach(button => {
-    button.addEventListener('click', () => {
-      goToPage(button.dataset.goPage || 'dashboard');
-    });
-  });
-
-  // Refresh the exact public rendering after any successful write through an admin API.
-  const nativeFetch = window.fetch.bind(window);
-  window.fetch = async function(input, init){
-    const response = await nativeFetch(input, init);
+  async function ensureCrud(resource){
     try{
-      const requestUrl = typeof input === 'string' ? input : input?.url;
-      const requestMethod = String(init?.method || input?.method || 'GET').toUpperCase();
-      const pathname = new URL(requestUrl || '', window.location.origin).pathname;
-      if(response.ok && requestMethod !== 'GET' && pathname.startsWith('/api/admin/')){
+      if(!crudRows?.[resource]?.length && permission(resource,'view') && typeof loadCrudResource==='function'){
+        await loadCrudResource(resource);
+      }
+    }catch(_){ }
+    return crudRows?.[resource] || [];
+  }
+
+  function openEdit(resource,row){
+    try{
+      if(typeof openCrudModal==='function') openCrudModal(resource,row ?? null);
+    }catch(error){ console.error(error); }
+  }
+
+  async function removeRow(resource,id){
+    try{
+      if(typeof deleteCrudRow==='function'){
+        const ok=await deleteCrudRow(resource,id);
+        if(ok) setTimeout(()=>decoratePreview(),220);
+      }
+    }catch(error){ console.error(error); }
+  }
+
+  function addHeaderAction(doc, target, labelText, onClick, extraClass=''){
+    if(!target) return;
+    if(target.querySelector('.preview-admin-actions')) return;
+    const wrap=doc.createElement('div');
+    wrap.className='preview-admin-actions';
+    const b=doc.createElement('button');
+    b.type='button'; b.className='jackal-admin-btn '+extraClass; b.textContent=labelText;
+    b.addEventListener('click',onClick);
+    wrap.appendChild(b); target.appendChild(wrap);
+  }
+
+  function addCardActions(doc, card, resource, row){
+    if(!card || card.querySelector('.jackal-admin-row-actions')) return;
+    const actions=doc.createElement('div');
+    actions.className='jackal-admin-row-actions';
+    if(permission(resource,'edit')){
+      const edit=doc.createElement('button'); edit.type='button'; edit.className='jackal-admin-btn'; edit.textContent='Bearbeiten';
+      edit.addEventListener('click',()=>openEdit(resource,row)); actions.appendChild(edit);
+    }
+    if(permission(resource,'delete')){
+      const del=doc.createElement('button'); del.type='button'; del.className='jackal-admin-btn danger'; del.textContent='Löschen';
+      del.addEventListener('click',()=>removeRow(resource,rowIdentity(resource,row))); actions.appendChild(del);
+    }
+    if(actions.childElementCount) card.appendChild(actions);
+  }
+
+  async function decorateDrivers(doc){
+    const rows=await ensureCrud('drivers');
+    if(!rows.length) return;
+    const byNick=new Map(rows.map(r=>[normalizeText(r.nickname),r]));
+    const head=doc.querySelector('.card .head');
+    if(head && permission('drivers','create')) addHeaderAction(doc,head,'+ Fahrer',()=>openEdit('drivers',null));
+    doc.querySelectorAll('#grid .driver').forEach(card=>{
+      const nick=normalizeText(card.querySelector('h3')?.textContent);
+      const row=byNick.get(nick);
+      if(row) addCardActions(doc,card,'drivers',row);
+    });
+  }
+
+  async function decorateRaces(doc){
+    const rows=await ensureCrud('races');
+    if(!rows.length) return;
+    const byName=new Map(rows.map(r=>[normalizeText(r.name),r]));
+    const mainCard=doc.querySelector('main.page > .card');
+    const toolbar=mainCard?.querySelector('.toolbar');
+    if(toolbar && permission('races','create')) addHeaderAction(doc,toolbar,'+ Rennen',()=>openEdit('races',null));
+    doc.querySelectorAll('.grid .race').forEach(card=>{
+      const name=normalizeText(card.querySelector('.race-title')?.textContent);
+      const row=byName.get(name);
+      if(row) addCardActions(doc,card,'races',row);
+    });
+  }
+
+  async function decorateNews(doc){
+    const rows=await ensureCrud('news');
+    if(!rows.length) return;
+    const byTitle=new Map(rows.map(r=>[normalizeText(r.title),r]));
+    const grid=doc.querySelector('main.grid-news');
+    const firstActionTarget=grid?.querySelector('.latest-news .card-head, .news-list') || grid;
+    if(firstActionTarget && permission('news','create')) addHeaderAction(doc,firstActionTarget,'+ Neue News',()=>openEdit('news',null));
+    doc.querySelectorAll('.news-item').forEach(card=>{
+      const title=normalizeText(card.querySelector('h3')?.textContent);
+      const row=byTitle.get(title);
+      if(row) addCardActions(doc,card,'news',row);
+    });
+  }
+
+  async function decorateBlacklist(doc){
+    const rows=await ensureCrud('blacklist');
+    const byVehicle=new Map(rows.map(r=>[normalizeText(r.vehicle_name),r]));
+    const card=doc.querySelector('main.page > .card');
+    if(card && permission('blacklist','create')) addHeaderAction(doc,card.querySelector('.head'),'+ Fahrzeug sperren',()=>openEdit('blacklist',null));
+    doc.querySelectorAll('.bl-card').forEach(item=>{
+      const name=normalizeText(item.querySelector('h3,h2,.bl-name')?.textContent);
+      const row=byVehicle.get(name);
+      if(row) addCardActions(doc,item,'blacklist',row);
+    });
+  }
+
+  async function decorateGallery(doc){
+    const rows=await ensureCrud('gallery');
+    const byTitle=new Map(rows.map(r=>[normalizeText(r.title),r]));
+    const target=doc.querySelector('main.page .toolbar') || doc.querySelector('main.page');
+    if(target && permission('gallery','create')) addHeaderAction(doc,target,'+ Bild hinzufügen',()=>openEdit('gallery',null));
+    doc.querySelectorAll('.g-tile,.gallery-card,.gallery-item').forEach(item=>{
+      const title=normalizeText(item.querySelector('h3,h2,.g-title,.title')?.textContent);
+      const row=byTitle.get(title);
+      if(row) addCardActions(doc,item,'gallery',row);
+    });
+  }
+
+  async function decorateRanking(doc){
+    const rows=await ensureCrud('drivers');
+    if(!rows.length) return;
+    const byNick=new Map(rows.map(r=>[normalizeText(r.nickname),r]));
+    doc.querySelectorAll('tbody tr').forEach(tr=>{
+      const nick=normalizeText(tr.querySelector('td:nth-child(2)')?.textContent);
+      const row=byNick.get(nick);
+      if(row) addCardActions(doc,tr,'drivers',row);
+    });
+  }
+
+  async function decoratePreview(){
+    if(!preview?.contentDocument) return;
+    const doc=preview.contentDocument;
+    try{doc.documentElement.setAttribute('data-jackal-admin-preview','true');}catch(_){ }
+    if(currentPage==='drivers') await decorateDrivers(doc);
+    else if(currentPage==='races') await decorateRaces(doc);
+    else if(currentPage==='news') await decorateNews(doc);
+    else if(currentPage==='blacklist') await decorateBlacklist(doc);
+    else if(currentPage==='gallery') await decorateGallery(doc);
+    else if(currentPage==='ranking') await decorateRanking(doc);
+  }
+
+  function scheduleDecorate(){
+    clearTimeout(decorateTimer);
+    decorateTimer=setTimeout(()=>decoratePreview(),250);
+    setTimeout(()=>decoratePreview(),900);
+  }
+
+  // Retain compatibility with the old navigation internally, but no top menu is shown.
+  document.querySelectorAll('[data-go-page]').forEach(button=>button.addEventListener('click',()=>{
+    currentPage=button.dataset.goPage||'dashboard';
+    setPreview(currentPage,false);
+    scheduleDecorate();
+  }));
+
+  const nativeFetch=window.fetch.bind(window);
+  window.fetch=async function(input,init){
+    const response=await nativeFetch(input,init);
+    try{
+      const requestUrl=typeof input==='string'?input:input?.url;
+      const requestMethod=String(init?.method||input?.method||'GET').toUpperCase();
+      const pathname=new URL(requestUrl||'',window.location.origin).pathname;
+      if(response.ok && requestMethod!=='GET' && pathname.startsWith('/api/admin/')){
         clearTimeout(previewReloadTimer);
-        previewReloadTimer = setTimeout(() => setPreview(currentPage, true), 180);
+        previewReloadTimer=setTimeout(()=>{setPreview(currentPage,true);},220);
       }
     }catch(_){ }
     return response;
   };
 
-  // After a successful login, keep the first screen identical to the live Home page.
-  const syncInitialPreview = () => setTimeout(() => setPreview(currentPage, true), 60);
-  const observer = new MutationObserver(() => {
-    const visible = adminApp && !adminApp.classList.contains('hidden');
+  const observer=new MutationObserver(()=>{
+    const visible=adminApp && !adminApp.classList.contains('hidden');
     if(visible){
-      syncInitialPreview();
+      setTimeout(()=>setPreview(currentPage,true),60);
       observer.disconnect();
     }
   });
-  if(adminApp) observer.observe(adminApp, {attributes:true, attributeFilter:['class']});
+  if(adminApp) observer.observe(adminApp,{attributes:true,attributeFilter:['class']});
 
-  preview?.addEventListener('load', () => {
-    // The outer header is the public JACKAL header in admin mode. Hide only the
-    // duplicated header inside the preview so the page underneath is a pixel-close
-    // representation of the live site. Everything else remains the real public page.
+  preview?.addEventListener('load',()=>{
     try{
-      const doc = preview.contentDocument;
-      if(!doc) return;
+      const doc=preview.contentDocument; if(!doc) return;
       doc.documentElement.setAttribute('data-jackal-admin-preview','true');
-      let style = doc.getElementById('jackalAdminPreviewStyle');
+      let style=doc.getElementById('jackalAdminPreviewStyle');
       if(!style){
-        style = doc.createElement('style');
-        style.id = 'jackalAdminPreviewStyle';
-        style.textContent = '.topbar{display:none!important;}';
+        style=doc.createElement('style'); style.id='jackalAdminPreviewStyle';
+        style.textContent='.topbar{display:none!important;}';
         doc.head?.appendChild(style);
       }
     }catch(_){ }
+    scheduleDecorate();
   });
 })();
 </script>
