@@ -1301,7 +1301,7 @@ function render(data){
  const latest=past[0]||null;
  const latestResults=(data.results||[]).filter(r=>latest&&String(r.race_id)===String(latest.id)).sort((a,b)=>(Number(a.position)||999)-(Number(b.position)||999));
  const dash=data.newsDashboard||{};
- const mode=String(dash.race_card_mode||'next_race');
+ const mode=String(dash.display_mode||dash.race_card_mode||'next_race');
  const configuredRace=dash.next_race_id?((data.races||[]).find(r=>String(r.id)===String(dash.next_race_id))||null):null;
  const next=mode==='last_race'?latest:(configuredRace||data.nextRace||null);
  const bestBody=document.querySelector('.bestlist tbody');
@@ -1460,5 +1460,6 @@ document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.que
 })();
 </script>
 
+<script src="/admin-tools.js" defer></script>
 </body>
 </html>

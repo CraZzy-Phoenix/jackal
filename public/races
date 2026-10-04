@@ -191,5 +191,6 @@ document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.que
 })();
 </script>
 
+<script src="/admin-tools.js" defer></script>
 </body>
 </html>

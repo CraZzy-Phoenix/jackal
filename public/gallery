@@ -64,7 +64,7 @@ try{
  const categories=[...new Set(items.map(x=>x.category).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE'));
  tabsEl.innerHTML='<button class="tab active" data-cat="">Alle</button>'+categories.map(x=>`<button class="tab" data-cat="${esc(x)}">${esc(x)}</button>`).join('');
  let current='';
- function render(){const q=searchEl.value.toLowerCase().trim(),s=sortEl.value;let list=items.filter(x=>(!q||[x.title,x.description,x.category,x.event,x.car,x.driver].join(' ').toLowerCase().includes(q))&&(!current||String(x.category||'').split('|').includes(current)));list.sort((a,b)=>{if(s==='likes')return (Number(b.likes)||0)-(Number(a.likes)||0);if(s==='old')return new Date(a.date||a.created_at)-new Date(b.date||b.created_at);return new Date(b.date||b.created_at)-new Date(a.date||a.created_at);});gridEl.innerHTML=list.length?list.map(x=>`<figure class="tile" data-src="${esc(media(x.image_url||x.image))}"><div class="img">${x.image_url||x.image?`<img src="${esc(media(x.image_url||x.image))}" alt="">`:''}</div><figcaption class="caption"><div class="title">${esc(x.title||'Gallery')}</div><div class="meta">${esc(date(x.date||x.created_at))} · ${esc(x.category||x.event||'Gallery')}</div>${x.description?`<p class="desc">${esc(x.description)}</p>`:''}</figcaption></figure>`).join(''):'<div class="empty">Keine Fotos gefunden.</div>';}
+ function render(){const q=searchEl.value.toLowerCase().trim(),s=sortEl.value;let list=items.filter(x=>(!q||[x.title,x.description,x.category,x.event,x.car,x.driver].join(' ').toLowerCase().includes(q))&&(!current||String(x.category||'').split('|').includes(current)));list.sort((a,b)=>{if(s==='likes')return (Number(b.likes)||0)-(Number(a.likes)||0);if(s==='old')return new Date(a.date||a.created_at)-new Date(b.date||b.created_at);return new Date(b.date||b.created_at)-new Date(a.date||a.created_at);});gridEl.innerHTML=list.length?list.map(x=>`<figure class="tile" data-gallery-id="${esc(String(x.id||''))}" data-src="${esc(media(x.image_url||x.image))}"><div class="img">${x.image_url||x.image?`<img src="${esc(media(x.image_url||x.image))}" alt="">`:''}</div><figcaption class="caption"><div class="title">${esc(x.title||'Gallery')}</div><div class="meta">${esc(date(x.date||x.created_at))} · ${esc(x.category||x.event||'Gallery')}</div>${x.description?`<p class="desc">${esc(x.description)}</p>`:''}</figcaption></figure>`).join(''):'<div class="empty">Keine Fotos gefunden.</div>';}
  render();searchEl.oninput=render;sortEl.onchange=render;
  tabsEl.onclick=e=>{const b=e.target.closest('.tab');if(!b)return;tabsEl.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');current=b.dataset.cat||'';render();};
  gridEl.onclick=e=>{const t=e.target.closest('.tile');if(!t||!t.dataset.src)return;lightboxImgEl.src=t.dataset.src;lightboxEl.classList.add('open');};
@@ -184,5 +184,6 @@ document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.que
 })();
 </script>
 
+<script src="/admin-tools.js" defer></script>
 </body>
 </html>

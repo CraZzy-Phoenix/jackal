@@ -3108,7 +3108,8 @@ a {
   ===================================================== */
 
   function renderNextRace(
-    race
+    race,
+    mode = 'next_race'
   ){
 
     var card =
@@ -3129,7 +3130,7 @@ a {
       ).innerHTML = `
 
         <h2 class="brush">
-          Next Race
+          ${mode === 'next_event' ? 'Next Event' : mode === 'last_race' ? 'Letztes Rennen' : 'Next Race'}
         </h2>
 
         <p
@@ -3197,7 +3198,7 @@ a {
     ).innerHTML = `
 
       <h2 class="brush">
-        Next Race
+        ${mode === 'next_event' ? 'Next Event' : mode === 'last_race' ? 'Letztes Rennen' : 'Next Race'}
       </h2>
 
 
@@ -3850,21 +3851,23 @@ a {
       .then(
         function(data){
 
-          renderNextRace(
-            data.nextRace ||
-            (
-              data.races ||
-              []
-            ).find(
-              function(race){
-
-                return Number(
-                  race.is_next
-                ) === 1;
-
-              }
-            )
-          );
+          var dashboard = data.newsDashboard || {};
+          var displayMode = String(dashboard.display_mode || 'next_race');
+          var allRaces = data.races || [];
+          var configuredRace = dashboard.next_race_id
+            ? allRaces.find(function(race){ return String(race.id) === String(dashboard.next_race_id); })
+            : null;
+          var pastRaces = allRaces.filter(function(race){
+            var raw = String(race.date || '');
+            var stamp = new Date(raw + (race.time ? 'T' + String(race.time).slice(0,5) : 'T23:59:59')).getTime();
+            return Number.isFinite(stamp) && stamp < Date.now();
+          }).sort(function(a,b){
+            return new Date(String(b.date || '1970-01-01')).getTime() - new Date(String(a.date || '1970-01-01')).getTime();
+          });
+          var homeRace = displayMode === 'last_race'
+            ? (pastRaces[0] || configuredRace || data.nextRace || null)
+            : (configuredRace || data.nextRace || allRaces.find(function(race){ return Number(race.is_next) === 1; }) || null);
+          renderNextRace(homeRace, displayMode);
 
 
           renderHomeNews(
@@ -4033,5 +4036,6 @@ a {
 })();
 </script>
 
+<script src="/admin-tools.js" defer></script>
 </body>
 </html>

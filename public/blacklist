@@ -64,7 +64,7 @@ try{
  const r=await fetch('/api/public/data',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');
  const items=(d.blacklist||[]).filter(x=>String(x.status||'').toLowerCase()!=='inactive');
  [...new Set(items.map(x=>x.status).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE')).forEach(x=>statusEl.add(new Option(x,x)));
- function render(){const q=searchEl.value.toLowerCase().trim(),s=statusEl.value,list=items.filter(x=>(!q||[x.vehicle_name,x.reason,x.status].join(' ').toLowerCase().includes(q))&&(!s||x.status===s));gridEl.innerHTML=list.length?list.map((x,i)=>`<article class="item"><div class="img">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div><div class="body"><div class="number">#${String(i+1).padStart(3,'0')}</div><h2 class="name">${esc(x.vehicle_name||'Unbekannt')}</h2><div class="status">${esc(x.status||'Gesperrt')}</div><p class="reason">${esc(x.reason||'Keine Begründung hinterlegt.')}</p></div></article>`).join(''):'<div class="empty">Keine Fahrzeuge gefunden.</div>';}
+ function render(){const q=searchEl.value.toLowerCase().trim(),s=statusEl.value,list=items.filter(x=>(!q||[x.vehicle_name,x.reason,x.status].join(' ').toLowerCase().includes(q))&&(!s||x.status===s));gridEl.innerHTML=list.length?list.map((x,i)=>`<article class="item" data-blacklist-id="${esc(String(x.id||''))}"><div class="img">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div><div class="body"><div class="number">#${String(i+1).padStart(3,'0')}</div><h2 class="name">${esc(x.vehicle_name||'Unbekannt')}</h2><div class="status">${esc(x.status||'Gesperrt')}</div><p class="reason">${esc(x.reason||'Keine Begründung hinterlegt.')}</p></div></article>`).join(''):'<div class="empty">Keine Fahrzeuge gefunden.</div>';}
  render();searchEl.oninput=render;statusEl.onchange=render;
  countEl.textContent=items.length;reasonsEl.textContent=new Set(items.map(x=>x.reason).filter(Boolean)).size;brandsEl.textContent=new Set(items.map(x=>String(x.vehicle_name||'').split(/\s+/)[0]).filter(Boolean)).size;
 }catch(e){console.error(e);gridEl.innerHTML='<div class="empty">Blacklist konnte nicht geladen werden.</div>'}
@@ -182,5 +182,6 @@ document.querySelector('.nav-toggle')?.addEventListener('click',()=>document.que
 })();
 </script>
 
+<script src="/admin-tools.js" defer></script>
 </body>
 </html>

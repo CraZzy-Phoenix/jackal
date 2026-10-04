@@ -1438,6 +1438,42 @@ body{
 /* Keep all existing dialogs above the editor drawer. */
 .modal-backdrop{z-index:3000!important}
 .toast{z-index:3100!important}
+
+/* =========================================================
+   SIMPLIFIED ADMIN + COMPACT EMBED EDITOR
+========================================================= */
+body:not(.embed-mode) #adminApp > .admin-topbar .menu,
+body:not(.embed-mode) #adminApp > .admin-topbar #editorOpen{display:none!important;}
+body:not(.embed-mode) #adminApp > .admin-topbar{justify-content:space-between;}
+body:not(.embed-mode) .site-preview,
+body:not(.embed-mode) .preview-hud,
+body:not(.embed-mode) .editor-backdrop{display:none!important;}
+body:not(.embed-mode) .admin-workspace{display:block;min-height:0;}
+body:not(.embed-mode) .editor-drawer{position:static;inset:auto;transform:none;width:min(1160px,calc(100vw - 36px));max-height:none;margin:26px auto 50px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;display:block;}
+body:not(.embed-mode) .editor-drawer-head{padding:0 0 18px;border-bottom:1px solid var(--line);}
+body:not(.embed-mode) .editor-drawer-head h1{font-family:var(--f-brush);font-weight:400;font-size:54px;line-height:.95;color:#fff;text-shadow:3px 3px 0 rgba(168,85,255,.5),0 0 22px rgba(168,85,255,.3);}
+body:not(.embed-mode) .editor-drawer-head p{color:var(--muted);}
+body:not(.embed-mode) .editor-drawer-note{margin:12px 0 16px;}
+body:not(.embed-mode) .editor-close{display:none!important;}
+body:not(.embed-mode) .editor-page-stack{padding:0;}
+body:not(.embed-mode) .editor-page-stack .page{display:none!important;}
+body:not(.embed-mode) .editor-page-stack #page-settings{display:block!important;padding:0;}
+body:not(.embed-mode) #page-settings > .card:nth-child(2){display:none!important;}
+body:not(.embed-mode) #page-settings > .card:first-child{margin-bottom:14px;}
+body:not(.embed-mode) #page-settings > .card:nth-child(3){margin-bottom:0;}
+body:not(.embed-mode) .admin-top-actions .site-link{margin-left:auto;}
+
+body.embed-mode{min-height:100vh;background:linear-gradient(180deg,#0b0812,#08060d);overflow-x:hidden;}
+body.embed-mode #loginScreen{z-index:9000;}
+body.embed-mode #adminApp{display:none!important;}
+body.embed-mode .modal-backdrop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(4,3,10,.70);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);}
+body.embed-mode .modal-backdrop.hidden{display:none!important;}
+body.embed-mode .modal{width:min(760px,calc(100vw - 28px));max-height:min(86vh,760px);margin:0;border-radius:9px;overflow:auto;}
+body.embed-mode .modal-header{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,var(--card-2),var(--card));}
+body.embed-mode .modal-header h2{font-size:32px;}
+body.embed-mode .crud-form{grid-template-columns:repeat(2,minmax(0,1fr));}
+body.embed-mode .crud-form .full{grid-column:1/-1;}
+@media(max-width:700px){body:not(.embed-mode) .editor-drawer{width:calc(100vw - 24px);margin-top:18px}body:not(.embed-mode) .editor-drawer-head h1{font-size:44px}body.embed-mode .crud-form{grid-template-columns:1fr}body.embed-mode .crud-form .full{grid-column:auto}body.embed-mode .modal{width:calc(100vw - 18px);max-height:90vh}}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/></head>
 <body>
@@ -1811,7 +1847,7 @@ body{
 </div>
 <div id="crud-table-settings"></div>
 </div>
-<div class="card">
+<div class="card" id="staticWebsiteSettingsCard">
 <div class="card-header">
 <div>
 <h2>
@@ -2143,6 +2179,12 @@ const loginMessage =
 const logoutButton =
   document.getElementById("logoutButton");
 
+const embedParams = new URLSearchParams(window.location.search);
+const embedMode = embedParams.get("embed") || "";
+if(embedMode) document.documentElement.classList.add("embed-mode");
+
+let embedSpecial = null;
+
 
 let currentUser = null;
 let currentPermissions = {};
@@ -2197,54 +2239,34 @@ async function loadCurrentUser(){
 
 
 async function checkSession(){
-
   adminApp.classList.remove("hidden");
-
   try{
+    const response = await fetch("/api/me", {credentials:"same-origin",cache:"no-store"});
+    if(!response.ok){ showLogin(); return; }
+    await loadCurrentUser();
+    showAdmin();
 
-    const response =
-      await fetch(
-        "/api/me",
-        {
-          credentials:"same-origin"
-        }
-      );
-
-    if(response.ok){
-
-      await loadCurrentUser();
-      showAdmin();
-      loadAllVisibleCrud();
-      loadBlacklist();
-      loadDashboardOverview();
-
-    }else{
-
-      showLogin();
-
+    if(embedMode){
+      await startEmbedEditor();
+      return;
     }
 
+    // Normal admin page = only settings and user management.
+    const settingsButton=document.querySelector('.menu button[data-page="settings"]');
+    settingsButton?.click();
+    await loadCrudResource("settings");
+    await loadUsers();
   }catch(error){
-
     showLogin();
-
   }
-
 }
 
 
 function showAdmin(){
-
-  loginScreen.classList.add(
-    "hidden"
-  );
-
-  adminApp.classList.remove(
-    "hidden"
-  );
-
+  loginScreen.classList.add("hidden");
+  adminApp.classList.remove("hidden");
   loginMessage.textContent = "";
-
+  document.body.classList.toggle("embed-mode", !!embedMode);
 }
 
 
@@ -2323,12 +2345,13 @@ loginForm.addEventListener(
 
         await loadCurrentUser();
         showAdmin();
-
-        loadUsers();
-        loadAllVisibleCrud();
-        loadBlacklist();
-        loadDashboardOverview();
-
+        if(embedMode){
+          await startEmbedEditor();
+        }else{
+          document.querySelector('.menu button[data-page="settings"]')?.click();
+          await loadCrudResource("settings");
+          await loadUsers();
+        }
         return;
       }
 
@@ -6028,6 +6051,15 @@ function closeCrudModal(){
 
 async function saveCrudForm(event){
   event.preventDefault();
+  if(embedSpecial){
+    const button=document.getElementById("crudModalSave");
+    const message=document.getElementById("crudFormMessage");
+    button.disabled=true;button.textContent="Wird gespeichert...";message.textContent="";message.classList.remove("error");
+    try{ await embedSpecial.onSave(event.currentTarget); closeCrudModal(); embedSpecial=null; notifyEmbed("jackal-admin-saved"); }
+    catch(error){ message.textContent=error.message||"Speichern fehlgeschlagen."; message.classList.add("error"); }
+    finally{ button.disabled=false;button.textContent="Speichern"; }
+    return;
+  }
   if(!crudEditing) return;
 
   const form=event.currentTarget;
@@ -6095,6 +6127,7 @@ async function saveCrudForm(event){
         if(oldUrl && oldUrl!==uploadedImage.url) await deleteImageUrl(oldUrl,"news","edit");
       }
       closeCrudModal();
+      if(embedMode) notifyEmbed("jackal-admin-saved");
       showToast(row?"News wurde gespeichert.":"News wurde veröffentlicht.");
       await loadCrudResource("news");
     }catch(error){
@@ -6211,6 +6244,7 @@ async function saveCrudForm(event){
     }
 
     closeCrudModal();
+    if(embedMode) notifyEmbed("jackal-admin-saved");
     showToast(row?"Datensatz geändert.":"Datensatz gespeichert.");
     await loadCrudResource(resource);
 
@@ -6260,8 +6294,8 @@ document.addEventListener("click",event=>{
 });
 
 document.getElementById("crudForm").addEventListener("submit",saveCrudForm);
-document.getElementById("crudModalClose").addEventListener("click",closeCrudModal);
-document.getElementById("crudModalCancel").addEventListener("click",closeCrudModal);
+document.getElementById("crudModalClose").addEventListener("click",()=>{closeCrudModal();if(embedMode)notifyEmbed("jackal-admin-close");});
+document.getElementById("crudModalCancel").addEventListener("click",()=>{closeCrudModal();if(embedMode)notifyEmbed("jackal-admin-close");});
 
 document.addEventListener("change",event=>{
   const input=event.target.closest('input[type="file"][name="__image_file"]');
@@ -6335,6 +6369,99 @@ if(__originalShowPage){
     __originalShowPage(page);
     if(page === "news") setTimeout(()=>loadNewsControl(),80);
   };
+}
+
+
+/* =========================================================
+   EMBED EDITOR – PUBLIC SEITEN
+========================================================= */
+function embedOrigin(){ return window.parent && window.parent !== window ? window.location.origin : window.location.origin; }
+function notifyEmbed(type){
+  try{ if(window.parent && window.parent !== window) window.parent.postMessage({type}, window.location.origin); }catch(_){ }
+}
+
+async function fetchJson(url, options={}){
+  const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...options});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok||!d.ok) throw new Error(d.error||"Aktion konnte nicht ausgeführt werden.");
+  return d;
+}
+
+function openEmbedSpecialModal(title, subtitle, html, onSave){
+  const modal=document.getElementById("crudModal");
+  const body=document.getElementById("crudFormBody");
+  const msg=document.getElementById("crudFormMessage");
+  if(!modal||!body) return;
+  document.getElementById("crudModalTitle").textContent=title;
+  document.getElementById("crudModalSubtitle").textContent=subtitle;
+  msg.textContent="";msg.classList.remove("error");
+  body.innerHTML=html;
+  embedSpecial={onSave};
+  modal.classList.remove("hidden");
+}
+
+async function openNewsDashboardSpecial(kind){
+  const dash=await fetchJson("/api/admin/news/dashboard");
+  await loadCrudResource("races");
+  await loadCrudResource("drivers");
+  const races=crudRows.races||[];
+  const drivers=(crudRows.drivers||[]).filter(d=>String(d.status||"").toLowerCase()!=="inactive");
+  if(kind==="next-event"){
+    const selected=String(dash.config?.next_race_id||"");
+    const mode=String(dash.config?.display_mode||"next_race");
+    const html=`
+      <div class="crud-field full"><label>Darstellung</label><select name="display_mode"><option value="next_race" ${mode==="next_race"?"selected":""}>Nächstes Rennen</option><option value="next_event" ${mode==="next_event"?"selected":""}>Nächstes Event</option><option value="last_race" ${mode==="last_race"?"selected":""}>Letztes Rennen</option></select></div>
+      <div class="crud-field full"><label>Verknüpftes Rennen</label><select name="next_race_id"><option value="">Automatisch auswählen</option>${races.map(r=>{const id=r.id;return `<option value="${escapeHtml(String(id))}" ${String(id)===selected?"selected":""}>${escapeHtml(r.name||"Rennen")} · ${escapeHtml(String(r.date||""))}</option>`}).join("")}</select></div>
+      <div class="crud-field full"><div class="news-modal-help">Das gewählte Rennen bleibt der Datensatz. Die Darstellung legt fest, ob die Box als „Nächstes Rennen“, „Nächstes Event“ oder „Letztes Rennen“ erscheint.</div></div>`;
+    openEmbedSpecialModal("Event-Bereich bearbeiten","News / Home",html,async form=>{
+      const payload={display_mode:form.elements.namedItem("display_mode")?.value||"next_race",next_race_id:form.elements.namedItem("next_race_id")?.value||"",latest_news_ids:dash.config?.latest_news_ids||[],featured_news_id:dash.config?.featured_news_id||"",hearts_winner_driver_id:dash.config?.hearts_winner_driver_id||"",hearts_quote:dash.config?.hearts_quote||"",poll_active:Number(dash.config?.poll_active)===1,poll_question:dash.config?.poll_question||"Wer war dein Sieger der Herzen?",poll_options:dash.config?.poll_options||[]};
+      await fetchJson("/api/admin/news/dashboard",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    });
+    return;
+  }
+
+  const winner=String(dash.config?.hearts_winner_driver_id||"");
+  const options=Array.isArray(dash.config?.poll_options)?dash.config.poll_options:[];
+  const optRows=Array.from({length:5},(_,i)=>{
+    const o=options[i]||{};const did=String(o.driver_id||"");const pct=Number(o.percent)||0;
+    return `<div class="crud-field"><label>Kandidat ${i+1}</label><select name="poll_driver_${i}"><option value="">Keiner</option>${drivers.map(d=>`<option value="${escapeHtml(String(d.id))}" ${String(d.id)===did?"selected":""}>${escapeHtml(d.nickname||d.name||"Fahrer")}</option>`).join("")}</select></div><div class="crud-field"><label>Prozent</label><input type="number" min="0" max="100" name="poll_percent_${i}" value="${pct}"></div>`;
+  }).join("");
+  const html=`
+    <div class="crud-field"><label>Sieger der Herzen</label><select name="hearts_winner_id"><option value="">Noch nicht festgelegt</option>${drivers.map(d=>`<option value="${escapeHtml(String(d.id))}" ${String(d.id)===winner?"selected":""}>${escapeHtml(d.nickname||d.name||"Fahrer")}</option>`).join("")}</select></div>
+    <div class="crud-field"><label>Abstimmung aktiv</label><div class="crud-checkbox"><input type="checkbox" name="poll_active" ${Number(dash.config?.poll_active)===1?"checked":""}><span>Abstimmung öffentlich anzeigen</span></div></div>
+    <div class="crud-field full"><label>Zitat / Beitrag</label><textarea rows="3" name="hearts_quote">${escapeHtml(dash.config?.hearts_quote||"")}</textarea></div>
+    <div class="crud-field full"><label>Abstimmungsfrage</label><input name="poll_question" value="${escapeHtml(dash.config?.poll_question||"Wer war dein Sieger der Herzen?")}"></div>
+    ${optRows}`;
+  openEmbedSpecialModal("Sieger der Herzen & Abstimmung","News",html,async form=>{
+    const poll_options=[];
+    for(let i=0;i<5;i++){const id=form.elements.namedItem(`poll_driver_${i}`)?.value||"";if(!id)continue;poll_options.push({driver_id:id,percent:Number(form.elements.namedItem(`poll_percent_${i}`)?.value||0)});}
+    const payload={display_mode:dash.config?.display_mode||"next_race",next_race_id:dash.config?.next_race_id||"",latest_news_ids:dash.config?.latest_news_ids||[],featured_news_id:dash.config?.featured_news_id||"",hearts_winner_driver_id:form.elements.namedItem("hearts_winner_id")?.value||"",hearts_quote:form.elements.namedItem("hearts_quote")?.value||"",poll_active:!!form.elements.namedItem("poll_active")?.checked,poll_question:form.elements.namedItem("poll_question")?.value||"Wer war dein Sieger der Herzen?",poll_options};
+    await fetchJson("/api/admin/news/dashboard",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  });
+}
+
+async function startEmbedEditor(){
+  const kind=embedParams.get("embed");
+  if(kind==="crud"){
+    const resource=String(embedParams.get("resource")||"");
+    const action=String(embedParams.get("action")||"edit");
+    const id=embedParams.get("id");
+    if(!resource) throw new Error("Kein Bearbeitungsbereich angegeben.");
+    await loadCrudResource(resource);
+    if(resource === "news" && typeof loadNewsCategories === "function") await loadNewsCategories();
+    let row=null;
+    if(action!=="new" && id!==null){
+      const schema=crudSchemas[resource];
+      row=(crudRows[resource]||[]).find(x=>String(x[schema?.identity||"id"])===String(id))||null;
+    }
+    await openCrudModal(resource,row);
+    return;
+  }
+  if(kind==="special"){
+    await openNewsDashboardSpecial(embedParams.get("special")||"next-event");
+    return;
+  }
+  throw new Error("Unbekannter Bearbeitungsbereich.");
 }
 
 /* =========================================================
