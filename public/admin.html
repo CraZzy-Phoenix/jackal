@@ -1438,60 +1438,19 @@ body{
 /* Keep all existing dialogs above the editor drawer. */
 .modal-backdrop{z-index:3000!important}
 .toast{z-index:3100!important}
-
-/* =========================================================
-   SIMPLIFIED ADMIN + COMPACT EMBED EDITOR
-========================================================= */
-body:not(.embed-mode) #adminApp > .admin-topbar .menu,
-body:not(.embed-mode) #adminApp > .admin-topbar #editorOpen{display:none!important;}
-body:not(.embed-mode) #adminApp > .admin-topbar{justify-content:space-between;}
-body:not(.embed-mode) .site-preview,
-body:not(.embed-mode) .preview-hud,
-body:not(.embed-mode) .editor-backdrop{display:none!important;}
-body:not(.embed-mode) .admin-workspace{display:block;min-height:0;}
-body:not(.embed-mode) .editor-drawer{position:static;inset:auto;transform:none;width:min(1160px,calc(100vw - 36px));max-height:none;margin:26px auto 50px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;display:block;}
-body:not(.embed-mode) .editor-drawer-head{padding:0 0 18px;border-bottom:1px solid var(--line);}
-body:not(.embed-mode) .editor-drawer-head h1{font-family:var(--f-brush);font-weight:400;font-size:54px;line-height:.95;color:#fff;text-shadow:3px 3px 0 rgba(168,85,255,.5),0 0 22px rgba(168,85,255,.3);}
-body:not(.embed-mode) .editor-drawer-head p{color:var(--muted);}
-body:not(.embed-mode) .editor-drawer-note{margin:12px 0 16px;}
-body:not(.embed-mode) .editor-close{display:none!important;}
-body:not(.embed-mode) .editor-page-stack{padding:0;}
-body:not(.embed-mode) .editor-page-stack .page{display:none!important;}
-body:not(.embed-mode) .editor-page-stack #page-settings{display:block!important;padding:0;}
-body:not(.embed-mode) #page-settings > .card:nth-child(2){display:none!important;}
-body:not(.embed-mode) #page-settings > .card:first-child{margin-bottom:14px;}
-body:not(.embed-mode) #page-settings > .card:nth-child(3){margin-bottom:0;}
-body:not(.embed-mode) .admin-top-actions .site-link{margin-left:auto;}
-
-body.embed-mode{min-height:100vh;background:linear-gradient(180deg,#0b0812,#08060d);overflow-x:hidden;}
-html.jackal-embed-mode #loginScreen{display:none!important;}
-body.embed-mode #loginScreen{display:none!important;}
-body.embed-mode #adminApp{display:none!important;}
-body.embed-mode .modal-backdrop{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(4,3,10,.10);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
-body.embed-mode .modal-backdrop.hidden{display:none!important;}
-body.embed-mode .modal{width:min(760px,calc(100vw - 28px));max-height:min(86vh,760px);margin:0;border-radius:9px;overflow:auto;}
-body.embed-mode .modal-header{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,var(--card-2),var(--card));}
-body.embed-mode .modal-header h2{font-size:32px;}
-body.embed-mode .crud-form{grid-template-columns:repeat(2,minmax(0,1fr));}
-body.embed-mode .crud-form .full{grid-column:1/-1;}
-@media(max-width:700px){body:not(.embed-mode) .editor-drawer{width:calc(100vw - 24px);margin-top:18px}body:not(.embed-mode) .editor-drawer-head h1{font-size:44px}body.embed-mode .crud-form{grid-template-columns:1fr}body.embed-mode .crud-form .full{grid-column:auto}body.embed-mode .modal{width:calc(100vw - 18px);max-height:90vh}}
-</style>
+<style>.crud-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.race-results-editor{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(8,6,15,.34);}
+.race-results-editor-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;}
+.race-results-editor-head strong{display:block;font-family:var(--head);font-size:18px;text-transform:uppercase;}
+.race-results-editor-head span{display:block;margin-top:3px;color:var(--muted);font-size:11px;}
+.race-results-editor-table{overflow:auto;}
+.race-results-editor-table .crud-table{margin:0;}
+@media(max-width:700px){.race-results-editor-head{align-items:flex-start;flex-direction:column;}.race-results-editor-head .action-button{width:100%;}}</style>
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/></head>
 <body>
 <!-- =========================================================
      LOGIN
 ========================================================= -->
-<script>
-  // Prevent the embedded editor login screen from flashing before session checks finish.
-  (function(){
-    try{
-      if(new URLSearchParams(location.search).get("embed")){
-        document.documentElement.classList.add("jackal-embed-mode");
-      }
-    }catch(_){}
-  })();
-</script>
-
 <section id="loginScreen" aria-label="Admin Login">
 <div class="login-box">
 <div class="login-brand">
@@ -1859,7 +1818,7 @@ body.embed-mode .crud-form .full{grid-column:1/-1;}
 </div>
 <div id="crud-table-settings"></div>
 </div>
-<div class="card" id="staticWebsiteSettingsCard">
+<div class="card">
 <div class="card-header">
 <div>
 <h2>
@@ -2191,12 +2150,6 @@ const loginMessage =
 const logoutButton =
   document.getElementById("logoutButton");
 
-const embedParams = new URLSearchParams(window.location.search);
-const embedMode = embedParams.get("embed") || "";
-if(embedMode) document.documentElement.classList.add("embed-mode");
-
-let embedSpecial = null;
-
 
 let currentUser = null;
 let currentPermissions = {};
@@ -2251,49 +2204,69 @@ async function loadCurrentUser(){
 
 
 async function checkSession(){
-  adminApp.classList.remove("hidden");
-  try{
-    const response = await fetch("/api/me", {credentials:"same-origin",cache:"no-store"});
-    if(!response.ok){ showLogin(); return; }
-    await loadCurrentUser();
-    showAdmin();
 
-    if(embedMode){
-      await startEmbedEditor();
-      return;
+  adminApp.classList.remove("hidden");
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/me",
+        {
+          credentials:"same-origin"
+        }
+      );
+
+    if(response.ok){
+
+      await loadCurrentUser();
+      showAdmin();
+      loadAllVisibleCrud();
+      loadBlacklist();
+      loadDashboardOverview();
+
+    }else{
+
+      showLogin();
+
     }
 
-    // Normal admin page = only settings and user management.
-    const settingsButton=document.querySelector('.menu button[data-page="settings"]');
-    settingsButton?.click();
-    await loadCrudResource("settings");
-    await loadUsers();
   }catch(error){
+
     showLogin();
+
   }
+
 }
 
 
 function showAdmin(){
-  loginScreen.classList.add("hidden");
-  adminApp.classList.remove("hidden");
+
+  loginScreen.classList.add(
+    "hidden"
+  );
+
+  adminApp.classList.remove(
+    "hidden"
+  );
+
   loginMessage.textContent = "";
-  document.body.classList.toggle("embed-mode", !!embedMode);
+
 }
 
 
 function showLogin(){
 
+  adminApp.classList.remove(
+    "hidden"
+  );
+
+  loginScreen.classList.remove(
+    "hidden"
+  );
+
   currentUser = null;
   currentPermissions = {};
-
-  if(embedMode){
-    try{ if(window.parent && window.parent !== window) window.parent.postMessage({type:"jackal-admin-auth-required"}, window.location.origin); }catch(_){}
-    return;
-  }
-
-  adminApp.classList.remove("hidden");
-  loginScreen.classList.remove("hidden");
 
 }
 
@@ -2357,13 +2330,12 @@ loginForm.addEventListener(
 
         await loadCurrentUser();
         showAdmin();
-        if(embedMode){
-          await startEmbedEditor();
-        }else{
-          document.querySelector('.menu button[data-page="settings"]')?.click();
-          await loadCrudResource("settings");
-          await loadUsers();
-        }
+
+        loadUsers();
+        loadAllVisibleCrud();
+        loadBlacklist();
+        loadDashboardOverview();
+
         return;
       }
 
@@ -3089,7 +3061,7 @@ createUserButton.addEventListener(
               username,
               password,
               active,
-              is_superadmin: isSuperadmin
+              is_superadmin
 
             })
           }
@@ -5868,6 +5840,75 @@ function renderCrudTable(resource){
   }).join("");
   container.innerHTML=`<div class="crud-table-wrap"><table class="crud-table"><thead><tr>${head}<th>Aktionen</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
+let resultCreateRaceId = "";
+
+async function openResultCreateForRace(raceId){
+  if(!hasPermission("results","create")){
+    showToast("Keine Berechtigung zum Erstellen eines Rennergebnisses.",true);
+    return;
+  }
+
+  resultCreateRaceId = raceId == null ? "" : String(raceId);
+  await openCrudModal("results");
+}
+
+function renderRaceResultsEditor(raceId){
+  const wrap=document.getElementById("raceResultsEditor");
+  if(!wrap) return;
+
+  const rows=(crudRows.results||[]).filter(r=>String(r.race_id??"")===String(raceId??""));
+  const add=hasPermission("results","create")
+    ? `<button type="button" class="action-button" id="raceAddResult">+ Ergebnis hinzufügen</button>`
+    : "";
+
+  if(!rows.length){
+    wrap.innerHTML=`
+      <div class="race-results-editor-head">
+        <div><strong>Rennergebnisse</strong><span>Noch keine Ergebnisse für dieses Rennen.</span></div>
+        ${add}
+      </div>
+    `;
+    return;
+  }
+
+  const body=rows.map(r=>{
+    const id=crudSchemas.results?.identity?r[crudSchemas.results.identity]:r.id;
+    const d=findDriverById(r.driver_id);
+    const edit=hasPermission("results","edit")
+      ? `<button type="button" class="crud-button race-result-edit" data-result-id="${escapeHtml(String(id))}">Bearbeiten</button>`
+      : "";
+    const del=hasPermission("results","delete")
+      ? `<button type="button" class="crud-button danger race-result-delete" data-result-id="${escapeHtml(String(id))}">Löschen</button>`
+      : "";
+
+    return `<tr>
+      <td>${escapeHtml(resultDriverLabel(d))}</td>
+      <td>${escapeHtml(String(r.position??"—"))}</td>
+      <td>${escapeHtml(String(r.points??"—"))}</td>
+      <td>${escapeHtml(String(r.best_lap||r.bestlap||"—"))}</td>
+      <td>${Number(r.dnf)===1?"Ja":"Nein"}</td>
+      <td><div class="crud-actions">${edit}${del}</div></td>
+    </tr>`;
+  }).join("");
+
+  wrap.innerHTML=`
+    <div class="race-results-editor-head">
+      <div><strong>Rennergebnisse</strong><span>${rows.length} Ergebnis${rows.length===1?"":"se"} für dieses Rennen</span></div>
+      ${add}
+    </div>
+    <div class="race-results-editor-table"><table class="crud-table"><thead><tr>
+      <th>Fahrer</th><th>Platz</th><th>Punkte</th><th>Beste Runde</th><th>DNF</th><th>Aktionen</th>
+    </tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+async function loadRaceResultsForEditor(raceId){
+  if(!hasPermission("results","view")) return;
+  if(!crudSchemas.results || !crudRows.results){
+    await loadCrudResource("results");
+  }
+  renderRaceResultsEditor(raceId);
+}
+
 async function openCrudModal(resource,row=null){
   if(row===null&&!hasPermission(resource,"create")){
     showToast("Keine Berechtigung zum Erstellen.",true);
@@ -5889,7 +5930,6 @@ async function openCrudModal(resource,row=null){
   crudEditing={resource,row};
   const modal=document.getElementById("crudModal");
   const body=document.getElementById("crudFormBody");
-  document.getElementById("crudModalSave")?.classList.remove("hidden");
 
   if(resource === "news"){
     const schemaCols=schema.columns||[];
@@ -5968,7 +6008,8 @@ async function openCrudModal(resource,row=null){
           <option value="">Bitte Rennen auswählen</option>
           ${races.map(r=>{
             const id=crudSchemas.races?.identity ? r[crudSchemas.races.identity] : "";
-            return `<option value="${escapeHtml(String(id))}" ${String(row?.race_id ?? "")===String(id)?"selected":""}>${escapeHtml(resultRaceLabel(r))}</option>`;
+            const selectedRaceId = row?.race_id ?? resultCreateRaceId;
+            return `<option value="${escapeHtml(String(id))}" ${String(selectedRaceId ?? "")===String(id)?"selected":""}>${escapeHtml(resultRaceLabel(r))}</option>`;
           }).join("")}
         </select>
       </div>
@@ -6022,11 +6063,16 @@ async function openCrudModal(resource,row=null){
     });
 
     modal.classList.remove("hidden");
+    resultCreateRaceId = "";
     return;
   }
 
+  if(resource === "races" && row && schema.identity && hasPermission("results","view")){
+    await loadRaceResultsForEditor(row[schema.identity]);
+  }
+
   body.innerHTML=visibleColumns(schema).map(col=>{
-    const value=row?.[col.name]??"";
+    const value = row?.[col.name] ?? ((resource === "drivers" && ["points", "wins"].includes(col.name)) ? 0 : "");
     const label=prettyColumn(col.name);
     const isOptionalImageField = col.name === "image_url" || col.name === "image" || col.name === "track_image_url";
     const required=!isOptionalImageField && Number(col.notnull)===1&&col.default===null?"required":"";
@@ -6054,6 +6100,16 @@ async function openCrudModal(resource,row=null){
     return `<div class="crud-field"><label>${escapeHtml(label)}</label><input type="${inputType(col)}" name="${escapeHtml(col.name)}" value="${escapeHtml(String(value))}" ${required}></div>`;
   }).join("");
 
+  if(resource === "races" && row && schema.identity && hasPermission("results","view")){
+    const raceId = row[schema.identity];
+    body.insertAdjacentHTML("beforeend", `
+      <div class="crud-field full race-results-editor" id="raceResultsEditor">
+        <div class="race-results-editor-head"><div><strong>Rennergebnisse</strong><span>Wird geladen...</span></div></div>
+      </div>
+    `);
+    renderRaceResultsEditor(raceId);
+  }
+
   modal.classList.remove("hidden");
 }
 
@@ -6064,15 +6120,6 @@ function closeCrudModal(){
 
 async function saveCrudForm(event){
   event.preventDefault();
-  if(embedSpecial){
-    const button=document.getElementById("crudModalSave");
-    const message=document.getElementById("crudFormMessage");
-    button.disabled=true;button.textContent="Wird gespeichert...";message.textContent="";message.classList.remove("error");
-    try{ await embedSpecial.onSave(event.currentTarget); closeCrudModal(); embedSpecial=null; notifyEmbed("jackal-admin-saved"); }
-    catch(error){ message.textContent=error.message||"Speichern fehlgeschlagen."; message.classList.add("error"); }
-    finally{ button.disabled=false;button.textContent="Speichern"; }
-    return;
-  }
   if(!crudEditing) return;
 
   const form=event.currentTarget;
@@ -6140,7 +6187,6 @@ async function saveCrudForm(event){
         if(oldUrl && oldUrl!==uploadedImage.url) await deleteImageUrl(oldUrl,"news","edit");
       }
       closeCrudModal();
-      if(embedMode) notifyEmbed("jackal-admin-saved");
       showToast(row?"News wurde gespeichert.":"News wurde veröffentlicht.");
       await loadCrudResource("news");
     }catch(error){
@@ -6171,7 +6217,8 @@ async function saveCrudForm(event){
     visibleColumns(schema).forEach(col=>{
       const el=form.elements.namedItem(col.name);
       if(!el)return;
-      data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
+      data[col.name] = el.type === "checkbox" ? (el.checked ? 1 : 0) : el.value;
+       if(resource === "drivers" && (col.name === "points" || col.name === "wins") && el.value === "") data[col.name] = 0;
     });
 
     const imageFields = [];
@@ -6257,7 +6304,6 @@ async function saveCrudForm(event){
     }
 
     closeCrudModal();
-    if(embedMode) notifyEmbed("jackal-admin-saved");
     showToast(row?"Datensatz geändert.":"Datensatz gespeichert.");
     await loadCrudResource(resource);
 
@@ -6271,16 +6317,19 @@ async function saveCrudForm(event){
 }
 
 async function deleteCrudRow(resource,id){
-  if(!hasPermission(resource,"delete")){showToast("Keine Berechtigung zum Löschen.",true);return;}
+  if(!hasPermission(resource,"delete")){showToast("Keine Berechtigung zum Löschen.",true);return false;}
   const schema=crudSchemas[resource];
-  if(!schema?.identity){showToast("Dieser Datensatz kann nicht eindeutig gelöscht werden.",true);return;}
-  if(!confirm("Diesen Datensatz wirklich löschen?"))return;
+  if(!schema?.identity){showToast("Dieser Datensatz kann nicht eindeutig gelöscht werden.",true);return false;}
+  if(!confirm("Diesen Datensatz wirklich löschen?"))return false;
   try{
     const r=await fetch(`/api/admin/data/${encodeURIComponent(resource)}/${encodeURIComponent(String(id))}`,{method:"DELETE",credentials:"same-origin"});
     const d=await r.json().catch(()=>({}));
     if(!r.ok||!d.ok)throw new Error(d.error||"Löschen fehlgeschlagen.");
-    showToast("Datensatz wurde gelöscht.");await loadCrudResource(resource);
-  }catch(error){showToast(error.message||"Löschen fehlgeschlagen.",true);}
+    const extra=Number(d.deleted_result_rows||0);
+    showToast(extra>0?`Datensatz gelöscht · ${extra} zugehörige Ergebnisse entfernt.`:"Datensatz wurde gelöscht.");
+    await loadCrudResource(resource);
+    return true;
+  }catch(error){showToast(error.message||"Löschen fehlgeschlagen.",true);return false;}
 }
 
 async function loadAllVisibleCrud(){
@@ -6300,6 +6349,36 @@ document.querySelectorAll("[data-news-filter]").forEach(button=>button.addEventL
 }));
 
 document.addEventListener("click",event=>{
+  const raceAdd=event.target.closest("#raceAddResult");
+  if(raceAdd){
+    const raceRow=crudEditing?.resource === "races" ? crudEditing.row : null;
+    const raceId=raceRow?.[crudSchemas.races?.identity || "id"];
+    if(raceId!=null) openResultCreateForRace(raceId);
+    return;
+  }
+
+  const raceResultEdit=event.target.closest(".race-result-edit");
+  if(raceResultEdit){
+    const id=raceResultEdit.dataset.resultId;
+    const row=(crudRows.results||[]).find(x=>String(x[crudSchemas.results?.identity||"id"])===String(id));
+    if(row) openCrudModal("results",row);
+    return;
+  }
+
+  const raceResultDelete=event.target.closest(".race-result-delete");
+  if(raceResultDelete){
+    const id=raceResultDelete.dataset.resultId;
+    deleteCrudRow("results",id).then(async()=>{
+      const raceRow=crudEditing?.resource === "races" ? crudEditing.row : null;
+      const raceId=raceRow?.[crudSchemas.races?.identity || "id"];
+      if(raceId!=null){
+        await loadCrudResource("results");
+        renderRaceResultsEditor(raceId);
+      }
+    });
+    return;
+  }
+
   const create=event.target.closest(".crud-create-button");if(create){openCrudModal(create.dataset.resource);return;}
   const refresh=event.target.closest(".crud-refresh");if(refresh){loadCrudResource(refresh.dataset.resource);return;}
   const edit=event.target.closest(".crud-edit");if(edit){const r=edit.dataset.resource;const id=edit.dataset.id;const row=(crudRows[r]||[]).find(x=>String(x[crudSchemas[r]?.identity])===String(id));if(row)openCrudModal(r,row);return;}
@@ -6307,8 +6386,8 @@ document.addEventListener("click",event=>{
 });
 
 document.getElementById("crudForm").addEventListener("submit",saveCrudForm);
-document.getElementById("crudModalClose").addEventListener("click",()=>{closeCrudModal();if(embedMode)notifyEmbed("jackal-admin-close");});
-document.getElementById("crudModalCancel").addEventListener("click",()=>{closeCrudModal();if(embedMode)notifyEmbed("jackal-admin-close");});
+document.getElementById("crudModalClose").addEventListener("click",closeCrudModal);
+document.getElementById("crudModalCancel").addEventListener("click",closeCrudModal);
 
 document.addEventListener("change",event=>{
   const input=event.target.closest('input[type="file"][name="__image_file"]');
@@ -6382,135 +6461,6 @@ if(__originalShowPage){
     __originalShowPage(page);
     if(page === "news") setTimeout(()=>loadNewsControl(),80);
   };
-}
-
-
-/* =========================================================
-   EMBED EDITOR – PUBLIC SEITEN
-========================================================= */
-function embedOrigin(){ return window.parent && window.parent !== window ? window.location.origin : window.location.origin; }
-function notifyEmbed(type){
-  try{ if(window.parent && window.parent !== window) window.parent.postMessage({type}, window.location.origin); }catch(_){ }
-}
-
-async function fetchJson(url, options={}){
-  const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...options});
-  const d=await r.json().catch(()=>({}));
-  if(!r.ok||!d.ok) throw new Error(d.error||"Aktion konnte nicht ausgeführt werden.");
-  return d;
-}
-
-function openEmbedSpecialModal(title, subtitle, html, onSave){
-  const modal=document.getElementById("crudModal");
-  const body=document.getElementById("crudFormBody");
-  const msg=document.getElementById("crudFormMessage");
-  if(!modal||!body) return;
-  document.getElementById("crudModalTitle").textContent=title;
-  document.getElementById("crudModalSubtitle").textContent=subtitle;
-  msg.textContent="";msg.classList.remove("error");
-  body.innerHTML=html;
-  embedSpecial={onSave};
-  modal.classList.remove("hidden");
-}
-
-async function openNewsDashboardSpecial(kind){
-  const dash=await fetchJson("/api/admin/news/dashboard");
-
-  if(kind==="news-archive"){
-    await loadCrudResource("news");
-    const rows=(crudRows.news||[]).slice().sort((a,b)=>String(b.date||b.created_at||"").localeCompare(String(a.date||a.created_at||"")));
-    const listHtml=rows.length ? rows.slice(0,50).map(row=>{
-      const id=row[crudSchemas.news?.identity||"id"];
-      const rawStatus=String(row.status||"").toLowerCase();
-      const archived=rawStatus==="archived" || (row.active!==undefined && Number(row.active)===0 && !["draft","inactive"].includes(rawStatus));
-      const label=archived?"ARCHIV":(rawStatus==="draft"?"ENTWURF":"ÖFFENTLICH");
-      const button=archived
-        ? `<button type="button" class="user-button embed-news-archive-action" data-id="${escapeHtml(String(id))}" data-archive="0">Wiederherstellen</button>`
-        : `<button type="button" class="user-button embed-news-archive-action" data-id="${escapeHtml(String(id))}" data-archive="1">Archivieren</button>`;
-      return `<div class="news-archive-row" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line,#2a2342)"><div><strong style="display:block;color:#fff">${escapeHtml(row.title||"Unbenannte News")}</strong><small style="color:#8f879e">${escapeHtml(String(row.date||row.created_at||"—"))}</small></div><span class="news-control-badge">${escapeHtml(newsNormalizeCategory(row.category))}</span><span class="news-muted">${label}</span>${button}</div>`;
-    }).join('') : '<div class="news-control-empty">Noch keine News vorhanden.</div>';
-
-    const html=`<div class="crud-field full"><div class="news-modal-help">Archivierte News bleiben in der Datenbank erhalten. Du kannst sie jederzeit wieder veröffentlichen.</div></div><div id="embeddedNewsArchiveList" style="max-height:50vh;overflow:auto;padding-right:4px">${listHtml}</div>`;
-    openEmbedSpecialModal("News archivieren","News",html,async()=>{});
-    document.getElementById("crudModalSave")?.classList.add("hidden");
-
-    document.querySelectorAll("#embeddedNewsArchiveList .embed-news-archive-action").forEach(button=>{
-      button.addEventListener("click",async()=>{
-        const id=button.dataset.id||"";
-        const archive=button.dataset.archive==="1";
-        button.disabled=true;
-        try{
-          await newsArchiveToggle(id,archive);
-          await openNewsDashboardSpecial("news-archive");
-        }catch(error){
-          showToast(error.message||"News konnte nicht geändert werden.",true);
-          button.disabled=false;
-        }
-      });
-    });
-    return;
-  }
-
-  await loadCrudResource("races");
-  await loadCrudResource("drivers");
-  const races=crudRows.races||[];
-  const drivers=(crudRows.drivers||[]).filter(d=>String(d.status||"").toLowerCase()!=="inactive");
-  if(kind==="next-event"){
-    const selected=String(dash.config?.next_race_id||"");
-    const mode=String(dash.config?.display_mode||"next_race");
-    const html=`
-      <div class="crud-field full"><label>Darstellung</label><select name="display_mode"><option value="next_race" ${mode==="next_race"?"selected":""}>Nächstes Rennen</option><option value="next_event" ${mode==="next_event"?"selected":""}>Nächstes Event</option><option value="last_race" ${mode==="last_race"?"selected":""}>Letztes Rennen</option></select></div>
-      <div class="crud-field full"><label>Verknüpftes Rennen</label><select name="next_race_id"><option value="">Automatisch auswählen</option>${races.map(r=>{const id=r.id;return `<option value="${escapeHtml(String(id))}" ${String(id)===selected?"selected":""}>${escapeHtml(r.name||"Rennen")} · ${escapeHtml(String(r.date||""))}</option>`}).join("")}</select></div>
-      <div class="crud-field full"><div class="news-modal-help">Das gewählte Rennen bleibt der Datensatz. Die Darstellung legt fest, ob die Box als „Nächstes Rennen“, „Nächstes Event“ oder „Letztes Rennen“ erscheint.</div></div>`;
-    openEmbedSpecialModal("Event-Bereich bearbeiten","News / Home",html,async form=>{
-      const payload={display_mode:form.elements.namedItem("display_mode")?.value||"next_race",next_race_id:form.elements.namedItem("next_race_id")?.value||"",latest_news_ids:dash.config?.latest_news_ids||[],featured_news_id:dash.config?.featured_news_id||"",hearts_winner_driver_id:dash.config?.hearts_winner_driver_id||"",hearts_quote:dash.config?.hearts_quote||"",poll_active:Number(dash.config?.poll_active)===1,poll_question:dash.config?.poll_question||"Wer war dein Sieger der Herzen?",poll_options:dash.config?.poll_options||[]};
-      await fetchJson("/api/admin/news/dashboard",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    });
-    return;
-  }
-
-  const winner=String(dash.config?.hearts_winner_driver_id||"");
-  const options=Array.isArray(dash.config?.poll_options)?dash.config.poll_options:[];
-  const optRows=Array.from({length:5},(_,i)=>{
-    const o=options[i]||{};const did=String(o.driver_id||"");const pct=Number(o.percent)||0;
-    return `<div class="crud-field"><label>Kandidat ${i+1}</label><select name="poll_driver_${i}"><option value="">Keiner</option>${drivers.map(d=>`<option value="${escapeHtml(String(d.id))}" ${String(d.id)===did?"selected":""}>${escapeHtml(d.nickname||d.name||"Fahrer")}</option>`).join("")}</select></div><div class="crud-field"><label>Prozent</label><input type="number" min="0" max="100" name="poll_percent_${i}" value="${pct}"></div>`;
-  }).join("");
-  const html=`
-    <div class="crud-field"><label>Sieger der Herzen</label><select name="hearts_winner_id"><option value="">Noch nicht festgelegt</option>${drivers.map(d=>`<option value="${escapeHtml(String(d.id))}" ${String(d.id)===winner?"selected":""}>${escapeHtml(d.nickname||d.name||"Fahrer")}</option>`).join("")}</select></div>
-    <div class="crud-field"><label>Abstimmung aktiv</label><div class="crud-checkbox"><input type="checkbox" name="poll_active" ${Number(dash.config?.poll_active)===1?"checked":""}><span>Abstimmung öffentlich anzeigen</span></div></div>
-    <div class="crud-field full"><label>Zitat / Beitrag</label><textarea rows="3" name="hearts_quote">${escapeHtml(dash.config?.hearts_quote||"")}</textarea></div>
-    <div class="crud-field full"><label>Abstimmungsfrage</label><input name="poll_question" value="${escapeHtml(dash.config?.poll_question||"Wer war dein Sieger der Herzen?")}"></div>
-    ${optRows}`;
-  openEmbedSpecialModal("Sieger der Herzen & Abstimmung","News",html,async form=>{
-    const poll_options=[];
-    for(let i=0;i<5;i++){const id=form.elements.namedItem(`poll_driver_${i}`)?.value||"";if(!id)continue;poll_options.push({driver_id:id,percent:Number(form.elements.namedItem(`poll_percent_${i}`)?.value||0)});}
-    const payload={display_mode:dash.config?.display_mode||"next_race",next_race_id:dash.config?.next_race_id||"",latest_news_ids:dash.config?.latest_news_ids||[],featured_news_id:dash.config?.featured_news_id||"",hearts_winner_driver_id:form.elements.namedItem("hearts_winner_id")?.value||"",hearts_quote:form.elements.namedItem("hearts_quote")?.value||"",poll_active:!!form.elements.namedItem("poll_active")?.checked,poll_question:form.elements.namedItem("poll_question")?.value||"Wer war dein Sieger der Herzen?",poll_options};
-    await fetchJson("/api/admin/news/dashboard",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  });
-}
-
-async function startEmbedEditor(){
-  const kind=embedParams.get("embed");
-  if(kind==="crud"){
-    const resource=String(embedParams.get("resource")||"");
-    const action=String(embedParams.get("action")||"edit");
-    const id=embedParams.get("id");
-    if(!resource) throw new Error("Kein Bearbeitungsbereich angegeben.");
-    await loadCrudResource(resource);
-    if(resource === "news" && typeof loadNewsCategories === "function") await loadNewsCategories();
-    let row=null;
-    if(action!=="new" && id!==null){
-      const schema=crudSchemas[resource];
-      row=(crudRows[resource]||[]).find(x=>String(x[schema?.identity||"id"])===String(id))||null;
-    }
-    await openCrudModal(resource,row);
-    return;
-  }
-  if(kind==="special"){
-    await openNewsDashboardSpecial(embedParams.get("special")||"next-event");
-    return;
-  }
-  throw new Error("Unbekannter Bearbeitungsbereich.");
 }
 
 /* =========================================================
