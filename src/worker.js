@@ -2464,7 +2464,7 @@ const SITE_RESPONSIVE_FIELDS = new Set([
 ]);
 
 const SITE_MEDIA_UPDATE_FIELDS = new Set([
-  "label", "image_url", "r2_key", "alt_text", "active", "sort_order"
+  "label", "image_url", "alt_text", "active", "sort_order"
 ]);
 
 function siteClampInt(value, min, max, fallback) {
@@ -2716,17 +2716,29 @@ async function handleAdminSiteMediaSave(request, env, slot) {
 
   const updates = [];
   const values = [];
+  let imageUrlChanged = false;
   for (const key of SITE_MEDIA_UPDATE_FIELDS) {
     if (!(key in body)) continue;
     let value = body[key];
     if (key === "active") value = Number(value) ? 1 : 0;
     if (key === "sort_order") value = siteClampInt(value, 0, 100000, Number(current.sort_order || 0));
     else value = String(value ?? "");
+    if (key === "image_url" && value !== String(current.image_url || "")) imageUrlChanged = true;
     updates.push(`${quoteIdentifier(key)} = ?`);
     values.push(value);
   }
   if (!updates.length) return json({ ok: false, error: "Keine Änderungen übergeben." }, 400);
+
+  const oldR2Key = imageUrlChanged ? String(current.r2_key || "") : "";
+  if (imageUrlChanged) {
+    updates.push(`r2_key = ?`);
+    values.push("");
+  }
+
   await env.DB.prepare(`UPDATE site_media SET ${updates.join(", ")}, updated_at = ? WHERE slot = ?`).bind(...values, Math.floor(Date.now() / 1000), normalizedSlot).run();
+  if (oldR2Key && env.IMAGES) {
+    try { await env.IMAGES.delete(oldR2Key); } catch (error) { console.error("Site media old R2 delete failed:", error); }
+  }
   const saved = await env.DB.prepare(`SELECT * FROM site_media WHERE slot = ? LIMIT 1`).bind(normalizedSlot).first();
   return json({ ok: true, media: saved });
 }
@@ -2768,7 +2780,17 @@ async function handleAdminSiteMediaUpload(request, env) {
   });
 
   const imageUrl = publicImageUrl(request, key);
-  await env.DB.prepare(`UPDATE site_media SET image_url = ?, r2_key = ?, updated_at = ? WHERE slot = ?`).bind(imageUrl, key, Math.floor(Date.now() / 1000), slot).run();
+  const oldR2Key = String(existing.r2_key || "");
+  try {
+    await env.DB.prepare(`UPDATE site_media SET image_url = ?, r2_key = ?, updated_at = ? WHERE slot = ?`).bind(imageUrl, key, Math.floor(Date.now() / 1000), slot).run();
+  } catch (error) {
+    try { await env.IMAGES.delete(key); } catch (cleanupError) { console.error("Site media upload cleanup failed:", cleanupError); }
+    throw error;
+  }
+
+  if (oldR2Key && oldR2Key !== key) {
+    try { await env.IMAGES.delete(oldR2Key); } catch (error) { console.error("Site media replaced R2 delete failed:", error); }
+  }
   return json({ ok: true, slot, key, url: imageUrl, mime_type: mimeType, size: file.size });
 }
 
