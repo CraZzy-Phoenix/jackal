@@ -1964,7 +1964,7 @@ body{
 <input accept="image/jpeg,image/png,image/webp,image/gif" id="blacklistImageFile" type="file"/>
 </div>
 <img alt="Bildvorschau" class="image-upload-preview" id="blacklistImagePreview"/>
-<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Eine ausgewählte Datei wird automatisch in Cloudflare R2 hochgeladen.</div>
+<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Die Bildangabe ist optional. Eine ausgewählte Datei wird automatisch in Cloudflare R2 hochgeladen.</div>
 </div>
 </div>
 <div class="ranking-field full">
@@ -2044,7 +2044,7 @@ body{
 <input accept="image/jpeg,image/png,image/webp,image/gif" id="rankingImageFile" type="file"/>
 </div>
 <img alt="Bildvorschau" class="image-upload-preview" id="rankingImagePreview"/>
-<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Eine ausgewählte Datei wird automatisch in Cloudflare R2 hochgeladen.</div>
+<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Die Bildangabe ist optional. Eine ausgewählte Datei wird automatisch in Cloudflare R2 hochgeladen.</div>
 </div>
 </div>
 </div>
@@ -5880,7 +5880,7 @@ async function openCrudModal(resource,row=null){
         ${has("active")?`<div class="crud-checkbox full"><input id="newsActiveField" name="active" type="checkbox" ${active?"checked":""}><span>News öffentlich anzeigen</span></div>`:""}
         ${textCol?`<div class="crud-field full"><label>Kurztext / Teaser</label><textarea rows="3" maxlength="300" name="${escapeHtml(textCol)}" id="newsTeaserField" placeholder="Kurzer Text für Karten und Vorschauen...">${escapeHtml(String(value(textCol,"")))}</textarea><div class="news-char-count" id="newsCharCount"></div></div>`:""}
         ${has("content") && textCol!=="content"?`<div class="crud-field full"><label>Vollständiger Inhalt</label><textarea rows="8" name="content" placeholder="Der vollständige News-Text...">${escapeHtml(String(value("content","")))}</textarea></div>`:""}
-        ${imageCol?`<div class="crud-field full"><label>Titelbild</label><div class="news-image-box"><input type="text" name="${escapeHtml(imageCol)}" id="newsImageUrl" value="${escapeHtml(String(value(imageCol,"")))}" placeholder="Bild-URL (optional)"><input type="file" name="__image_file" accept="image/jpeg,image/png,image/webp,image/gif"><img class="news-image-preview" id="newsImagePreview" src="${escapeHtml(String(value(imageCol,"")))}" alt="Vorschau" style="${value(imageCol,"")?"display:block":"display:none"}"><div class="news-modal-help">JPG, PNG, WEBP oder GIF · maximal 10 MB. Beim Speichern wird das Bild automatisch in R2 hochgeladen.</div></div></div>`:""}
+        ${imageCol?`<div class="crud-field full"><label>Titelbild (optional)</label><div class="news-image-box"><input type="text" name="${escapeHtml(imageCol)}" id="newsImageUrl" value="${escapeHtml(String(value(imageCol,"")))}" placeholder="Bild-URL (optional)"><input type="file" name="__image_file" accept="image/jpeg,image/png,image/webp,image/gif"><img class="news-image-preview" id="newsImagePreview" src="${escapeHtml(String(value(imageCol,"")))}" alt="Vorschau" style="${value(imageCol,"")?"display:block":"display:none"}"><div class="news-modal-help">JPG, PNG, WEBP oder GIF · maximal 10 MB. Das Titelbild ist optional. Eine ausgewählte Datei wird beim Speichern automatisch in R2 hochgeladen.</div></div></div>`:""}
       </div>`;
 
     const teaser=document.getElementById("newsTeaserField");
@@ -5982,7 +5982,8 @@ async function openCrudModal(resource,row=null){
   body.innerHTML=visibleColumns(schema).map(col=>{
     const value=row?.[col.name]??"";
     const label=prettyColumn(col.name);
-    const required=Number(col.notnull)===1&&col.default===null?"required":"";
+    const isOptionalImageField = col.name === "image_url" || col.name === "image" || col.name === "track_image_url";
+    const required=!isOptionalImageField && Number(col.notnull)===1&&col.default===null?"required":"";
 
     if(isBooleanColumn(col)){
       const checked=Number(value)===1||value===true||value==="1";
@@ -5995,7 +5996,7 @@ async function openCrudModal(resource,row=null){
       const preview = value
         ? `<img class="image-upload-preview" style="display:block" src="${escapeHtml(String(value))}" alt="Bild" onerror="this.style.display='none'">`
         : `<img class="image-upload-preview" alt="Bildvorschau">`;
-      return `<div class="crud-field full"><label>${escapeHtml(fieldTitle)}</label><div class="image-upload-box"><input type="text" name="${escapeHtml(col.name)}" value="${escapeHtml(String(value))}" placeholder="Bild-URL (optional)"><div class="image-upload-row"><input type="file" name="${fileField}" accept="image/jpeg,image/png,image/webp,image/gif"></div>${preview}<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Die Datei wird beim Speichern automatisch in R2 hochgeladen.</div></div></div>`;
+      return `<div class="crud-field full"><label>${escapeHtml(fieldTitle)}</label><div class="image-upload-box"><input type="text" name="${escapeHtml(col.name)}" value="${escapeHtml(String(value))}" placeholder="Bild-URL (optional)"><div class="image-upload-row"><input type="file" name="${fileField}" accept="image/jpeg,image/png,image/webp,image/gif"></div>${preview}<div class="image-upload-note">JPG, PNG, WEBP oder GIF · maximal 10 MB. Die Bildangabe ist optional. Eine ausgewählte Datei wird beim Speichern automatisch in R2 hochgeladen.</div></div></div>`;
     }
 
     const textarea=/description|content|text|reason|message/i.test(col.name)||String(col.type||"").toUpperCase().includes("TEXT")&&String(value).length>80;
@@ -6027,6 +6028,7 @@ async function saveCrudForm(event){
   const message=document.getElementById("crudFormMessage");
   const button=document.getElementById("crudModalSave");
   const data={};
+  const uploadedImages = [];
 
   if(resource === "news"){
     const schemaCols=schema.columns||[];
@@ -6116,7 +6118,6 @@ async function saveCrudForm(event){
       data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
     });
 
-    const uploadedImages = [];
     const imageFields = [];
 
     const imageCol = imageColumnName(schema);
