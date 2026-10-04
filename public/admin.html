@@ -1009,296 +1009,427 @@ button,input,textarea,select{font-family:var(--f-body);}
 
 
 /* =========================================================
-   JACKAL ADMIN – FINAL PUBLIC SITE LOOK
-   Keeps the existing admin functionality/IDs untouched.
+   JACKAL LIVE-SITE ADMIN MODE
+   The admin uses the public site as the visual preview and
+   keeps the existing management pages as a slide-over editor.
 ========================================================= */
+:root{
+  --bg:#07060d;
+  --bg-2:#0d0b18;
+  --card:#110e1f;
+  --card-2:#171329;
+  --line:#2a2342;
+  --line-glow:#4b2f8a;
+  --purple:#4e18ae;
+  --purple-2:#b266ff;
+  --purple-3:#dcbcff;
+  --neon:#a855ff;
+  --text:#f2eefc;
+  --muted:#a49cbc;
+  --f-brush:'Permanent Marker',cursive;
+  --f-head:'Saira Condensed','Arial Narrow',sans-serif;
+  --f-body:'Rajdhani','Segoe UI',sans-serif;
+}
+
+html,body{
+  background:var(--bg)!important;
+  color:var(--text)!important;
+  font-family:var(--f-body)!important;
+}
+
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(1200px 500px at 50% 0,rgba(168,85,255,.12),transparent 60%),
+    var(--bg)!important;
+}
+
 #adminApp{
   min-height:100vh;
   background:var(--bg);
 }
-#adminApp>.admin-topbar{
-  height:58px;
-  padding:0 36px;
-  gap:24px;
-  background:rgba(8,7,14,.94);
-  border-bottom:1px solid var(--line);
-  box-shadow:0 8px 28px rgba(0,0,0,.22);
+
+#adminApp.hidden{display:none!important}
+
+.admin-topbar{
+  position:sticky!important;
+  top:0!important;
+  z-index:2000!important;
+  height:58px!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0 36px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:24px!important;
+  border-bottom:1px solid var(--line)!important;
+  background:rgba(8,7,14,.96)!important;
+  box-shadow:0 8px 30px rgba(0,0,0,.22)!important;
 }
-#adminApp>.admin-topbar .admin-brand{
-  display:flex;
-  align-items:center;
-  flex:0 0 auto;
-  min-width:max-content;
+
+.admin-topbar .brand{
+  flex:0 0 auto!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+  padding:0!important;
+  color:var(--text)!important;
+  text-decoration:none!important;
 }
-#adminApp>.admin-topbar .brand-text{
-  display:inline-flex;
-  align-items:baseline;
-  gap:8px;
-  margin:0;
-  padding:0;
-  font-family:var(--f-brush);
-  font-size:30px;
-  line-height:1;
-  font-weight:400;
-  letter-spacing:0;
-  text-transform:none;
-  color:#fff;
-  transform:skew(-8deg);
-  text-shadow:0 0 12px rgba(178,102,255,.8),2px 2px 0 var(--purple);
+
+.admin-topbar .brand-slot{
+  width:30px!important;
+  height:30px!important;
+  overflow:hidden!important;
+  border-radius:7px!important;
+  flex:0 0 30px!important;
 }
-#adminApp>.admin-topbar .brand-admin-word{
-  font-family:var(--f-head);
-  font-size:16px;
-  font-style:italic;
-  font-weight:800;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  color:var(--purple-2);
-  text-shadow:0 0 10px rgba(168,85,255,.45);
-  transform:skew(0deg);
+
+.admin-topbar .brand-slot img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  display:block!important;
 }
-#adminApp>.admin-topbar .menu{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  flex:0 1 auto;
-  overflow-x:auto;
-  scrollbar-width:none;
-  white-space:nowrap;
+
+.admin-topbar .brand-text{
+  display:flex!important;
+  align-items:baseline!important;
+  gap:7px!important;
+  font:30px var(--f-brush)!important;
+  letter-spacing:0!important;
+  color:var(--text)!important;
+  white-space:nowrap!important;
 }
-#adminApp>.admin-topbar .menu::-webkit-scrollbar{display:none}
-#adminApp>.admin-topbar .menu button{
-  position:relative;
-  width:auto;
-  margin:0;
-  padding:20px 15px;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  color:#d9d3ec;
-  font-family:var(--f-body);
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  cursor:pointer;
-  transition:color .2s,background .2s;
+
+.admin-topbar .admin-mark{
+  font:700 12px var(--f-head)!important;
+  text-transform:uppercase!important;
+  letter-spacing:2px!important;
+  color:var(--purple-2)!important;
+  padding-left:8px!important;
+  border-left:1px solid var(--line)!important;
 }
-#adminApp>.admin-topbar .menu button:hover,
-#adminApp>.admin-topbar .menu button.active{
-  color:#fff;
-  background:transparent;
-  border:0;
-  box-shadow:none;
+
+.admin-topbar .menu{
+  position:absolute!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:3px!important;
+  height:100%!important;
+  white-space:nowrap!important;
 }
-#adminApp>.admin-topbar .menu button.active::after{
+
+.admin-topbar .menu button{
+  width:auto!important;
+  height:58px!important;
+  margin:0!important;
+  padding:20px 15px!important;
+  border:0!important;
+  border-radius:0!important;
+  color:var(--muted)!important;
+  background:transparent!important;
+  font:700 13px var(--f-head)!important;
+  text-transform:uppercase!important;
+  letter-spacing:.6px!important;
+  text-align:center!important;
+  position:relative!important;
+}
+
+.admin-topbar .menu button:hover,
+.admin-topbar .menu button.active{
+  color:#fff!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+.admin-topbar .menu button.active::after{
   content:"";
   position:absolute;
-  left:10px;
-  right:10px;
-  bottom:5px;
+  right:15px;
+  bottom:0;
+  left:15px;
   height:2px;
-  border-radius:99px;
-  background:var(--accent);
-  box-shadow:0 0 10px var(--neon);
+  background:var(--neon);
+  box-shadow:0 0 10px rgba(168,85,255,.55);
 }
-#adminApp>.admin-topbar .admin-top-actions{
-  margin-left:auto;
+
+.admin-top-actions{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  margin-left:auto!important;
+}
+
+.admin-top-actions .status{display:none!important}
+
+.editor-toggle,
+.site-link,
+.admin-top-actions .logout{
+  position:static!important;
+  inset:auto!important;
+  width:auto!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:9px 14px!important;
+  border:1px solid var(--line)!important;
+  border-radius:8px!important;
+  color:var(--text)!important;
+  background:rgba(17,14,31,.92)!important;
+  font:700 12px var(--f-head)!important;
+  text-transform:uppercase!important;
+  letter-spacing:.7px!important;
+  text-decoration:none!important;
+}
+
+.editor-toggle:hover,
+.site-link:hover,
+.admin-top-actions .logout:hover{
+  border-color:var(--purple-2)!important;
+  box-shadow:0 0 16px rgba(168,85,255,.18)!important;
+}
+
+.editor-toggle{
+  border-color:rgba(168,85,255,.45)!important;
+  background:linear-gradient(135deg,rgba(78,24,174,.56),rgba(168,85,255,.18))!important;
+}
+
+.admin-workspace{
+  position:relative;
+  min-height:calc(100vh - 58px);
+  overflow:hidden;
+  background:var(--bg);
+}
+
+.site-preview{
+  position:relative;
+  width:100%;
+  height:calc(100vh - 58px);
+  min-height:620px;
+  background:var(--bg);
+}
+
+.site-preview-frame{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+}
+
+#sitePreview{
+  width:100%;
+  height:100%;
+  border:0;
+  display:block;
+  background:var(--bg);
+}
+
+.preview-hud{
+  position:absolute;
+  left:16px;
+  bottom:16px;
+  z-index:20;
   display:flex;
   align-items:center;
-  gap:9px;
-  flex:0 0 auto;
+  gap:10px;
+  padding:8px 11px;
+  border:1px solid rgba(168,85,255,.28);
+  border-radius:8px;
+  background:rgba(8,7,14,.88);
+  backdrop-filter:blur(10px);
+  box-shadow:0 10px 30px rgba(0,0,0,.28);
+  pointer-events:none;
 }
-#adminApp>.admin-topbar .status{
-  display:inline-flex;
-  align-items:center;
-  padding:0;
-  border:0;
-  background:transparent;
-  color:#75e29b;
-  font-family:var(--f-body);
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:.08em;
-  white-space:nowrap;
-}
-#adminApp>.admin-topbar .admin-site-link,
-#adminApp>.admin-topbar .logout{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:34px;
-  padding:0 13px;
-  border:1px solid var(--line);
-  border-radius:4px;
-  background:rgba(14,11,23,.72);
-  color:#d9d3ec;
-  font-family:var(--f-body);
-  font-size:11px;
-  font-weight:800;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  text-decoration:none;
-  transition:color .2s,border-color .2s,box-shadow .2s,background .2s;
-}
-#adminApp>.admin-topbar .admin-site-link:hover,
-#adminApp>.admin-topbar .logout:hover{
-  color:#fff;
-  border-color:var(--purple-2);
-  background:rgba(168,85,255,.08);
-  box-shadow:0 0 12px rgba(168,85,255,.22);
-}
-#adminApp>.admin-topbar .logout{position:static;width:auto;margin:0;cursor:pointer;}
 
-#adminApp .hero-admin{
-  height:230px;
-  border-bottom:1px solid var(--line);
-}
-#adminApp .hero-admin .hero-content{padding-bottom:12px}
-#adminApp .hero-admin .hero-title{
-  font-family:var(--f-brush);
-  font-weight:400;
-  color:#ecebf2;
-  text-shadow:4px 4px 0 var(--purple),0 0 30px rgba(168,85,255,.9),0 0 60px rgba(168,85,255,.5);
-}
-#adminApp .page{
-  max-width:1500px;
-  margin:6px auto 0;
-  padding:0 18px 36px;
-}
-#adminApp .stats{gap:14px;margin-bottom:14px}
-#adminApp .stat,
-#adminApp .card,
-#adminApp .news-control-card,
-#adminApp .news-admin-stat{
-  background:linear-gradient(180deg,var(--card-2),var(--card));
-  border-color:var(--line);
-  border-radius:var(--radius);
-  box-shadow:0 10px 30px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.03);
-}
-#adminApp .card-header,
-#adminApp .card-head{
-  background:linear-gradient(100deg,rgba(168,85,255,.09),transparent 52%);
-  border-bottom:1px solid var(--line);
-}
-#adminApp .card-header h2,
-#adminApp .card-head h2,
-#adminApp .news-control-head h3{
-  font-family:var(--f-head);
-  font-style:italic;
-  font-weight:800;
-  text-transform:uppercase;
-  color:#fff;
-}
-#adminApp .card-header h2,
-#adminApp .card-head h2{font-size:23px}
-#adminApp .card-header span{color:var(--muted)}
-#adminApp .action-button,
-#adminApp .user-button,
-#adminApp .crud-button,
-#adminApp .news-filter,
-#adminApp .news-control-actions button,
-#adminApp .dashboard-preview-actions button{
-  border:1px solid var(--line);
-  border-radius:4px;
-  background:#0e0b17;
-  color:#ddd6ee;
-  font-family:var(--f-body);
-  font-weight:800;
-  letter-spacing:.04em;
-  text-transform:uppercase;
-  transition:.2s;
-}
-#adminApp .action-button:hover,
-#adminApp .user-button:hover,
-#adminApp .crud-button:hover,
-#adminApp .news-filter:hover,
-#adminApp .news-filter.active,
-#adminApp .news-control-actions button:hover,
-#adminApp .dashboard-preview-actions button:hover{
-  color:#fff;
-  border-color:var(--purple-2);
-  background:rgba(168,85,255,.10);
-  box-shadow:0 0 14px rgba(168,85,255,.18);
-}
-#adminApp input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
-#adminApp textarea,
-#adminApp select{
-  background:#0e0b17;
-  border:1px solid var(--line);
-  border-radius:4px;
-  color:#fff;
-  outline:none;
-}
-#adminApp input:not([type="checkbox"]):not([type="radio"]):focus,
-#adminApp textarea:focus,
-#adminApp select:focus{
-  border-color:var(--purple-2);
-  box-shadow:0 0 0 2px rgba(168,85,255,.10),0 0 14px rgba(168,85,255,.10);
-}
-#adminApp .crud-table-wrap,
-#adminApp .ranking-table-wrap{
-  border-color:var(--line);
-  border-radius:var(--radius);
-  background:#0e0b17;
-}
-#adminApp .crud-table th,
-#adminApp .ranking-table th{
-  background:#0d0b18;
+.preview-hud-title{
+  font:700 11px var(--f-head);
+  letter-spacing:1.5px;
   color:var(--purple-2);
-  border-bottom-color:var(--line);
-  font-family:var(--f-body);
-  font-weight:800;
-  letter-spacing:.08em;
-}
-#adminApp .crud-table td,
-#adminApp .ranking-table td{
-  color:#ddd7e9;
-  border-bottom-color:rgba(42,35,66,.7);
-}
-#adminApp .crud-table tr:hover td,
-#adminApp .ranking-table tr:hover td{background:rgba(168,85,255,.045)}
-#adminApp .modal-overlay{
-  background:rgba(4,3,9,.78);
-  backdrop-filter:blur(7px);
-}
-#adminApp .modal,
-#adminApp .ranking-modal{
-  border-color:var(--line);
-  border-radius:var(--radius);
-  background:linear-gradient(180deg,#171329,#0f0c1a);
-  box-shadow:0 24px 70px rgba(0,0,0,.65),0 0 34px rgba(168,85,255,.10);
 }
 
-@media(max-width:1200px){
-  #adminApp>.admin-topbar .menu{gap:2px}
-  #adminApp>.admin-topbar .menu button{padding-left:10px;padding-right:10px;font-size:12px}
-  #adminApp>.admin-topbar .status{display:none}
-}
-@media(max-width:960px){
-  #adminApp>.admin-topbar{flex-wrap:wrap;height:auto;min-height:58px;padding:7px 16px;gap:10px}
-  #adminApp>.admin-topbar .menu{position:static;left:auto;transform:none;order:3;flex-basis:100%;justify-content:flex-start;border-top:1px solid var(--line);padding-top:2px}
-  #adminApp>.admin-topbar .menu button{padding:12px 11px}
-  #adminApp .hero-admin{height:250px}
-}
-@media(max-width:700px){
-  #adminApp .page{padding:0 12px 22px}
-  #adminApp .hero-admin{height:220px}
-  #adminApp .hero-admin .hero-title{font-size:clamp(48px,16vw,82px)}
-  #adminApp>.admin-topbar .brand-text{font-size:26px}
-  #adminApp>.admin-topbar .brand-admin-word{font-size:13px}
-  #adminApp>.admin-topbar .admin-site-link{display:none}
-}
-@media(max-width:480px){
-  #adminApp>.admin-topbar .brand-admin-word{font-size:12px}
-  #adminApp>.admin-topbar .logout{padding:0 10px;font-size:10px}
-  #adminApp .hero-admin{height:200px}
+.preview-hud-page{
+  font:700 11px var(--f-head);
+  letter-spacing:1px;
+  color:var(--text);
+  text-transform:uppercase;
 }
 
+.live-dot{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  margin-right:6px;
+  border-radius:50%;
+  background:#69e39a;
+  box-shadow:0 0 10px rgba(105,227,154,.65);
+}
+
+.editor-backdrop{
+  position:fixed;
+  inset:58px 0 0 0;
+  z-index:2050;
+  background:rgba(4,3,9,.58);
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .18s ease,visibility .18s ease;
+}
+
+.editor-drawer{
+  position:fixed;
+  top:58px;
+  right:0;
+  bottom:0;
+  z-index:2060;
+  width:min(620px,92vw);
+  overflow:auto;
+  padding:0 18px 28px;
+  border-left:1px solid var(--line);
+  background:
+    linear-gradient(180deg,rgba(17,14,31,.98),rgba(11,9,20,.99));
+  box-shadow:-30px 0 80px rgba(0,0,0,.42);
+  transform:translateX(100%);
+  transition:transform .22s ease;
+}
+
+.admin-workspace.editor-open .editor-backdrop{
+  opacity:1;
+  visibility:visible;
+}
+
+.admin-workspace.editor-open .editor-drawer{
+  transform:translateX(0);
+}
+
+.editor-drawer-head{
+  position:sticky;
+  top:0;
+  z-index:10;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding:20px 2px 15px;
+  border-bottom:1px solid var(--line);
+  background:rgba(17,14,31,.97);
+  backdrop-filter:blur(12px);
+}
+
+.editor-eyebrow{
+  margin-bottom:3px;
+  font:700 10px var(--f-head);
+  letter-spacing:1.6px;
+  color:var(--purple-2);
+}
+
+.editor-drawer-head h1{
+  margin:0;
+  font:700 28px var(--f-head);
+  text-transform:uppercase;
+}
+
+.editor-drawer-head p{
+  margin:3px 0 0;
+  color:var(--muted);
+  font:600 13px var(--f-body);
+}
+
+.editor-close{
+  flex:0 0 auto;
+  width:36px;
+  height:36px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--muted);
+  background:var(--card);
+  font-size:24px;
+  line-height:1;
+}
+
+.editor-close:hover{
+  color:#fff;
+  border-color:var(--purple-2);
+}
+
+.editor-drawer-note{
+  margin:15px 0;
+  padding:10px 12px;
+  border:1px solid rgba(168,85,255,.2);
+  border-radius:8px;
+  color:var(--muted);
+  background:rgba(168,85,255,.055);
+  font-size:12px;
+  line-height:1.45;
+}
+
+.editor-drawer-note span{
+  display:inline-block;
+  margin-right:7px;
+  color:#69e39a;
+  font:700 10px var(--f-head);
+  letter-spacing:1.2px;
+}
+
+.editor-page-stack{
+  padding-top:0;
+}
+
+.editor-page-stack .page{
+  display:none!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.editor-page-stack .page.active{
+  display:block!important;
+}
+
+.editor-page-stack .card,
+.editor-page-stack .news-control-shell,
+.editor-page-stack .news-admin-head{
+  margin-left:0!important;
+  margin-right:0!important;
+}
+
+.editor-page-stack .card{
+  border-color:var(--line)!important;
+  background:var(--card)!important;
+}
+
+.editor-page-stack .card-header,
+.editor-page-stack .news-control-head{
+  gap:12px;
+}
+
+.editor-page-stack .primary-button,
+.editor-page-stack .action-button,
+.editor-page-stack .user-button,
+.editor-page-stack .secondary-button{
+  font-family:var(--f-body)!important;
+}
+
+@media(max-width:1100px){
+  .admin-topbar{padding:0 18px!important;gap:12px!important}
+  .admin-topbar .menu{position:static!important;transform:none!important;margin-left:auto!important;margin-right:auto!important;overflow:auto!important}
+  .admin-topbar .menu button{padding:20px 9px!important;font-size:12px!important}
+  .admin-top-actions .site-link{display:none!important}
+}
+
+@media(max-width:820px){
+  .admin-topbar .brand-text{font-size:24px!important}
+  .admin-topbar .admin-mark{font-size:10px!important;letter-spacing:1.4px!important}
+  .admin-topbar .menu{display:none!important}
+  .editor-toggle{padding:8px 10px!important}
+  .admin-top-actions .logout{padding:8px 10px!important}
+  .site-preview{min-height:560px;height:calc(100vh - 58px)}
+}
+
+/* Keep all existing dialogs above the editor drawer. */
+.modal-backdrop{z-index:3000!important}
+.toast{z-index:3100!important}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&amp;family=Saira+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/></head>
 <body>
@@ -1330,39 +1461,58 @@ button,input,textarea,select{font-family:var(--f-body);}
 <!-- =========================================================
      ADMIN APP
 ========================================================= -->
-<div class="hidden" id="adminApp"><header class="topbar admin-topbar">
-<a class="brand admin-brand" href="/" aria-label="Jackal Admin – zur Website">
-<span class="brand-text">Jackal <span class="brand-admin-word">Admin</span></span>
-</a>
-<nav aria-label="Admin navigation" class="menu">
-<button class="active" data-page="dashboard">Dashboard</button>
-<button data-page="races">Rennen</button>
-<button data-page="drivers">Fahrer</button>
-<button data-page="ranking">Rangliste</button>
-<button data-page="news">News</button>
-<button data-page="blacklist">Blacklist</button>
-<button data-page="gallery">Gallery</button>
-<button data-page="settings">Einstellungen</button>
-</nav>
-<div class="admin-top-actions">
-<span class="status">● SYSTEM ONLINE</span>
-<a class="admin-site-link" href="/" aria-label="Öffentliche Website öffnen">Website</a>
-<button class="logout" id="logoutButton">Abmelden</button>
-</div>
+<div class="hidden" id="adminApp">
+<header class="topbar admin-topbar">
+  <a class="brand" href="/" aria-label="Jackal Racing League">
+    <div class="img-slot brand-slot" data-label="logo-small.png">
+      <img src="images/logo-small.png" alt="Jackal">
+    </div>
+    <span class="brand-text">Jackal <span class="admin-mark">Admin</span></span>
+  </a>
+
+  <nav aria-label="Seitennavigation" class="menu">
+    <button class="active" data-page="dashboard" type="button">Home</button>
+    <button data-page="news" type="button">News</button>
+    <button data-page="drivers" type="button">Drivers</button>
+    <button data-page="ranking" type="button">Rangliste</button>
+    <button data-page="races" type="button">Races</button>
+    <button data-page="blacklist" type="button">Blacklist</button>
+    <button data-page="gallery" type="button">Gallery</button>
+  </nav>
+
+  <div class="admin-top-actions">
+    <button class="editor-toggle" id="editorOpen" type="button">Bearbeiten</button>
+    <a class="site-link" href="/" target="_blank" rel="noopener">Live-Seite</a>
+    <button class="logout" id="logoutButton" type="button">Abmelden</button>
+  </div>
 </header>
 
-<main class="main"><section class="hero hero-admin">
-<div class="img-slot hero-bg" data-label="jackal-banner.png">
-<img alt="JACKAL Racing League" src="jackal-banner.png"/>
-</div>
-<div class="hero-overlay"></div>
-<div class="hero-content">
-<h1 class="hero-title" id="pageTitle">Dashboard</h1>
-<p class="hero-sub" id="pageSubtitle">Admin Control</p>
-<p class="hero-claim">We are Jackal. We are racing.</p>
-</div>
-</section>
+<div class="admin-workspace">
+  <section class="site-preview" aria-label="Live-Vorschau">
+    <div class="site-preview-frame">
+      <iframe id="sitePreview" title="JACKAL Live Vorschau" src="/" loading="eager"></iframe>
+    </div>
+    <div class="preview-hud">
+      <div class="preview-hud-title"><span class="live-dot"></span> LIVE-VORSCHAU</div>
+      <div class="preview-hud-page" id="previewPageLabel">Home</div>
+    </div>
+  </section>
 
+  <div class="editor-backdrop" id="editorBackdrop"></div>
+  <aside class="editor-drawer" id="editorDrawer" aria-label="Website bearbeiten">
+    <div class="editor-drawer-head">
+      <div>
+        <div class="editor-eyebrow">JACKAL ADMIN</div>
+        <h1 id="pageTitle">Home</h1>
+        <p id="pageSubtitle">Website-Inhalte verwalten</p>
+      </div>
+      <button class="editor-close" id="editorClose" type="button" aria-label="Bearbeitung schließen">×</button>
+    </div>
+    <div class="editor-drawer-note">
+      <span>LIVE</span>
+      Änderungen werden nach dem Speichern direkt in der Vorschau übernommen.
+    </div>
+    <div class="editor-page-stack" id="editorPageStack">
 <!-- =====================================================
          DASHBOARD
     ====================================================== -->
@@ -1762,7 +1912,9 @@ button,input,textarea,select{font-family:var(--f-body);}
 </div>
 </div>
 </section>
-</main>
+</div>
+</aside>
+</div>
 </div>
 <!-- =========================================================
      CRUD MODAL
@@ -6180,6 +6332,142 @@ if(__originalShowPage){
 
 checkSession();
 
+
+
+/* =========================================================
+   LIVE-SITE PREVIEW / EDITOR MODE
+========================================================= */
+(function(){
+  const workspace = document.querySelector('.admin-workspace');
+  const preview = document.getElementById('sitePreview');
+  const editorOpen = document.getElementById('editorOpen');
+  const editorClose = document.getElementById('editorClose');
+  const editorBackdrop = document.getElementById('editorBackdrop');
+  const label = document.getElementById('previewPageLabel');
+  const drawer = document.getElementById('editorDrawer');
+
+  const previewRoutes = {
+    dashboard:'/',
+    news:'/news',
+    drivers:'/drivers',
+    ranking:'/rangliste',
+    races:'/races',
+    blacklist:'/blacklist',
+    gallery:'/gallery',
+    settings:'/'
+  };
+
+  const previewNames = {
+    dashboard:'Home',
+    news:'News',
+    drivers:'Drivers',
+    ranking:'Rangliste',
+    races:'Races',
+    blacklist:'Blacklist',
+    gallery:'Gallery',
+    settings:'Einstellungen'
+  };
+
+  let currentPage = 'dashboard';
+  let previewReloadTimer = null;
+
+  function setPreview(page, forceReload){
+    currentPage = page || 'dashboard';
+    const route = previewRoutes[currentPage] || '/';
+    const name = previewNames[currentPage] || 'Home';
+    if(label) label.textContent = name;
+    if(!preview) return;
+    const target = new URL(route, window.location.origin).href;
+    if(forceReload || preview.contentWindow?.location?.href !== target){
+      preview.src = route;
+    }else{
+      try{ preview.contentWindow.location.reload(); }catch(_){ preview.src = route; }
+    }
+  }
+
+  function openEditor(){
+    workspace?.classList.add('editor-open');
+    if(editorOpen) editorOpen.setAttribute('aria-expanded','true');
+  }
+
+  function closeEditor(){
+    workspace?.classList.remove('editor-open');
+    if(editorOpen) editorOpen.setAttribute('aria-expanded','false');
+  }
+
+  function goToPage(page){
+    currentPage = page;
+    setPreview(page, false);
+    openEditor();
+  }
+
+  editorOpen?.addEventListener('click', openEditor);
+  editorClose?.addEventListener('click', closeEditor);
+  editorBackdrop?.addEventListener('click', closeEditor);
+
+  document.addEventListener('keydown', event => {
+    if(event.key === 'Escape' && workspace?.classList.contains('editor-open')){
+      closeEditor();
+    }
+  });
+
+  document.querySelectorAll('.menu button[data-page]').forEach(button => {
+    button.addEventListener('click', () => {
+      goToPage(button.dataset.page || 'dashboard');
+    });
+  });
+
+  document.querySelectorAll('[data-go-page]').forEach(button => {
+    button.addEventListener('click', () => {
+      goToPage(button.dataset.goPage || 'dashboard');
+    });
+  });
+
+  // Refresh the exact public rendering after any successful write through an admin API.
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async function(input, init){
+    const response = await nativeFetch(input, init);
+    try{
+      const requestUrl = typeof input === 'string' ? input : input?.url;
+      const requestMethod = String(init?.method || input?.method || 'GET').toUpperCase();
+      const pathname = new URL(requestUrl || '', window.location.origin).pathname;
+      if(response.ok && requestMethod !== 'GET' && pathname.startsWith('/api/admin/')){
+        clearTimeout(previewReloadTimer);
+        previewReloadTimer = setTimeout(() => setPreview(currentPage, true), 180);
+      }
+    }catch(_){ }
+    return response;
+  };
+
+  // After a successful login, keep the first screen identical to the live Home page.
+  const syncInitialPreview = () => setTimeout(() => setPreview(currentPage, true), 60);
+  const observer = new MutationObserver(() => {
+    const visible = adminApp && !adminApp.classList.contains('hidden');
+    if(visible){
+      syncInitialPreview();
+      observer.disconnect();
+    }
+  });
+  if(adminApp) observer.observe(adminApp, {attributes:true, attributeFilter:['class']});
+
+  preview?.addEventListener('load', () => {
+    // The outer header is the public JACKAL header in admin mode. Hide only the
+    // duplicated header inside the preview so the page underneath is a pixel-close
+    // representation of the live site. Everything else remains the real public page.
+    try{
+      const doc = preview.contentDocument;
+      if(!doc) return;
+      doc.documentElement.setAttribute('data-jackal-admin-preview','true');
+      let style = doc.getElementById('jackalAdminPreviewStyle');
+      if(!style){
+        style = doc.createElement('style');
+        style.id = 'jackalAdminPreviewStyle';
+        style.textContent = '.topbar{display:none!important;}';
+        doc.head?.appendChild(style);
+      }
+    }catch(_){ }
+  });
+})();
 </script>
 </body>
 </html>
