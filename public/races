@@ -20,6 +20,20 @@
 @media(max-width:960px){.login-link{min-width:82px;height:34px;padding:0 11px;font-size:13px;margin-left:10px}}
 
 </style>
+
+<style id="jackalPublicLoginStyle">
+.jackal-login-overlay{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,3,10,.64);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.jackal-login-overlay.open{display:flex}
+.jackal-login-modal{width:min(390px,calc(100vw - 32px));padding:26px;border:1px solid #2a2342;border-radius:10px;background:linear-gradient(180deg,#171329,#110e1f);box-shadow:0 24px 90px rgba(0,0,0,.65),0 0 28px rgba(168,85,255,.18);position:relative}
+.jackal-login-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border:1px solid #2a2342;border-radius:4px;background:#0f0c18;color:#cfc7dd;font:700 18px 'Rajdhani',sans-serif;line-height:1;cursor:pointer}.jackal-login-close:hover{color:#fff;border-color:#b266ff;box-shadow:0 0 12px rgba(168,85,255,.2)}
+.jackal-login-kicker{font:700 12px 'Rajdhani',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#b266ff}.jackal-login-title{margin-top:4px;font:800 34px 'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;color:#fff}.jackal-login-sub{margin-top:4px;color:#a49cbc;font:600 13px 'Rajdhani',sans-serif}
+.jackal-login-form{margin-top:20px}.jackal-login-field{margin-bottom:12px}.jackal-login-field label{display:block;margin-bottom:6px;color:#b9b0ca;font:700 11px 'Rajdhani',sans-serif;letter-spacing:.1em;text-transform:uppercase}.jackal-login-field input{width:100%;height:42px;padding:0 12px;border:1px solid #2a2342;border-radius:5px;background:#0e0c1a;color:#fff;outline:none;font:600 14px 'Rajdhani',sans-serif}.jackal-login-field input:focus{border-color:#b266ff;box-shadow:0 0 0 2px rgba(168,85,255,.08)}
+.jackal-login-submit{width:100%;height:42px;margin-top:4px;border:1px solid #b266ff;border-radius:4px;color:#fff;background:linear-gradient(180deg,#5c22c4 0%,#4e18ae 55%,#43149a 100%);box-shadow:0 0 16px rgba(168,85,255,.3),inset 0 1px 0 rgba(255,255,255,.08);font:800 16px 'Saira Condensed',sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}.jackal-login-submit:hover{filter:brightness(1.1);box-shadow:0 0 22px rgba(178,102,255,.48)}
+.jackal-login-message{min-height:18px;margin-top:10px;color:#ff6f8d;font:600 12px 'Rajdhani',sans-serif;text-align:center}.jackal-login-note{margin-top:12px;color:#716981;font:500 11px 'Rajdhani',sans-serif;text-align:center}
+.login-link.is-authenticated{border-color:#6f3ad7}
+@media(max-width:960px){.jackal-login-modal{padding:22px}.jackal-login-title{font-size:30px}}
+</style>
+
 </head>
 <body>
 <header class="topbar"><a href="/" class="brand">Jackal</a><button class="nav-toggle"><span></span><span></span><span></span></button><nav class="nav"><a href="/">Home</a><a href="/news">News</a><a href="/drivers">Drivers</a><a href="/rangliste">Rangliste</a><a href="/races" class="active">Races</a><a href="/blacklist">Blacklist</a><a href="/gallery">Gallery</a></nav><a class="login-link" href="/admin" aria-label="Zum Admin-Login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V8a5 5 0 0 1 10 0v3"></path></svg><span>Login</span></a></header>
@@ -56,5 +70,116 @@ render();search.oninput=render;location.onchange=render;
 })();
 document.querySelector('.nav-toggle').onclick=()=>document.querySelector('.nav').classList.toggle('open');
 </script>
+
+<div class="jackal-login-overlay" id="jackalLoginOverlay" aria-hidden="true">
+  <div class="jackal-login-modal" role="dialog" aria-modal="true" aria-labelledby="jackalLoginTitle">
+    <button class="jackal-login-close" id="jackalLoginClose" type="button" aria-label="Login schließen">×</button>
+    <div class="jackal-login-kicker">JACKAL ADMIN</div>
+    <h2 class="jackal-login-title" id="jackalLoginTitle">Anmelden</h2>
+    <div class="jackal-login-sub">Melde dich an, um die Website zu verwalten.</div>
+    <form class="jackal-login-form" id="jackalLoginForm">
+      <div class="jackal-login-field">
+        <label for="jackalLoginUsername">Benutzername</label>
+        <input id="jackalLoginUsername" name="username" type="text" autocomplete="username" required>
+      </div>
+      <div class="jackal-login-field">
+        <label for="jackalLoginPassword">Passwort</label>
+        <input id="jackalLoginPassword" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="jackal-login-submit" type="submit">ADMIN BEREICH ÖFFNEN</button>
+      <div class="jackal-login-message" id="jackalLoginMessage"></div>
+    </form>
+    <div class="jackal-login-note">Der Login bleibt auf dieser Seite, bis du ihn absendest oder schließt.</div>
+  </div>
+</div>
+
+
+<script id="jackalPublicLoginScript">
+(function(){
+  const button = document.querySelector('.login-link');
+  const overlay = document.getElementById('jackalLoginOverlay');
+  const close = document.getElementById('jackalLoginClose');
+  const form = document.getElementById('jackalLoginForm');
+  const message = document.getElementById('jackalLoginMessage');
+  if(!button || !overlay || !form) return;
+
+  const label = button.querySelector('span');
+  let authenticated = false;
+
+  function openLogin(){
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden','false');
+    message.textContent = '';
+    setTimeout(() => document.getElementById('jackalLoginUsername')?.focus(), 40);
+  }
+  function closeLogin(){
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden','true');
+    message.textContent = '';
+  }
+
+  async function refreshAuthState(){
+    try{
+      const r = await fetch('/api/me',{credentials:'same-origin',cache:'no-store'});
+      authenticated = r.ok;
+      button.classList.toggle('is-authenticated', authenticated);
+      if(label) label.textContent = authenticated ? 'Admin' : 'Login';
+      button.setAttribute('aria-label', authenticated ? 'Zum Admin-Bereich' : 'Zum Admin-Login');
+    }catch(_){
+      authenticated = false;
+      button.classList.remove('is-authenticated');
+      if(label) label.textContent = 'Login';
+      button.setAttribute('aria-label','Zum Admin-Login');
+    }
+  }
+
+  button.addEventListener('click', async event => {
+    event.preventDefault();
+    if(authenticated){
+      window.location.href = '/admin';
+      return;
+    }
+    openLogin();
+  });
+
+  close?.addEventListener('click', closeLogin);
+  overlay.addEventListener('click', event => {
+    if(event.target === overlay) closeLogin();
+  });
+  document.addEventListener('keydown', event => {
+    if(event.key === 'Escape' && overlay.classList.contains('open')) closeLogin();
+  });
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const username = document.getElementById('jackalLoginUsername').value.trim();
+    const password = document.getElementById('jackalLoginPassword').value;
+    message.textContent = 'Anmeldung wird geprüft...';
+    try{
+      const r = await fetch('/api/login',{
+        method:'POST',
+        credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({username,password})
+      });
+      const d = await r.json().catch(() => ({}));
+      if(!r.ok || !d.ok){
+        message.textContent = d.error || 'Benutzername oder Passwort ist falsch.';
+        return;
+      }
+      authenticated = true;
+      if(label) label.textContent = 'Admin';
+      button.classList.add('is-authenticated');
+      document.getElementById('jackalLoginPassword').value = '';
+      window.location.href = '/admin';
+    }catch(_){
+      message.textContent = 'Der Login-Server ist momentan nicht erreichbar.';
+    }
+  });
+
+  refreshAuthState();
+})();
+</script>
+
 </body>
 </html>

@@ -35,45 +35,49 @@ button{
 ========================================================= */
 
 #loginScreen{
-  min-height:100vh;
+  position:fixed;
+  inset:0;
+  z-index:5000;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:24px;
-  background:
-    radial-gradient(
-      circle at 50% 20%,
-      rgba(130,70,255,.18),
-      transparent 38%
-    ),
-    #08080d
+  padding:20px;
+  background:rgba(4,3,10,.64);
+  backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
 }
 
 .login-box{
-  width:min(430px,100%);
-  padding:38px;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:18px;
-  background:rgba(18,18,27,.94);
-  box-shadow:0 25px 80px rgba(0,0,0,.5)
+  width:min(390px,calc(100vw - 32px));
+  padding:26px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:linear-gradient(180deg,var(--card-2),var(--card));
+  box-shadow:0 24px 90px rgba(0,0,0,.65),0 0 28px rgba(168,85,255,.18);
+  position:relative
 }
 
 .login-brand{
-  text-align:center;
-  margin-bottom:32px
+  text-align:left;
+  margin-bottom:20px
 }
 
 .login-brand h1{
   margin:0;
+  font-family:var(--f-head);
+  font-style:italic;
   font-size:34px;
-  letter-spacing:5px
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:#fff
 }
 
 .login-brand p{
-  margin:10px 0 0;
-  color:#9d9daa;
+  margin:4px 0 0;
+  color:var(--purple-2);
+  font-family:var(--f-body);
   font-size:12px;
-  letter-spacing:2px;
+  letter-spacing:.14em;
   text-transform:uppercase
 }
 
@@ -111,12 +115,16 @@ button{
 .login-button,
 .primary-button{
   width:100%;
-  border:0;
-  border-radius:10px;
-  padding:13px 18px;
+  border:1px solid var(--purple-2);
+  border-radius:4px;
+  padding:12px 18px;
   color:#fff;
-  background:linear-gradient(135deg,#7b4cff,#a36cff);
-  font-weight:700
+  background:linear-gradient(180deg,#5c22c4 0%,var(--purple) 55%,#43149a 100%);
+  box-shadow:0 0 16px rgba(168,85,255,.3),inset 0 1px 0 rgba(255,255,255,.08);
+  font-family:var(--f-head);
+  font-size:16px;
+  letter-spacing:.05em;
+  text-transform:uppercase
 }
 
 .login-note{
@@ -894,10 +902,10 @@ button{
 html,body{background:var(--bg);}
 body{color:var(--text);font-family:var(--f-body);font-size:16px;line-height:1.4;background:radial-gradient(1200px 500px at 50% 0%,rgba(168,85,255,.12),transparent 60%),var(--bg);}
 button,input,textarea,select{font-family:var(--f-body);}
-#loginScreen{min-height:100vh;padding:24px;background:linear-gradient(to bottom,rgba(7,6,13,.18),rgba(7,6,13,.86)),radial-gradient(900px 420px at 50% 0%,rgba(168,85,255,.2),transparent 70%),var(--bg);}
-.login-box{width:min(450px,100%);padding:34px;border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(180deg,var(--card-2),var(--card));box-shadow:0 10px 40px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.03);}
-.login-brand h1{font-family:var(--f-brush);font-weight:400;font-size:72px;line-height:.9;color:#ecebf2;transform:skew(-10deg) rotate(-3deg);text-shadow:4px 4px 0 var(--purple),0 0 30px rgba(168,85,255,.9),0 0 60px rgba(168,85,255,.5);}
-.login-brand p{font-family:var(--f-head);font-size:16px;letter-spacing:.18em;color:var(--purple-2);}
+#loginScreen{position:fixed;inset:0;z-index:5000;min-height:0;padding:20px;background:rgba(4,3,10,.64);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);}
+.login-box{width:min(390px,calc(100vw - 32px));padding:26px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,var(--card-2),var(--card));box-shadow:0 24px 90px rgba(0,0,0,.65),0 0 28px rgba(168,85,255,.18);}
+.login-brand h1{font-family:var(--f-head);font-style:italic;font-weight:800;font-size:34px;line-height:1;color:#fff;transform:none;text-shadow:none;letter-spacing:.04em;text-transform:uppercase;}
+.login-brand p{font-family:var(--f-body);font-size:12px;letter-spacing:.14em;color:var(--purple-2);}
 .field label,.crud-field label,.ranking-field label{font-family:var(--f-body);font-weight:700;letter-spacing:.09em;color:#d9d3ec;}
 .field input,.field textarea,.field select,.crud-field input,.crud-field textarea,.crud-field select,.ranking-field input,.ranking-field select{color:#fff;background:#0e0b17;border:1px solid var(--line);border-radius:4px;}
 .field input:focus,.field textarea:focus,.field select:focus,.crud-field input:focus,.crud-field textarea:focus,.crud-field select:focus,.ranking-field input:focus,.ranking-field select:focus{border-color:var(--purple-2);box-shadow:0 0 0 2px rgba(168,85,255,.1);}
@@ -1436,7 +1444,7 @@ body{
 <!-- =========================================================
      LOGIN
 ========================================================= -->
-<section id="loginScreen">
+<section id="loginScreen" aria-label="Admin Login">
 <div class="login-box">
 <div class="login-brand">
 <h1>JACKAL</h1>
@@ -2190,6 +2198,8 @@ async function loadCurrentUser(){
 
 async function checkSession(){
 
+  adminApp.classList.remove("hidden");
+
   try{
 
     const response =
@@ -2240,7 +2250,7 @@ function showAdmin(){
 
 function showLogin(){
 
-  adminApp.classList.add(
+  adminApp.classList.remove(
     "hidden"
   );
 
