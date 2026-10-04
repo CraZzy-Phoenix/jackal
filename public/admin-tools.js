@@ -2,6 +2,7 @@
   'use strict';
 
   const STYLE = `
+    .hidden{display:none!important}
     .jackal-admin-auth-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto;flex:0 0 auto}
     .jackal-admin-auth-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 13px;border:1px solid rgba(178,102,255,.68);border-radius:3px;color:#fff;background:linear-gradient(180deg,#5c22c4,#4e18ae 60%,#43149a);box-shadow:0 0 12px rgba(168,85,255,.30),inset 0 1px 0 rgba(255,255,255,.08);font:800 13px 'Saira Condensed',sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap;text-decoration:none}
     .jackal-admin-auth-btn:hover{filter:brightness(1.12);box-shadow:0 0 18px rgba(178,102,255,.46)}
@@ -45,12 +46,19 @@
       }else{
         header.appendChild(wrap);
       }
-      wrap.innerHTML=`<button type="button" class="jackal-admin-auth-btn" data-auth-action="login">${icon('login')}<span>Login</span></button><button type="button" class="jackal-admin-auth-btn secondary" data-auth-action="manage">${icon('manage')}<span>Verwaltung</span></button><button type="button" class="jackal-admin-auth-btn logout" data-auth-action="logout">${icon('logout')}<span>Logout</span></button>`;
+      wrap.innerHTML=`<button type="button" class="jackal-admin-auth-btn" data-auth-action="login">${icon('login')}<span>Login</span></button><button type="button" class="jackal-admin-auth-btn secondary hidden" data-auth-action="manage">${icon('manage')}<span>Verwaltung</span></button><button type="button" class="jackal-admin-auth-btn logout hidden" data-auth-action="logout">${icon('logout')}<span>Logout</span></button>`;
       wrap.querySelector('[data-auth-action="login"]')?.addEventListener('click',()=>openLogin());
       wrap.querySelector('[data-auth-action="manage"]')?.addEventListener('click',()=>openManagement());
       wrap.querySelector('[data-auth-action="logout"]')?.addEventListener('click',()=>logout());
     }
     return wrap;
+  }
+
+  function clearInjectedAdminUi(){
+    document.querySelectorAll('.jackal-admin-edit,.jackal-admin-inline').forEach(el=>el.remove());
+    document.querySelectorAll('.jackal-admin-row-actions').forEach(row=>{
+      if(!row.children.length) row.remove();
+    });
   }
 
   function setAuthUi(auth){
@@ -63,6 +71,7 @@
     login?.classList.toggle('hidden',yes);
     manage?.classList.toggle('hidden',!yes);
     logoutBtn?.classList.toggle('hidden',!yes);
+    if(!yes) clearInjectedAdminUi();
   }
 
   function openLogin(){
