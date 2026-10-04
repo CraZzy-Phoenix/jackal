@@ -16,6 +16,17 @@
     .jackal-admin-inline.danger{border-color:rgba(255,80,110,.45);background:rgba(120,20,50,.42);color:#ffd5df}
     .jackal-admin-inline.danger:hover{border-color:#ff5d7d;box-shadow:0 0 12px rgba(255,80,110,.20);color:#fff}
     .jackal-admin-row-actions .jackal-admin-inline{margin-left:0}
+    .jackal-admin-home-modal{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,3,10,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .jackal-home-admin-window{width:min(720px,94vw);max-height:min(760px,92vh);overflow:auto;border:1px solid rgba(178,102,255,.42);border-radius:10px;background:rgba(17,14,31,.96);box-shadow:0 30px 100px rgba(0,0,0,.45),0 0 38px rgba(168,85,255,.16)}
+    .jackal-home-admin-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid rgba(42,35,66,.9)}
+    .jackal-home-admin-kicker{font:800 11px 'Saira Condensed',sans-serif;letter-spacing:.16em;color:#b266ff;text-transform:uppercase}
+    .jackal-home-admin-head h2{margin:3px 0 0;font:800 30px 'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;color:#fff}
+    .jackal-home-admin-head p{margin:4px 0 0;color:#a49cbc;font:600 12px 'Rajdhani',sans-serif}
+    .jackal-home-admin-close{width:34px;height:34px;border:1px solid rgba(75,47,138,.7);border-radius:3px;color:#ddd5eb;background:rgba(15,12,24,.78);font:700 18px 'Saira Condensed',sans-serif;cursor:pointer}
+    .jackal-home-admin-body{padding:18px 20px}.jackal-home-admin-actions{display:flex;justify-content:flex-end;gap:9px;padding:16px 20px;border-top:1px solid rgba(42,35,66,.9)}
+    .jackal-home-admin-cancel,.jackal-home-admin-save,.jackal-home-news-feature{border:1px solid rgba(178,102,255,.55);border-radius:3px;padding:9px 12px;color:#fff;background:#0f0c18;font:800 13px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}.jackal-home-admin-save{background:linear-gradient(180deg,#5c22c4,#4e18ae 60%,#43149a);box-shadow:0 0 15px rgba(168,85,255,.28)}
+    .jackal-home-admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.jackal-home-admin-field{display:grid;gap:6px}.jackal-home-admin-field.full{grid-column:1/-1}.jackal-home-admin-field label{font:800 11px 'Rajdhani',sans-serif;color:#d9d3ec;letter-spacing:.08em;text-transform:uppercase}.jackal-home-admin-field input,.jackal-home-admin-field select{width:100%;padding:11px 12px;border:1px solid #2a2342;border-radius:4px;color:#fff;background:#0e0b17;outline:none}.jackal-home-admin-field input:focus,.jackal-home-admin-field select:focus{border-color:#b266ff}.jackal-home-admin-inline{display:flex;gap:7px}.jackal-home-admin-inline button{border:1px solid #4b2f8a;border-radius:3px;color:#fff;background:#251545;padding:0 12px;font:800 12px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}.jackal-home-admin-help,.jackal-home-news-note{margin-top:10px;color:#817892;font:600 11px 'Rajdhani',sans-serif;line-height:1.5}.jackal-home-admin-message{min-height:18px;margin-top:10px;color:#ff8798;font:700 12px 'Rajdhani',sans-serif}.jackal-home-news-list{display:grid;gap:8px;max-height:52vh;overflow:auto;margin-top:12px;padding-right:3px}.jackal-home-news-row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid #2a2342;border-radius:6px;background:#0e0b17;cursor:pointer}.jackal-home-news-row:hover{border-color:#4b2f8a}.jackal-home-news-row input{width:16px;height:16px;accent-color:#a855ff}.jackal-home-news-main strong{display:block;color:#fff;font:800 14px 'Saira Condensed',sans-serif}.jackal-home-news-main small{display:block;margin-top:2px;color:#756d80;font:600 10px 'Rajdhani',sans-serif}.jackal-home-news-status{font:700 9px 'Rajdhani',sans-serif;color:#b266ff;text-transform:uppercase;letter-spacing:.06em}.jackal-home-news-feature{padding:6px 9px;font-size:10px}.jackal-home-news-feature[aria-pressed="true"]{background:linear-gradient(180deg,#5c22c4,#4e18ae 60%,#43149a);box-shadow:0 0 12px rgba(168,85,255,.25)}
+    @media(max-width:700px){.jackal-home-admin-grid{grid-template-columns:1fr}.jackal-home-admin-field.full{grid-column:auto}.jackal-home-news-row{grid-template-columns:auto 1fr}.jackal-home-news-status,.jackal-home-news-feature{grid-column:2}}
     .jackal-admin-news-actions{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
     .jackal-admin-news-actions .jackal-admin-edit{margin-left:0;padding:6px 9px;font-size:11px}
     .jackal-login-overlay{background:rgba(4,3,10,.12)!important;backdrop-filter:blur(9px)!important;-webkit-backdrop-filter:blur(9px)!important}
@@ -117,7 +128,12 @@
     if(!container || container.querySelector(`.jackal-admin-edit[data-action-key="${CSS.escape(opts.key||params)}"]`)) return;
     const button=document.createElement('button');
     button.type='button';button.className='jackal-admin-edit';button.dataset.actionKey=opts.key||params;button.textContent=label;
-    button.addEventListener('click',()=>openEditor(params));
+    button.addEventListener('click',e=>{
+      e.preventDefault(); e.stopPropagation();
+      if(params==='home-next-race') return openHomeNextRaceManager();
+      if(params==='home-news-manager') return openHomeNewsManager();
+      openEditor(params);
+    });
     container.appendChild(button);
   }
 
@@ -202,18 +218,102 @@
     if(head)addButton(head,label,params,{key});
   }
 
+  function createHomeModal(title, subtitle, bodyHtml, onSave, saveLabel='Speichern'){
+    let overlay=document.getElementById('jackalHomeAdminModal');
+    if(overlay) overlay.remove();
+    overlay=document.createElement('div');
+    overlay.id='jackalHomeAdminModal';
+    overlay.className='jackal-admin-home-modal';
+    overlay.innerHTML=`<div class="jackal-home-admin-window" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="jackal-home-admin-head"><div><div class="jackal-home-admin-kicker">JACKAL ADMIN</div><h2>${esc(title)}</h2><p>${esc(subtitle||'')}</p></div><button type="button" class="jackal-home-admin-close" aria-label="Fenster schließen">×</button></div><div class="jackal-home-admin-body">${bodyHtml}</div><div class="jackal-home-admin-actions"><button type="button" class="jackal-home-admin-cancel">Abbrechen</button><button type="button" class="jackal-home-admin-save">${esc(saveLabel)}</button></div></div>`;
+    document.body.appendChild(overlay);
+    const close=()=>overlay.remove();
+    overlay.querySelector('.jackal-home-admin-close')?.addEventListener('click',close);
+    overlay.querySelector('.jackal-home-admin-cancel')?.addEventListener('click',close);
+    overlay.querySelector('.jackal-home-admin-save')?.addEventListener('click',async()=>{
+      const btn=overlay.querySelector('.jackal-home-admin-save');
+      try{ btn.disabled=true; await onSave?.(overlay); close(); location.reload(); }
+      catch(e){ btn.disabled=false; const msg=overlay.querySelector('.jackal-home-admin-message'); if(msg) msg.textContent=e?.message||'Speichern fehlgeschlagen.'; }
+    });
+    return overlay;
+  }
+
+  function randomAccessCode(){
+    const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes=crypto.getRandomValues(new Uint8Array(8));
+    let out='';
+    for(const b of bytes) out += alphabet[b % alphabet.length];
+    return out;
+  }
+
+  async function openHomeNextRaceManager(){
+    const data=await fetch('/api/public/data',{cache:'no-store'}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');return d;});
+    const dash=await fetch('/api/admin/news/dashboard',{credentials:'same-origin',cache:'no-store'}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Home-Konfiguration konnte nicht geladen werden.');return d;});
+    const races=Array.isArray(data.races)?data.races.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))):[];
+    const selected=String(dash.config?.next_race_id||'');
+    const current=String(selected || data.nextRace?.id || races.find(r=>Number(r.is_next)===1)?.id || '');
+    const opts=races.map(r=>`<option value="${esc(String(r.id))}" ${String(r.id)===current?'selected':''}>${esc(r.name||'Rennen')} · ${esc(String(r.date||''))}${r.time?` · ${esc(String(r.time).slice(0,5))}`:''}</option>`).join('');
+    const html=`<div class="jackal-home-admin-grid"><div class="jackal-home-admin-field full"><label>Rennen für Home</label><select id="homeNextRaceSelect"><option value="">Kein Rennen ausgewählt</option>${opts}</select></div><div class="jackal-home-admin-field"><label>Anzeigemodus</label><select id="homeNextRaceMode"><option value="next_race" ${String(dash.config?.display_mode||'next_race')==='next_race'?'selected':''}>Next Race</option><option value="next_event" ${String(dash.config?.display_mode||'next_race')==='next_event'?'selected':''}>Next Event</option><option value="last_race" ${String(dash.config?.display_mode||'next_race')==='last_race'?'selected':''}>Letztes Rennen</option></select></div><div class="jackal-home-admin-field"><label>Zugangscode</label><div class="jackal-home-admin-inline"><input id="homeNextRaceCode" maxlength="32" placeholder="Neuen Code eingeben..."><button type="button" id="homeNextRaceGenerate">Generieren</button></div></div></div><div class="jackal-home-admin-help">Das hier festgelegte Rennen wird auf der Home-Seite angezeigt. Mit „Generieren“ kannst du direkt einen neuen Zugangscode setzen.</div><div class="jackal-home-admin-message"></div>`;
+    const overlay=createHomeModal('Next Race verwalten','Home · Event-Bereich',html,async ov=>{
+      const raceId=ov.querySelector('#homeNextRaceSelect')?.value||'';
+      const mode=ov.querySelector('#homeNextRaceMode')?.value||'next_race';
+      const code=ov.querySelector('#homeNextRaceCode')?.value.trim()||randomAccessCode();
+      if(raceId){
+        const nextRes=await fetch('/api/admin/races/next',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({race_id:raceId,access_code:code})});
+        const nextData=await nextRes.json().catch(()=>({}));
+        if(!nextRes.ok||!nextData.ok) throw new Error(nextData.error||'Next Race konnte nicht gespeichert werden.');
+      }else{
+        await fetch('/api/admin/races/next',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({race_id:'',access_code:''})}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Next Race konnte nicht entfernt werden.');});
+      }
+      const payload={display_mode:mode,next_race_id:raceId,latest_news_ids:dash.config?.latest_news_ids||[],featured_news_id:dash.config?.featured_news_id||'',hearts_winner_driver_id:dash.config?.hearts_winner_driver_id||'',hearts_quote:dash.config?.hearts_quote||'',poll_active:Number(dash.config?.poll_active)===1,poll_question:dash.config?.poll_question||'Wer war dein Sieger der Herzen?',poll_options:dash.config?.poll_options||[]};
+      const cfgRes=await fetch('/api/admin/news/dashboard',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const cfgData=await cfgRes.json().catch(()=>({}));
+      if(!cfgRes.ok||!cfgData.ok) throw new Error(cfgData.error||'Home-Konfiguration konnte nicht gespeichert werden.');
+    },'Speichern');
+    overlay.querySelector('#homeNextRaceGenerate')?.addEventListener('click',()=>{const i=overlay.querySelector('#homeNextRaceCode');if(i)i.value=randomAccessCode();});
+    return overlay;
+  }
+
+  async function openHomeNewsManager(){
+    const [publicRes,dashRes]=await Promise.all([
+      fetch('/api/public/data',{cache:'no-store'}),
+      fetch('/api/admin/news/dashboard',{credentials:'same-origin',cache:'no-store'})
+    ]);
+    const data=await publicRes.json().catch(()=>({}));
+    const dash=await dashRes.json().catch(()=>({}));
+    if(!publicRes.ok||!data.ok) throw new Error(data.error||'News konnten nicht geladen werden.');
+    if(!dashRes.ok||!dash.ok) throw new Error(dash.error||'Home-News-Konfiguration konnte nicht geladen werden.');
+    const selected=new Set((dash.config?.latest_news_ids||[]).map(String));
+    const featured=String(dash.config?.featured_news_id||'');
+    const news=(data.news||[]).slice().sort((a,b)=>String(b.date||b.created_at||'').localeCompare(String(a.date||a.created_at||'')));
+    const rows=news.length?news.map(n=>`<label class="jackal-home-news-row"><input type="checkbox" data-home-news-id="${esc(String(n.id))}" ${selected.has(String(n.id))?'checked':''}><span class="jackal-home-news-main"><strong>${esc(n.title||'Unbenannte News')}</strong><small>${esc(String(n.date||n.created_at||''))}</small></span><span class="jackal-home-news-status">${esc(String(n.category||'ALLGEMEIN'))}</span><button type="button" class="jackal-home-news-feature" data-feature-id="${esc(String(n.id))}" aria-pressed="${featured===String(n.id)?'true':'false'}">${featured===String(n.id)?'Featured':'Als Featured setzen'}</button></label>`).join(''):'<div class="jackal-home-admin-help">Noch keine News vorhanden.</div>';
+    const html=`<div class="jackal-home-news-note">Wähle bis zu 3 Meldungen aus, die auf Home unter „Latest News“ erscheinen sollen. Nicht ausgewählte News werden dort nicht eingeblendet. Optional kannst du eine davon als Featured markieren.</div><div class="jackal-home-news-list">${rows}</div><div class="jackal-home-admin-message"></div>`;
+    const overlay=createHomeModal('News verwalten','Home · Latest News',html,async ov=>{
+      const ids=[...ov.querySelectorAll('[data-home-news-id]:checked')].map(x=>x.dataset.homeNewsId).filter(Boolean).slice(0,3);
+      let feat=ov.querySelector('[data-feature-id][aria-pressed="true"]')?.dataset.featureId||'';
+      if(feat && !ids.includes(String(feat))) feat='';
+      const payload={...dash.config,latest_news_ids:ids,featured_news_id:feat};
+      const r=await fetch('/api/admin/news/dashboard',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok) throw new Error(d.error||'Latest News konnten nicht gespeichert werden.');
+    });
+    overlay.querySelectorAll('[data-feature-id]').forEach(btn=>btn.addEventListener('click',()=>{overlay.querySelectorAll('[data-feature-id]').forEach(b=>b.setAttribute('aria-pressed','false'));btn.setAttribute('aria-pressed','true');}));
+    return overlay;
+  }
+
   function setupIndex(auth){
     if(!auth) return;
     const next=document.querySelector('.next-race');
-    if(next && can(auth,'races','edit') && can(auth,'news','edit')) addHeadButton(next,'Nächstes Event anpassen','embed=special&special=next-event','home-next');
+    if(next && can(auth,'races','edit') && can(auth,'news','edit')) addHeadButton(next,'Next Race verwalten','home-next-race','home-next-race');
     const news=document.querySelector('section.card.news');
-    if(news && can(auth,'news','create')) addHeadButton(news,'Neue News','embed=crud&resource=news&action=new','home-news');
+    if(news && can(auth,'news','edit')) addHeadButton(news,'News verwalten','home-news-manager','home-news-manager');
     const hearts=document.querySelector('.hearts');
     if(hearts && can(auth,'news','edit')) addHeadButton(hearts,'Sieger & Abstimmung','embed=special&special=hearts-poll','home-hearts');
     const laps=document.querySelector('.laps');
     if(laps && can(auth,'results','create')) addHeadButton(laps,'Rundenzeiten verwalten','embed=crud&resource=results&action=new','home-laps');
     const champion=document.querySelector('.champion');
-    if(champion && can(auth,'drivers','create')) addHeadButton(champion,'Fahrer hinzufügen','embed=crud&resource=drivers&action=new','home-champion');
+    if(champion){
+      champion.querySelectorAll('[data-action-key="home-champion"]').forEach(el=>el.remove());
+    }
   }
 
   function setupNews(auth){
@@ -433,7 +533,7 @@
           if(!nodes.length) return false;
           return nodes.some(node=>{
             const el=node;
-            if(el.matches?.('.jackal-admin-auth-actions,.jackal-admin-edit-overlay,.jackal-admin-row-actions,.jackal-admin-edit,.jackal-admin-inline')) return false;
+            if(el.matches?.('.jackal-admin-auth-actions,.jackal-admin-edit-overlay,.jackal-admin-row-actions,.jackal-admin-edit,.jackal-admin-inline,.jackal-admin-home-modal')) return false;
             if(el.closest?.('.jackal-admin-auth-actions,.jackal-admin-edit-overlay,.jackal-admin-row-actions')) return false;
             return true;
           });

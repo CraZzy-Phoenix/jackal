@@ -3556,7 +3556,9 @@ a {
     var dash=data.newsDashboard||{};
     var out=[],seen=new Set();
     if(dash.featured_news_id && byId.has(String(dash.featured_news_id))){out.push(byId.get(String(dash.featured_news_id)));seen.add(String(dash.featured_news_id));}
-    (dash.latest_news_ids||[]).forEach(function(id){var key=String(id);if(byId.has(key)&&!seen.has(key)){out.push(byId.get(key));seen.add(key);}});
+    var configuredIds=Array.isArray(dash.latest_news_ids)?dash.latest_news_ids.map(String).filter(Boolean):[];
+    configuredIds.forEach(function(id){var key=String(id);if(byId.has(key)&&!seen.has(key)){out.push(byId.get(key));seen.add(key);}});
+    if(configuredIds.length){ return out.slice(0,3); }
     all.sort(function(a,b){return String(b.date||b.created_at||'').localeCompare(String(a.date||a.created_at||''));});
     all.forEach(function(n){var key=String(n.id);if(!seen.has(key)&&out.length<3){out.push(n);seen.add(key);}});
     return out.slice(0,3);
