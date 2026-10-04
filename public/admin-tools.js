@@ -215,7 +215,7 @@
   }
 
   function addHeadButton(card,label,params,key){
-    const head=card?.querySelector('.head,.card-head,.card-header');
+    const head=card?.querySelector('.head,.big-head,.card-head,.card-header');
     if(head){
       addButton(head,label,params,{key});
       return;
@@ -330,8 +330,16 @@
   function setupNews(auth){
     if(!auth) return;
 
-    // News card: separate actions for creating and archiving, while keeping
-    // the existing per-news edit button below each item.
+    const best=document.querySelector('.bestlist');
+    if(best && can(auth,'results','edit')){
+      addHeadButton(best,'Bestenliste verwalten','embed=special&special=news-bestlist','news-bestlist');
+    }
+
+    const race=document.querySelector('.race-card');
+    if(race && can(auth,'news','edit')){
+      addHeadButton(race,'Bereich verwalten','embed=special&special=news-event','news-event');
+    }
+
     const newsCard=document.querySelector('.changes');
     if(newsCard){
       const head=newsCard.querySelector('.big-head');
@@ -339,48 +347,69 @@
         const group=document.createElement('div');
         group.className='jackal-admin-news-actions';
 
-        const make=(label,params,key)=>{
-          if(head.querySelector(`button[data-action-key="${CSS.escape(key)}"]`)) return;
+        if(can(auth,'news','create')){
           const b=document.createElement('button');
-          b.type='button';
-          b.className='jackal-admin-edit';
-          b.dataset.actionKey=key;
-          b.textContent=label;
-          b.addEventListener('click',()=>openEditor(params));
+          b.type='button'; b.className='jackal-admin-edit';
+          b.dataset.actionKey='news-manage'; b.textContent='News verwalten';
+          b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor('embed=special&special=news-manage');});
           group.appendChild(b);
-        };
+        }
 
-        if(can(auth,'news','create')) make('Neue News','embed=crud&resource=news&action=new','news-create');
-        if(can(auth,'news','edit')) make('News archivieren','embed=special&special=news-archive','news-archive');
+        if(can(auth,'news','edit')){
+          const b=document.createElement('button');
+          b.type='button'; b.className='jackal-admin-edit';
+          b.dataset.actionKey='news-archive-manage'; b.textContent='News Archiv';
+          b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor('embed=special&special=news-archive');});
+          group.appendChild(b);
+        }
+
         if(group.children.length) head.appendChild(group);
       }
     }
 
-    const best=document.querySelector('.bestlist');
-    if(best && can(auth,'results','create')) addHeadButton(best,'Ergebnisse verwalten','embed=crud&resource=results&action=new','news-best');
-    const race=document.querySelector('.race-card');
-    if(race && can(auth,'races','edit') && can(auth,'news','edit')) addHeadButton(race,'Event anpassen','embed=special&special=next-event','news-race');
     const hearts=document.querySelector('.hearts');
     if(hearts && can(auth,'news','edit')){
       const head=hearts.querySelector('.card-head');
-      if(head) addButton(head,'Sieger & Abstimmung','embed=special&special=hearts-poll',{key:'news-hearts'});
+      if(head) addButton(head,'Sieger der Herzen verwalten','embed=special&special=hearts-poll',{key:'news-hearts'});
     }
+
+    const poll=document.querySelector('.poll');
+    if(poll && can(auth,'news','edit')){
+      const pollHead=poll.querySelector('.poll-head');
+      if(pollHead && !pollHead.querySelector('[data-action-key="news-poll"]')){
+        const b=document.createElement('button');
+        b.type='button'; b.className='jackal-admin-edit';
+        b.dataset.actionKey='news-poll'; b.textContent='Abstimmung verwalten';
+        b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor('embed=special&special=poll');});
+        pollHead.style.display='flex'; pollHead.style.alignItems='center'; pollHead.style.justifyContent='space-between';
+        pollHead.appendChild(b);
+      }
+    }
+
     const laps=document.querySelector('.laps');
-    if(laps && can(auth,'results','create')) addHeadButton(laps,'Rundenzeiten verwalten','embed=crud&resource=results&action=new','news-laps');
-    document.querySelectorAll('.news-read-link[data-news-id]').forEach((link,idx)=>{
-      const id=link.dataset.newsId;
-      if(!id) return;
-      const parent=link.parentElement;
-      let row=parent?.querySelector('.jackal-admin-row-actions');
-      if(!row) row=document.createElement('div');
-      row.className='jackal-admin-row-actions';
+    if(laps && can(auth,'results','edit')) addHeadButton(laps,'Rundenzeiten verwalten','embed=special&special=news-laps','news-laps');
+
+    fetch('/api/admin/news/categories',{credentials:'same-origin',cache:'no-store'}).catch(()=>{});
+
+    document.querySelectorAll('.news-read-link[data-news-id]').forEach(link=>{
+      const id=link.dataset.newsId; if(!id || link.dataset.jackalAdminWired==='1') return;
+      link.dataset.jackalAdminWired='1';
+      const parent=link.parentElement; if(!parent) return;
+      let row=parent.querySelector('.jackal-admin-row-actions');
+      if(!row){ row=document.createElement('div'); row.className='jackal-admin-row-actions'; parent.appendChild(row); }
+
       if(can(auth,'news','edit')){
-        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.newsEdit=id;b.dataset.actionKey=`news-edit-${id}`;b.textContent='News bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=news&action=edit&id=${encodeURIComponent(id)}`)});row.appendChild(b);
+        const b=document.createElement('button'); b.type='button'; b.className='jackal-admin-inline';
+        b.dataset.actionKey=`news-edit-${id}`; b.textContent='News bearbeiten';
+        b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=news&action=edit&id=${encodeURIComponent(id)}`);});
+        row.appendChild(b);
       }
       if(can(auth,'news','delete')){
-        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.dataset.actionKey=`news-delete-${id}`;b.textContent='Löschen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('news',id,link.textContent.trim())});row.appendChild(b);
+        const b=document.createElement('button'); b.type='button'; b.className='jackal-admin-inline danger';
+        b.dataset.actionKey=`news-delete-${id}`; b.textContent='Löschen';
+        b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('news',id,link.textContent.trim());});
+        row.appendChild(b);
       }
-      if(row.children.length) link.parentElement.appendChild(row);
     });
   }
 
