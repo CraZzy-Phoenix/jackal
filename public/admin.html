@@ -2253,8 +2253,6 @@ async function loadCurrentUser(){
 async function checkSession(){
   adminApp.classList.remove("hidden");
   try{
-    const response = await fetch("/api/me", {credentials:"same-origin",cache:"no-store"});
-    if(!response.ok){ showLogin(); return; }
     await loadCurrentUser();
     showAdmin();
 
@@ -6590,7 +6588,8 @@ checkSession();
 
   editorOpen?.addEventListener('click', openEditor);
   editorClose?.addEventListener('click', closeEditor);
-  editorBackdrop?.addEventListener('click', closeEditor);
+  // Clicking outside the management window does not close it; only the explicit close action does.
+  editorBackdrop?.addEventListener('click', event => { if(event.target === editorBackdrop) event.stopPropagation(); });
 
   document.addEventListener('keydown', event => {
     if(event.key === 'Escape' && workspace?.classList.contains('editor-open')){

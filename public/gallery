@@ -48,7 +48,7 @@
 <section id="grid" class="grid"></section>
 </main>
 
-<div id="lightbox" class="lightbox"><div id="close" class="close">×</div><img id="lightboxImg" src="" alt=""></div>
+<div id="lightbox" class="lightbox"><div id="lightboxClose" class="close">×</div><img id="lightboxImg" src="" alt=""></div>
 
 <footer class="footer"><span>Jackal Racing League</span><span class="footer-center">We are Jackal. We are racing.</span><span class="footer-right">Los Santos · Est. 2026</span></footer>
 

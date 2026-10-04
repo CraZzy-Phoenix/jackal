@@ -13,6 +13,8 @@
     .jackal-admin-edit:hover{filter:brightness(1.12);box-shadow:0 0 18px rgba(178,102,255,.42)}
     .jackal-admin-row-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
     .jackal-admin-inline{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid rgba(178,102,255,.55);border-radius:3px;color:#fff;background:rgba(78,24,174,.72);font:800 12px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}
+    .jackal-admin-inline.danger{border-color:rgba(255,80,110,.45);background:rgba(120,20,50,.42);color:#ffd5df}
+    .jackal-admin-inline.danger:hover{border-color:#ff5d7d;box-shadow:0 0 12px rgba(255,80,110,.20);color:#fff}
     .jackal-admin-row-actions .jackal-admin-inline{margin-left:0}
     .jackal-admin-news-actions{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
     .jackal-admin-news-actions .jackal-admin-edit{margin-left:0;padding:6px 9px;font-size:11px}
@@ -26,6 +28,10 @@
   style.id='jackalAdminToolsStyle';
   style.textContent=STYLE;
   document.head.appendChild(style);
+
+  let currentAuth=null;
+  let observerTimer=null;
+  let adminObserver=null;
 
   function esc(v){return String(v ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 
@@ -92,13 +98,15 @@
     overlay.setAttribute('aria-hidden','true');
   }
 
-  async function getAuth(){
+  async function getAuth(force=false){
+    if(!force && currentAuth) return currentAuth;
     try{
       const r=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'});
-      if(!r.ok) return null;
+      if(!r.ok){currentAuth=null;return null;}
       const d=await r.json().catch(()=>null);
-      return d?.ok?d:null;
-    }catch(_){return null;}
+      currentAuth=d?.ok?d:null;
+      return currentAuth;
+    }catch(_){currentAuth=null;return null;}
   }
 
   function can(auth,resource,action){
@@ -113,10 +121,28 @@
     container.appendChild(button);
   }
 
+  async function deleteResource(resource,id,label){
+    if(!currentAuth){ setAuthUi(null); return; }
+    if(!can(currentAuth,resource,'delete')) return;
+    if(!window.confirm(`"${label || resource}" wirklich löschen?`)) return;
+    try{
+      const r=await fetch(`/api/admin/data/${encodeURIComponent(resource)}/${encodeURIComponent(String(id))}`,{
+        method:'DELETE',credentials:'same-origin',cache:'no-store'
+      });
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok) throw new Error(d.error||'Löschen fehlgeschlagen.');
+      location.reload();
+    }catch(e){
+      if(String(e?.message||'').includes('Nicht angemeldet')){
+        currentAuth=null;setAuthUi(null);openLogin();return;
+      }
+      window.alert(e.message||'Löschen fehlgeschlagen.');
+    }
+  }
+
   async function openEditor(params){
-    // Never open the admin iframe unless the parent page currently has a valid session.
-    const auth=await getAuth();
-    if(!auth){ setAuthUi(null); return; }
+    const auth=currentAuth || await getAuth();
+    if(!auth){ setAuthUi(null); openLogin(); return; }
     const overlay=document.getElementById('jackalAdminEditOverlay');
     const frame=document.getElementById('jackalAdminEditFrame');
     if(!overlay||!frame) return;
@@ -128,8 +154,8 @@
   }
 
   function openManagement(){
-    getAuth().then(auth=>{
-      if(!auth){setAuthUi(null);return;}
+    Promise.resolve(currentAuth || getAuth()).then(auth=>{
+      if(!auth){setAuthUi(null);openLogin();return;}
       const overlay=document.getElementById('jackalAdminEditOverlay');
       const frame=document.getElementById('jackalAdminEditFrame');
       if(!overlay||!frame) return;
@@ -232,10 +258,18 @@
     if(laps && can(auth,'results','create')) addHeadButton(laps,'Rundenzeiten verwalten','embed=crud&resource=results&action=new','news-laps');
     document.querySelectorAll('.news-read-link[data-news-id]').forEach((link,idx)=>{
       const id=link.dataset.newsId;
-      if(!id||!can(auth,'news','edit')||link.parentElement.querySelector(`.jackal-admin-inline[data-news-edit="${CSS.escape(id)}"]`)) return;
-      const row=document.createElement('div');row.className='jackal-admin-row-actions';
-      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.newsEdit=id;b.textContent='News bearbeiten';b.addEventListener('click',()=>openEditor(`embed=crud&resource=news&action=edit&id=${encodeURIComponent(id)}`));
-      row.appendChild(b);link.parentElement.appendChild(row);
+      if(!id) return;
+      const parent=link.parentElement;
+      let row=parent?.querySelector('.jackal-admin-row-actions');
+      if(!row) row=document.createElement('div');
+      row.className='jackal-admin-row-actions';
+      if(can(auth,'news','edit')){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.newsEdit=id;b.dataset.actionKey=`news-edit-${id}`;b.textContent='News bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=news&action=edit&id=${encodeURIComponent(id)}`)});row.appendChild(b);
+      }
+      if(can(auth,'news','delete')){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.dataset.actionKey=`news-delete-${id}`;b.textContent='Löschen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('news',id,link.textContent.trim())});row.appendChild(b);
+      }
+      if(row.children.length) link.parentElement.appendChild(row);
     });
   }
 
@@ -245,11 +279,17 @@
     if(card && can(auth,'drivers','create')) addHeadButton(card,'+ Fahrer','embed=crud&resource=drivers&action=new','drivers-new');
     document.querySelectorAll('.driver[data-driver-id]').forEach(el=>{
       const id=el.dataset.driverId;
-      if(id && can(auth,'drivers','edit')){
-        const actions=el.querySelector('.jackal-admin-row-actions')||document.createElement('div');
-        actions.className='jackal-admin-row-actions';
-        if(!actions.querySelector('button')){const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.textContent='Bearbeiten';b.addEventListener('click',()=>openEditor(`embed=crud&resource=drivers&action=edit&id=${encodeURIComponent(id)}`));actions.appendChild(b);el.appendChild(actions);}
+      if(!id) return;
+      const actions=el.querySelector('.jackal-admin-row-actions')||document.createElement('div');
+      actions.className='jackal-admin-row-actions';
+      if(can(auth,'drivers','edit') && !actions.querySelector(`[data-action-key="driver-edit-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`driver-edit-${id}`;b.textContent='Bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=drivers&action=edit&id=${encodeURIComponent(id)}`)});actions.appendChild(b);
       }
+      if(can(auth,'drivers','delete') && !actions.querySelector(`[data-action-key="driver-delete-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.dataset.actionKey=`driver-delete-${id}`;b.textContent='Löschen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('drivers',id,el.querySelector('h2')?.textContent?.trim()||'Fahrer')});actions.appendChild(b);
+      }
+      if(actions.children.length && !actions.parentElement) el.appendChild(actions);
+      else if(actions.children.length && !el.contains(actions)) el.appendChild(actions);
     });
   }
 
@@ -262,50 +302,65 @@
   function setupRaces(auth){
     if(!auth) return;
     const toolbar=document.querySelector('main .toolbar');
-    if(toolbar && can(auth,'races','create') && !toolbar.querySelector('.jackal-admin-edit[data-action-key="races-new"]')){
+    if(toolbar && can(auth,'races','create') && !toolbar.querySelector('[data-action-key="races-new"]')){
       const row=document.createElement('div');row.className='jackal-admin-row-actions';
-      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey='races-new';b.textContent='+ Neues Rennen';b.addEventListener('click',()=>openEditor('embed=crud&resource=races&action=new'));toolbar.appendChild(row);row.appendChild(b);
+      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey='races-new';b.textContent='+ Neues Rennen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor('embed=crud&resource=races&action=new')});row.appendChild(b);toolbar.appendChild(row);
     }
     document.querySelectorAll('.race[data-race-id]').forEach(el=>{
-      const id=el.dataset.raceId;
-      if(!id||!can(auth,'races','edit')) return;
+      const id=el.dataset.raceId;if(!id) return;
       const body=el.querySelector('.race-body')||el;
-      const row=document.createElement('div');row.className='jackal-admin-row-actions';
-      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.textContent='Rennen bearbeiten';b.addEventListener('click',()=>openEditor(`embed=crud&resource=races&action=edit&id=${encodeURIComponent(id)}`));row.appendChild(b);
-      body.appendChild(row);
+      const row=body.querySelector('.jackal-admin-row-actions')||document.createElement('div');row.className='jackal-admin-row-actions';
+      if(can(auth,'races','edit') && !row.querySelector(`[data-action-key="race-edit-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`race-edit-${id}`;b.textContent='Rennen bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=races&action=edit&id=${encodeURIComponent(id)}`)});row.appendChild(b);
+      }
+      if(can(auth,'races','delete') && !row.querySelector(`[data-action-key="race-delete-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.dataset.actionKey=`race-delete-${id}`;b.textContent='Löschen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('races',id,el.querySelector('.race-title,.race-name,h2')?.textContent?.trim()||'Rennen')});row.appendChild(b);
+      }
+      if(row.children.length && !body.contains(row)) body.appendChild(row);
     });
   }
 
   function setupBlacklist(auth){
     if(!auth) return;
     const toolbar=document.querySelector('main .toolbar');
-    if(toolbar && can(auth,'blacklist','create') && !toolbar.querySelector('.jackal-admin-edit[data-action-key="blacklist-new"]')){
+    if(toolbar && can(auth,'blacklist','create') && !toolbar.querySelector('[data-action-key="blacklist-new"]')){
       const row=document.createElement('div');row.className='jackal-admin-row-actions';
-      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey='blacklist-new';b.textContent='+ Fahrzeug';b.addEventListener('click',()=>openEditor('embed=crud&resource=blacklist&action=new'));toolbar.appendChild(row);row.appendChild(b);
+      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey='blacklist-new';b.textContent='+ Fahrzeug';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor('embed=crud&resource=blacklist&action=new')});row.appendChild(b);toolbar.appendChild(row);
     }
     document.querySelectorAll('.item[data-blacklist-id]').forEach(el=>{
-      const id=el.dataset.blacklistId;
-      if(!id||!can(auth,'blacklist','edit')) return;
-      const row=document.createElement('div');row.className='jackal-admin-row-actions';
-      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.textContent='Bearbeiten';b.addEventListener('click',()=>openEditor(`embed=crud&resource=blacklist&action=edit&id=${encodeURIComponent(id)}`));row.appendChild(b);el.querySelector('.body')?.appendChild(row);
+      const id=el.dataset.blacklistId;if(!id) return;
+      const host=el.querySelector('.body')||el;
+      const row=host.querySelector('.jackal-admin-row-actions')||document.createElement('div');row.className='jackal-admin-row-actions';
+      if(can(auth,'blacklist','edit') && !row.querySelector(`[data-action-key="blacklist-edit-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`blacklist-edit-${id}`;b.textContent='Bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=blacklist&action=edit&id=${encodeURIComponent(id)}`)});row.appendChild(b);
+      }
+      if(can(auth,'blacklist','delete') && !row.querySelector(`[data-action-key="blacklist-delete-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.dataset.actionKey=`blacklist-delete-${id}`;b.textContent='Löschen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('blacklist',id,el.querySelector('.name')?.textContent?.trim()||'Fahrzeug')});row.appendChild(b);
+      }
+      if(row.children.length && !host.contains(row)) host.appendChild(row);
     });
   }
 
   function setupGallery(auth){
     if(!auth) return;
     const toolbar=document.querySelector('main .toolbar');
-    if(toolbar && can(auth,'gallery','create') && !toolbar.querySelector('.jackal-admin-edit[data-action-key="gallery-new"]')){
+    if(toolbar && can(auth,'gallery','create') && !toolbar.querySelector('[data-action-key="gallery-new"]')){
       const row=document.createElement('div');row.className='jackal-admin-row-actions';
-      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey='gallery-new';b.textContent='+ Foto';b.addEventListener('click',()=>openEditor('embed=crud&resource=gallery&action=new'));toolbar.appendChild(row);row.appendChild(b);
+      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey='gallery-new';b.textContent='+ Foto';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor('embed=crud&resource=gallery&action=new')});row.appendChild(b);toolbar.appendChild(row);
     }
     document.querySelectorAll('.tile[data-gallery-id]').forEach(el=>{
-      const id=el.dataset.galleryId;
-      if(!id||!can(auth,'gallery','edit')) return;
-      const row=document.createElement('div');row.className='jackal-admin-row-actions';
-      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.textContent='Bearbeiten';b.addEventListener('click',()=>openEditor(`embed=crud&resource=gallery&action=edit&id=${encodeURIComponent(id)}`));row.appendChild(b);el.querySelector('.caption')?.appendChild(row);
+      const id=el.dataset.galleryId;if(!id) return;
+      const host=el.querySelector('.caption')||el;
+      const row=host.querySelector('.jackal-admin-row-actions')||document.createElement('div');row.className='jackal-admin-row-actions';
+      if(can(auth,'gallery','edit') && !row.querySelector(`[data-action-key="gallery-edit-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`gallery-edit-${id}`;b.textContent='Bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=gallery&action=edit&id=${encodeURIComponent(id)}`)});row.appendChild(b);
+      }
+      if(can(auth,'gallery','delete') && !row.querySelector(`[data-action-key="gallery-delete-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.dataset.actionKey=`gallery-delete-${id}`;b.textContent='Löschen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('gallery',id,el.querySelector('.title')?.textContent?.trim()||'Foto')});row.appendChild(b);
+      }
+      if(row.children.length && !host.contains(row)) host.appendChild(row);
     });
   }
-
 
   function init(auth){
     ensureOverlay();
@@ -323,6 +378,7 @@
 
   async function logout(){
     try{await fetch('/api/logout',{method:'POST',credentials:'same-origin'});}catch(_){}
+    currentAuth=null;
     closeEditor();
     location.reload();
   }
@@ -348,7 +404,8 @@
         if(!r.ok||!d.ok){if(message)message.textContent=d.error||'Benutzername oder Passwort ist falsch.';return;}
         if(document.getElementById('jackalLoginPassword'))document.getElementById('jackalLoginPassword').value='';
         closeLogin();
-        const auth=await getAuth();
+        const auth=await getAuth(true);
+        currentAuth=auth;
         setAuthUi(auth);
         init(auth);
       }catch(_){if(message)message.textContent='Der Login-Server ist momentan nicht erreichbar.';}
@@ -359,15 +416,32 @@
     if(event.origin!==location.origin)return;
     if(event.data?.type==='jackal-admin-saved'){closeEditor();setTimeout(()=>location.reload(),120);}
     if(event.data?.type==='jackal-admin-close')closeEditor();
-    if(event.data?.type==='jackal-admin-auth-required'){closeEditor();setAuthUi(null);setTimeout(openLogin,50);}
+    if(event.data?.type==='jackal-admin-auth-required'){currentAuth=null;closeEditor();setAuthUi(null);setTimeout(openLogin,50);}
   });
 
   document.addEventListener('DOMContentLoaded',async()=>{
     ensureAuthControls();
     wireLoginModal();
     ensureOverlay();
-    const auth=await getAuth();
+    const auth=await getAuth(true);
+    currentAuth=auth;
     init(auth);
-    if(auth){const observer=new MutationObserver(()=>init(auth));observer.observe(document.body,{childList:true,subtree:true});setTimeout(()=>observer.disconnect(),5000);}
+    if(auth){
+      adminObserver=new MutationObserver((mutations)=>{
+        const relevant=mutations.some(m=>{
+          const nodes=[...m.addedNodes,...m.removedNodes].filter(n=>n.nodeType===1);
+          if(!nodes.length) return false;
+          return nodes.some(node=>{
+            const el=node;
+            if(el.matches?.('.jackal-admin-auth-actions,.jackal-admin-edit-overlay,.jackal-admin-row-actions,.jackal-admin-edit,.jackal-admin-inline')) return false;
+            if(el.closest?.('.jackal-admin-auth-actions,.jackal-admin-edit-overlay,.jackal-admin-row-actions')) return false;
+            return true;
+          });
+        });
+        if(!relevant || !currentAuth || observerTimer) return;
+        observerTimer=setTimeout(()=>{observerTimer=null;if(currentAuth)init(currentAuth);},60);
+      });
+      adminObserver.observe(document.body,{childList:true,subtree:true});
+    }
   });
 })();
