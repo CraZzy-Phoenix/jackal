@@ -597,7 +597,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media(max-width:1050px){.nav a{padding-left:12px;padding-right:12px}}
-@media(max-width:850px){.nav-toggle{display:block}.nav{display:none;left:0;right:0;top:58px;transform:none;flex-direction:column;background:rgba(8,7,14,.98)}.nav.open{display:flex}.nav a{padding:14px 24px}}
+@media(max-width:960px){.nav-toggle{display:block}.nav{display:none;left:0;right:0;top:58px;transform:none;flex-direction:column;background:rgba(8,7,14,.98)}.nav.open{display:flex}.nav a{padding:14px 24px}}
 /* =========================================================
    NEWS-SEITE
    ========================================================= */
@@ -1008,12 +1008,17 @@ a { color: inherit; text-decoration: none; }
 }
 .g-tab.active { border-color: #c08cff; box-shadow: 0 0 8px rgba(192, 140, 255, .9), 0 0 22px var(--neon), inset 0 0 10px rgba(192, 140, 255, .35); }
 .search input:focus, .filters select:focus, .select-wrap select:focus { border-color: #c08cff; box-shadow: 0 0 10px var(--neon); }
-  </style>
+  
+/* PUBLIC LOGIN BUTTON */
+.login-link{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:96px;height:36px;padding:0 14px;border:1px solid var(--accent);border-radius:3px;color:#fff;background:linear-gradient(180deg,#5c22c4 0%,var(--purple) 55%,#43149a 100%);box-shadow:0 0 12px rgba(168,85,255,.35),inset 0 1px 0 rgba(255,255,255,.1);font-family:var(--head);font-size:15px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;transition:filter .2s,box-shadow .2s}.login-link:hover{filter:brightness(1.12);box-shadow:0 0 18px rgba(178,102,255,.55),0 0 30px rgba(168,85,255,.22),inset 0 1px 0 rgba(255,255,255,.16)}.login-link svg{width:16px;height:16px;flex-shrink:0}
+@media(max-width:960px){.login-link{min-width:82px;height:34px;padding:0 11px;font-size:13px;margin-left:10px}}
+
+</style>
 </head>
 <body>
 
   <!-- ========== NAVIGATION ========== -->
-  <header class="topbar"><a href="/" class="brand">Jackal</a><button class="nav-toggle"><span></span><span></span><span></span></button><nav class="nav"><a href="/">Home</a><a href="/news" class="active">News</a><a href="/drivers">Drivers</a><a href="/rangliste">Rangliste</a><a href="/races">Races</a><a href="/blacklist">Blacklist</a><a href="/gallery">Gallery</a></nav></header>
+  <header class="topbar"><a href="/" class="brand">Jackal</a><button class="nav-toggle"><span></span><span></span><span></span></button><nav class="nav"><a href="/">Home</a><a href="/news" class="active">News</a><a href="/drivers">Drivers</a><a href="/rangliste">Rangliste</a><a href="/races">Races</a><a href="/blacklist">Blacklist</a><a href="/gallery">Gallery</a></nav><a class="login-link" href="/admin" aria-label="Zum Admin-Login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V8a5 5 0 0 1 10 0v3"></path></svg><span>Login</span></a></header>
 
   <!-- ========== HERO ========== -->
   <section class="hero hero-news">
