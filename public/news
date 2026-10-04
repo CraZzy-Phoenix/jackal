@@ -1086,6 +1086,249 @@ a { color: inherit; text-decoration: none; }
 }
 </style>
 
+<script id="jackal-site-config-loader">
+(function(){
+  if(window.__JACKAL_SITE_CONFIG_LOADER_INSTALLED)return;
+  window.__JACKAL_SITE_CONFIG_LOADER_INSTALLED=true;
+
+  const pagePath=location.pathname.toLowerCase();
+  const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+  const pxValue=(v,fallback)=>{
+    const s=String(v??'').trim();
+    return /^-?\d+(?:\.\d+)?px$/.test(s)?s:fallback;
+  };
+
+  function chooseResponsive(rows){
+    const width=window.innerWidth;
+    return (Array.isArray(rows)?rows:[]).find(x=>{
+      const min=Number(x.min_viewport_width||0);
+      const max=x.max_viewport_width==null||x.max_viewport_width===''?Infinity:Number(x.max_viewport_width);
+      return width>=min && width<=max;
+    })||null;
+  }
+
+  function setRootVar(name,value){
+    if(value!==undefined&&value!==null&&String(value)!=='')document.documentElement.style.setProperty(name,String(value));
+  }
+
+  function normalizeUrl(url){
+    const s=String(url||'').trim();
+    if(!s)return '';
+    return s.startsWith('http')||s.startsWith('/')||s.startsWith('data:')?s:'/'+s;
+  }
+
+  function applyDesign(config){
+    const d=config?.design||{};
+    const r=chooseResponsive(config?.responsive||[]);
+    const vars={
+      '--bg':d.bg_color,
+      '--bg-2':d.bg2_color,
+      '--bg2':d.bg2_color,
+      '--card':d.card_color,
+      '--card-2':d.card2_color,
+      '--card2':d.card2_color,
+      '--line':d.line_color,
+      '--line-glow':d.line_glow_color,
+      '--purple':d.purple_color,
+      '--purple-2':d.purple2_color,
+      '--accent':d.purple2_color,
+      '--purple-3':d.purple3_color,
+      '--neon':d.neon_color,
+      '--text':d.text_color,
+      '--muted':d.muted_color,
+      '--brush':d.brush_font_family,
+      '--f-brush':d.brush_font_family,
+      '--head':d.head_font_family,
+      '--f-head':d.head_font_family,
+      '--body':d.body_font_family,
+      '--f-body':d.body_font_family,
+      '--radius':pxValue(d.radius_px,'10px'),
+      '--site-radius':pxValue(d.radius_px,'10px'),
+      '--site-brush-size':pxValue(d.brush_font_size,'30px'),
+      '--site-head-size':pxValue(d.head_font_size,'23px'),
+      '--site-body-size':pxValue(d.body_font_size,'16px'),
+      '--site-brush-weight':d.brush_font_weight||400,
+      '--site-head-weight':d.head_font_weight||700,
+      '--site-body-weight':d.body_font_weight||600,
+      '--site-brush-style':d.brush_font_style||'normal',
+      '--site-head-style':d.head_font_style||'normal',
+      '--site-body-style':d.body_font_style||'normal',
+      '--site-brush-color':d.brush_font_color,
+      '--site-head-color':d.head_font_color,
+      '--site-body-color':d.body_font_color,
+      '--site-small-color':d.small_text_color,
+      '--site-glow-strength':String(clamp(Number(d.glow_strength??100),0,200))/100,
+      '--site-shadow-strength':String(clamp(Number(d.shadow_strength??100),0,200))/100,
+      '--site-overlay-strength':String(clamp(Number(d.overlay_strength??100),0,100))/100,
+      '--site-blur':pxValue(d.backdrop_blur_px,'8px'),
+      '--site-page-max':pxValue(d.page_max_width,'1500px'),
+      '--site-page-gutter':pxValue(d.page_gutter,'18px'),
+      '--site-gap':pxValue(d.section_gap_px,'14px'),
+      '--site-topbar-height':pxValue(d.topbar_height_px,'58px'),
+      '--site-hero-height':pxValue(d.hero_height_px,'320px'),
+      '--site-content-width':r?.content_width||'92vw',
+      '--site-responsive-max':r?.max_content_width||pxValue(d.page_max_width,'1500px'),
+      '--site-responsive-gutter':r?.page_gutter||pxValue(d.page_gutter,'18px'),
+      '--site-scale':r?.scale||1,
+      '--site-responsive-hero':pxValue(r?.hero_height_px,pxValue(d.hero_height_px,'320px')),
+      '--site-responsive-topbar':pxValue(r?.topbar_height_px,pxValue(d.topbar_height_px,'58px')),
+      '--site-responsive-gap':pxValue(r?.section_gap_px,pxValue(d.section_gap_px,'14px'))
+    };
+    Object.entries(vars).forEach(([k,v])=>setRootVar(k,v));
+    const root=document.documentElement;
+    root.dataset.siteAnimations=Number(d.animations_enabled??1)===1?'1':'0';
+    root.dataset.siteHover=Number(d.hover_effects??1)===1?'1':'0';
+    root.dataset.siteGradient=Number(d.background_gradient_enabled??1)===1?'1':'0';
+  }
+
+  function applyBrandLogo(config){
+    const media=Array.isArray(config?.media)?config.media:[];
+    const item=media.find(x=>String(x.slot)==='logo_small'&&Number(x.active??1)!==0);
+    const url=normalizeUrl(item?.image_url);
+    if(!url)return;
+    const brands=document.querySelectorAll('.brand');
+    brands.forEach(brand=>{
+      let img=brand.querySelector('.site-brand-img');
+      if(!img){
+        img=document.createElement('img');
+        img.className='site-brand-img';
+        img.alt=item?.alt_text||'JACKAL';
+        brand.appendChild(img);
+      }
+      img.src=url;
+      img.alt=item?.alt_text||'JACKAL';
+      brand.classList.add('site-brand-logo-active');
+    });
+  }
+
+  function applyMedia(config){
+    const active=(Array.isArray(config?.media)?config.media:[]).filter(x=>Number(x.active??1)!==0);
+    const bySlot=new Map(active.map(x=>[String(x.slot),x]));
+    const src=(slot)=>normalizeUrl(bySlot.get(slot)?.image_url||'');
+    const set=(selector,slot)=>{
+      const url=src(slot);if(!url)return;
+      document.querySelectorAll(selector).forEach(img=>{
+        if(img.getAttribute('src')!==url)img.src=url;
+        const alt=bySlot.get(slot)?.alt_text;if(alt)img.alt=alt;
+      });
+    };
+
+    set('img[src*="jackal-banner.png"]','main_banner');
+    set('.hero-bg img','main_banner');
+    set('.brand-slot img','logo_small');
+    set('.hero-logo-slot img','logo');
+
+    if(pagePath.endsWith('/')||pagePath.endsWith('/index.html')||pagePath.includes('/index')){
+      set('.next-race-bg img','home_next_race');
+      set('.champion-bg img','home_champion_bg');
+      set('.champion-avatar img','home_champion_driver');
+      set('.car-thumb img','home_champion_car');
+    }
+    if(pagePath.endsWith('/news')||pagePath.includes('/news')){
+      set('.race-card .race-bg img','news_race_background');
+      set('.winner-img img','news_hearts');
+    }
+
+    set('img[src*="team-jackal.png"]','team_jackal');
+    set('img[src*="team-nightshift.png"]','team_nightshift');
+    set('img[src*="team-phantom.png"]','team_phantom');
+    set('img[src*="team-velocity.png"]','team_velocity');
+
+    applyBrandLogo(config);
+    if(window.wireImageSlots)try{window.wireImageSlots();}catch{}
+  }
+
+  function applyTexts(config){
+    const rows=Array.isArray(config?.texts)?config.texts.filter(x=>Number(x.active??1)!==0):[];
+    const byKey=new Map(rows.map(x=>[String(x.text_key),x.value]));
+    const text=(key)=>byKey.get(key);
+    const set=(selector,key)=>{
+      const value=text(key);if(value===undefined)return;
+      document.querySelectorAll(selector).forEach(el=>el.textContent=String(value));
+    };
+
+    const websiteName=text('global.website_name');
+    if(websiteName){
+      document.title=pagePath.endsWith('/news')||pagePath.includes('/news')?
+        `${websiteName} – News`:
+        document.title.replace(/Jackal Racing League|JACKAL RACING LEAGUE/gi,websiteName);
+    }
+    set('.footer > span:first-child','global.footer_left');
+    set('.footer .footer-claim,.footer .footer-center','global.footer_claim');
+    set('.footer > span:last-child,.footer .footer-right','global.footer_right');
+    set('.hero-claim','global.website_slogan');
+
+    if(pagePath.endsWith('/news')||pagePath.includes('/news')){
+      set('.news-title','news.page_title');
+      set('.hero-sub','news.page_subtitle');
+    }
+    if(pagePath.endsWith('/')||pagePath.endsWith('/index.html')||pagePath.includes('/index')){
+      set('.next-race h2.brush','home.next_race_title');
+      set('.news .card-head .head-title','home.latest_news_title');
+      set('.champion .card-head .head-title','home.champion_title');
+    }
+  }
+
+  function installResponsiveStyle(){
+    if(document.getElementById('jackal-site-config-style'))return;
+    const s=document.createElement('style');
+    s.id='jackal-site-config-style';
+    s.textContent=`
+      :root{--site-scale:1;--site-content-width:92vw;--site-responsive-max:1500px;--site-responsive-gutter:18px;--site-responsive-hero:320px;--site-responsive-topbar:58px;--site-responsive-gap:14px}
+      html,body{font-family:var(--f-body)!important;font-size:var(--site-body-size,16px)!important;font-weight:var(--site-body-weight,600)!important;font-style:var(--site-body-style,normal)!important;color:var(--site-body-color,var(--text))}
+      body{background-color:var(--bg)!important;}
+      body[data-site-scaling="1"]{zoom:var(--site-scale,1)}
+      .topbar{height:var(--site-responsive-topbar)!important;backdrop-filter:blur(var(--site-blur,8px))}
+      .hero{height:var(--site-responsive-hero)!important}
+      .page,.grid,.grid-news{width:var(--site-content-width)!important;max-width:var(--site-responsive-max)!important;margin-left:auto!important;margin-right:auto!important}
+      .grid,.grid-news{gap:var(--site-responsive-gap)!important}
+      .page,.grid,.grid-news{padding-left:var(--site-responsive-gutter)!important;padding-right:var(--site-responsive-gutter)!important}
+      .card,.race,.item,.tile{border-radius:var(--site-radius,var(--radius,10px))!important}
+      .brand,.brand-text,.brush,.footer-claim{font-family:var(--f-brush)!important;font-weight:var(--site-brush-weight,400)!important;font-style:var(--site-brush-style,normal)!important;color:var(--site-brush-color,var(--text))!important}
+      .brand{font-size:var(--site-brush-size,30px)!important}
+      .brush,.footer-claim{font-size:var(--site-brush-size,30px)!important}
+      .hero-title,.news-title,.page-title{font-family:var(--f-brush)!important;font-weight:var(--site-brush-weight,400)!important;font-style:var(--site-brush-style,normal)!important;color:var(--site-brush-color,var(--text))!important}
+      .hero-title{font-size:clamp(calc(var(--site-brush-size,30px) * 2),8vw,calc(var(--site-brush-size,30px) * 4.5))!important}
+      .news-title,.page-title{font-size:clamp(calc(var(--site-brush-size,30px) * 1.5),6vw,calc(var(--site-brush-size,30px) * 2.8))!important}
+      .head-title,.big-title{font-family:var(--f-head)!important;font-size:var(--site-head-size,23px)!important;font-weight:var(--site-head-weight,700)!important;font-style:var(--site-head-style,normal)!important;color:var(--site-head-color,var(--text))!important}
+      .hero-content .hero-sub,.hero-sub,.head-sub,.big-sub,.small,.footer{font-family:var(--f-body)!important}
+      .head-sub,.big-sub{color:var(--site-small-color,var(--muted))!important}
+      .hero-claim{color:var(--site-small-color,var(--muted))!important}
+      .footer{color:var(--site-body-color,var(--text))!important}
+      .card,.stat,.tile,.item,.race{box-shadow:0 10px 30px rgba(0,0,0,calc(.45 * var(--site-shadow-strength,1)))!important}
+      .hero-overlay{opacity:var(--site-overlay-strength,1)!important}
+      .hero-title,.news-title,.page-title,.brush-purple,.btn,.head-icon,.big-icon,.cd-box span{filter:drop-shadow(0 0 calc(8px * var(--site-glow-strength,1)) var(--neon))}
+      html[data-site-animations="0"] *,html[data-site-animations="0"] *::before,html[data-site-animations="0"] *::after{animation:none!important;transition:none!important}
+      html[data-site-hover="0"] .driver-card:hover,html[data-site-hover="0"] .bl-card:hover,html[data-site-hover="0"] .race-tile:hover,html[data-site-hover="0"] .g-tile:hover,html[data-site-hover="0"] .news-item:hover{transform:none!important;box-shadow:none!important;filter:none!important}
+      html[data-site-gradient="0"] body{background-image:none!important}
+      .site-brand-img{display:none;width:110px;height:40px;object-fit:contain}
+      .brand.site-brand-logo-active{display:flex;align-items:center;justify-content:center}
+      .brand.site-brand-logo-active>.site-brand-img{display:block}
+      .brand.site-brand-logo-active{font-size:0!important}
+      @media(max-width:960px){.topbar{height:var(--site-responsive-topbar)!important}.hero{height:var(--site-responsive-hero)!important}.page,.grid,.grid-news{width:calc(100% - 2 * var(--site-responsive-gutter))!important;max-width:none!important}}
+    `;
+    document.head.appendChild(s);
+  }
+
+  function apply(config){
+    installResponsiveStyle();
+    applyDesign(config);
+    applyMedia(config);
+    applyTexts(config);
+    document.body?.setAttribute('data-site-scaling','1');
+  }
+
+  window.__JACKAL_SITE_CONFIG_PROMISE=fetch('/api/public/site-config',{cache:'no-store',credentials:'same-origin'})
+    .then(r=>{if(!r.ok)throw new Error('Site-Config konnte nicht geladen werden.');return r.json();})
+    .then(config=>{window.__JACKAL_SITE_CONFIG=config;apply(config);return config;})
+    .catch(err=>{console.warn('[JACKAL] Site-Config:',err);return null;});
+
+  window.__JACKAL_APPLY_SITE_CONFIG=function(){if(window.__JACKAL_SITE_CONFIG)apply(window.__JACKAL_SITE_CONFIG);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{installResponsiveStyle();if(window.__JACKAL_SITE_CONFIG)apply(window.__JACKAL_SITE_CONFIG);});
+  else{installResponsiveStyle();if(window.__JACKAL_SITE_CONFIG)apply(window.__JACKAL_SITE_CONFIG);}
+})();
+</script>
+
 </head>
 <body>
 
