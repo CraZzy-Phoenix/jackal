@@ -747,6 +747,23 @@ async function handleAdminDataDelete(request, env, resource, value) {
     }
   }
 
+  // Remove dependent race results first so driver/race deletes do not fail on foreign keys.
+  if (resource === 'drivers') {
+    try {
+      await env.DB.prepare(`DELETE FROM race_results WHERE driver_id = ?`).bind(identityValue).run();
+    } catch (error) {
+      console.error('Driver result cleanup failed:', error);
+    }
+  }
+
+  if (resource === 'races') {
+    try {
+      await env.DB.prepare(`DELETE FROM race_results WHERE race_id = ?`).bind(identityValue).run();
+    } catch (error) {
+      console.error('Race result cleanup failed:', error);
+    }
+  }
+
   const result = await env.DB.prepare(`
     DELETE FROM ${quoteIdentifier(table)}
     WHERE ${quoteIdentifier(identity.name)} = ?
@@ -2175,8 +2192,17 @@ async function handlePublicData(env) {
   });
 
   const publicDrivers = drivers.map(driver => ({
-    ...driver,
-    races: raceCounts.get(String(driver.id)) || 0
+    id: driver.id,
+    nickname: driver.nickname || '',
+    number: driver.number,
+    team: driver.team,
+    car: driver.car,
+    image_url: driver.image_url,
+    status: driver.status,
+    points: driver.points,
+    wins: driver.wins,
+    races: raceCounts.get(String(driver.id)) || 0,
+    created_at: driver.created_at
   }));
 
   const nextRace = races.find(race => Number(race.is_next) === 1) || null;
