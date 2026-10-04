@@ -1204,9 +1204,75 @@ function parseJsonArray(value) {
   }
 }
 
+
+async function ensureNewsDashboardColumns(env) {
+  const required = [
+    { name: "display_mode", type: "TEXT NOT NULL DEFAULT 'next_race'" },
+    { name: "display_race_id", type: "TEXT NOT NULL DEFAULT ''" },
+    { name: "bestlist_race_id", type: "TEXT NOT NULL DEFAULT ''" },
+    { name: "laps_race_id", type: "TEXT NOT NULL DEFAULT ''" }
+  ];
+
+  const schema = await getTableSchema(env, "news_dashboard");
+  const existing = new Set((schema.results || []).map(col => col.name));
+  for (const column of required) {
+    if (existing.has(column.name)) continue;
+    await env.DB.prepare(
+      `ALTER TABLE news_dashboard ADD COLUMN ${quoteIdentifier(column.name)} ${column.type}`
+    ).run();
+  }
+}
+
+async function ensureDefaultNewsCategories(env) {
+  const defaults = [
+    ["blacklist", "BLACKLIST", "#FF3D4D", "#FFFFFF", 10],
+    ["fahrer", "FAHRER", "#3D8BFF", "#FFFFFF", 20],
+    ["events", "EVENTS", "#A855FF", "#FFFFFF", 30],
+    ["rennen", "RENNEN", "#FF8A3D", "#FFFFFF", 40],
+    ["abstimmungen", "ABSTIMMUNGEN", "#35D0BA", "#07100D", 50],
+    ["sieger-der-herzen", "SIEGER DER HERZEN", "#FF5CAB", "#FFFFFF", 60],
+    ["highlights", "HIGHLIGHTS", "#FFD34D", "#15100A", 70],
+    ["allgemein", "ALLGEMEIN", "#9E91B8", "#FFFFFF", 80]
+  ];
+
+  const legacySlugs = ["event", "ergebnisse", "update", "blacklist-update", "partner"];
+  const now = Math.floor(Date.now() / 1000);
+
+  for (const slug of legacySlugs) {
+    await env.DB.prepare(
+      `UPDATE news_categories SET active = 0, updated_at = ? WHERE slug = ?`
+    ).bind(now, slug).run();
+  }
+
+  for (const [slug, name, color, textColor, sortOrder] of defaults) {
+    const existing = await env.DB.prepare(
+      `SELECT id FROM news_categories WHERE slug = ? LIMIT 1`
+    ).bind(slug).first();
+
+    if (existing) {
+      await env.DB.prepare(`
+        UPDATE news_categories
+        SET name = ?, color = ?, text_color = ?, active = 1,
+            sort_order = ?, updated_at = ?
+        WHERE id = ?
+      `).bind(name, color, textColor, sortOrder, now, existing.id).run();
+    } else {
+      await env.DB.prepare(`
+        INSERT INTO news_categories
+          (id,name,slug,color,text_color,active,sort_order,created_at,updated_at)
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)
+      `).bind(`default-${slug}`, name, slug, color, textColor, sortOrder, now, now).run();
+    }
+  }
+}
+
 function normalizeNewsDashboardConfig(row) {
   return {
     next_race_id: String(row?.next_race_id ?? ""),
+    display_mode: String(row?.display_mode || "next_race"),
+    display_race_id: String(row?.display_race_id ?? row?.next_race_id ?? ""),
+    bestlist_race_id: String(row?.bestlist_race_id ?? ""),
+    laps_race_id: String(row?.laps_race_id ?? ""),
     latest_news_ids: parseJsonArray(row?.latest_news_ids)
       .map(String)
       .filter(Boolean)
@@ -1245,11 +1311,16 @@ async function handleAdminNewsDashboardGet(request, env) {
   if (auth instanceof Response) return auth;
 
   try {
+    await ensureNewsDashboardColumns(env);
     const row = await env.DB
       .prepare(`
         SELECT
           id,
           next_race_id,
+          display_mode,
+          display_race_id,
+          bestlist_race_id,
+          laps_race_id,
           latest_news_ids,
           featured_news_id,
           hearts_winner_driver_id,
@@ -1294,6 +1365,8 @@ async function handleAdminNewsDashboardSave(request, env) {
   );
 
   if (auth instanceof Response) return auth;
+
+  await ensureNewsDashboardColumns(env);
 
   let body;
 
@@ -1371,8 +1444,23 @@ async function handleAdminNewsDashboardSave(request, env) {
     );
   }
 
+  const allowedDisplayModes = new Set([
+    "next_race",
+    "last_race",
+    "next_event",
+    "last_event",
+    "current_event"
+  ]);
+  const displayMode = allowedDisplayModes.has(String(body?.display_mode || ""))
+    ? String(body.display_mode)
+    : "next_race";
+
   const config = {
     next_race_id: String(body?.next_race_id ?? ""),
+    display_mode: displayMode,
+    display_race_id: String(body?.display_race_id ?? body?.next_race_id ?? ""),
+    bestlist_race_id: String(body?.bestlist_race_id ?? ""),
+    laps_race_id: String(body?.laps_race_id ?? ""),
     latest_news_ids: latestNewsIds,
     featured_news_id: String(
       body?.featured_news_id ?? ""
@@ -1399,6 +1487,10 @@ async function handleAdminNewsDashboardSave(request, env) {
         INSERT INTO news_dashboard (
           id,
           next_race_id,
+          display_mode,
+          display_race_id,
+          bestlist_race_id,
+          laps_race_id,
           latest_news_ids,
           featured_news_id,
           hearts_winner_driver_id,
@@ -1408,10 +1500,14 @@ async function handleAdminNewsDashboardSave(request, env) {
           poll_options,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id)
         DO UPDATE SET
           next_race_id = excluded.next_race_id,
+          display_mode = excluded.display_mode,
+          display_race_id = excluded.display_race_id,
+          bestlist_race_id = excluded.bestlist_race_id,
+          laps_race_id = excluded.laps_race_id,
           latest_news_ids = excluded.latest_news_ids,
           featured_news_id = excluded.featured_news_id,
           hearts_winner_driver_id = excluded.hearts_winner_driver_id,
@@ -1424,6 +1520,10 @@ async function handleAdminNewsDashboardSave(request, env) {
       .bind(
         1,
         config.next_race_id,
+        config.display_mode,
+        config.display_race_id,
+        config.bestlist_race_id,
+        config.laps_race_id,
         JSON.stringify(config.latest_news_ids),
         config.featured_news_id,
         config.hearts_winner_driver_id,
@@ -1467,6 +1567,7 @@ async function handleAdminNewsCategoriesGet(request, env) {
   if (auth instanceof Response) return auth;
 
   try {
+    await ensureDefaultNewsCategories(env);
     const result = await env.DB
       .prepare(`
         SELECT
@@ -2155,6 +2256,10 @@ async function handlePublicData(env) {
       publicRows(env, 'news_dashboard', [
         'id',
         'next_race_id',
+        'display_mode',
+        'display_race_id',
+        'bestlist_race_id',
+        'laps_race_id',
         'latest_news_ids',
         'featured_news_id',
         'hearts_winner_driver_id',
@@ -2176,6 +2281,15 @@ async function handlePublicData(env) {
     }
 
     return isPublicActive(item.status);
+  });
+
+  const publicNewsArchive = news.filter(item => {
+    const status = String(item.status ?? "").trim().toLowerCase();
+    const archivedByStatus = status === "archived";
+    const archivedByActiveFlag = item.active !== undefined &&
+      Number(item.active) === 0 &&
+      !["draft", "inactive"].includes(status);
+    return archivedByStatus || archivedByActiveFlag;
   });
 
   const publicBlacklist = blacklist.filter(item =>
@@ -2253,6 +2367,7 @@ async function handlePublicData(env) {
       drivers: publicDrivers,
       ranking,
       news: publicNews,
+      newsArchive: publicNewsArchive,
       newsCategories: publicNewsCategories,
       newsDashboard,
       blacklist: publicBlacklist,
