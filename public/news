@@ -839,6 +839,7 @@ a { color: inherit; text-decoration: none; }
 .change-red time { color: #ff6b6b; }
 .change-blue time { color: #9fbfff; }
 .change ul { list-style: none; display: grid; gap: 6px; margin: 0 0 10px 6px; }
+.change .news-teaser{display:block;min-height:1.3em;line-height:1.45;color:#e6e1f5;}
 .change li { position: relative; padding-left: 18px; font-size: 14px; font-weight: 500; color: #e6e1f5; }
 .change li::before {
   content: ""; position: absolute; left: 0; top: .45em;
@@ -1043,52 +1044,6 @@ a { color: inherit; text-decoration: none; }
 .news-archive-cta h3{font:800 22px var(--f-head);font-style:italic;text-transform:uppercase;color:#fff}.news-archive-cta p{margin-top:3px;color:var(--muted);font:600 12px var(--f-body)}
 .news-archive-cta .btn{flex:0 0 auto}.change{position:relative;padding-bottom:42px;border-color:color-mix(in srgb,var(--category-color,#4d86ff) 40%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--category-color,#4d86ff) 18%,transparent),rgba(10,10,30,.35))}.change .change-head svg{color:var(--category-color,#4d86ff)}.change time{color:color-mix(in srgb,var(--category-color,#4d86ff) 70%,#fff)}.change li::before{color:var(--category-color,#4d86ff);background:var(--category-color,#4d86ff);border:0}.change .change-link{color:var(--category-color,#4d86ff)}.change-category{position:absolute;left:14px;bottom:12px;padding:4px 7px;border-radius:4px;font:800 9px var(--f-body);letter-spacing:.08em;text-transform:uppercase}
 .news-archive-overlay{position:fixed;inset:0;z-index:6000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(4,3,10,.28);backdrop-filter:blur(8px)}.news-archive-overlay.open{display:flex}.news-archive-modal{width:min(980px,94vw);max-height:88vh;overflow:auto;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,var(--card-2),var(--card));box-shadow:0 30px 90px rgba(0,0,0,.55)}.news-archive-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px;border-bottom:1px solid var(--line)}.news-archive-modal-head h2{font:800 30px var(--f-head);font-style:italic;text-transform:uppercase;color:#fff}.news-archive-modal-head p{margin-top:4px;color:var(--muted);font:600 12px var(--f-body)}.news-archive-close{width:34px;height:34px;border:1px solid var(--line);border-radius:3px;color:#d8d0e8;background:#0f0c18;font:700 18px var(--f-head);cursor:pointer}.news-archive-list{display:grid;gap:9px;padding:16px}.news-archive-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:6px;background:#0e0b17}.news-archive-item strong{display:block;color:#fff;font:800 16px var(--f-head);text-transform:uppercase}.news-archive-item small{display:block;margin-top:2px;color:#756d80;font:600 10px var(--f-body)}.news-archive-item .category{padding:4px 7px;border-radius:4px;font:800 9px var(--f-body);letter-spacing:.08em;text-transform:uppercase}.news-archive-empty{padding:30px;text-align:center;color:#766e82;font:700 12px var(--f-body);text-transform:uppercase}@media(max-width:700px){.news-archive-cta{flex-direction:column;align-items:flex-start}.news-archive-item{grid-template-columns:1fr}.news-archive-item .category,.news-archive-item .btn{justify-self:start}}
-</style>
-
-
-<style id="jackalNewsResponsiveLayout">
-/* NEWS: use the available desktop canvas before collapsing columns. */
-.nav a{font-size:clamp(12px,.7vw,15px);padding-left:clamp(10px,.75vw,16px);padding-right:clamp(10px,.75vw,16px)}
-@media (min-width:961px){
-  .grid-news{width:min(calc(100% - 72px),1800px);max-width:1800px;padding-left:0;padding-right:0;}
-  .grid-news{grid-template-columns:minmax(0,1.55fr) minmax(0,1.15fr) minmax(0,1fr)}
-  .row-2{grid-template-columns:minmax(0,1.18fr) minmax(0,1fr)}
-}
-@media (min-width:1440px){
-  .grid-news{gap:18px;margin-top:10px}
-  .big-head{padding:18px 22px 12px;gap:20px}
-  .big-icon{width:58px;height:58px}
-  .big-title{font-size:clamp(30px,1.45vw,38px)}
-  .big-sub{font-size:clamp(18px,1vw,22px)}
-  .tbl{font-size:clamp(15px,.82vw,17px)}
-  .tbl th{font-size:clamp(11px,.64vw,13px)}
-  .tbl .driver{font-size:clamp(16px,.88vw,19px)}
-  .change-head h3{font-size:clamp(20px,1.08vw,24px)}
-  .winner-name{font-size:clamp(28px,1.55vw,34px)}
-}
-@media (min-width:1800px){
-  .grid-news{gap:20px}
-  .card-foot{padding:16px 20px 20px}
-  .changes-list{padding:0 14px 16px;gap:14px}
-  .race-body{min-height:330px;padding:22px}
-  .winner-img{min-height:260px}
-}
-@media (min-width:2400px){
-  .grid-news{width:min(calc(100% - 80px),2000px);max-width:2000px}
-}
-
-/* Archive and article dialogs should grow on large displays too. */
-@media (min-width:1200px){
-  .news-detail-modal{width:min(1100px,88vw);max-height:86vh}
-  .news-detail-body{padding:30px 34px 34px}
-  .news-detail-title{font-size:clamp(34px,2vw,46px)}
-  .news-archive-modal{width:min(1450px,90vw);max-height:88vh}
-  .news-archive-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:20px}
-}
-@media (min-width:1800px){
-  .news-archive-modal{width:min(1700px,88vw)}
-  .news-archive-item{padding:15px 16px}
-}
 </style>
 
 </head>
@@ -1376,7 +1331,7 @@ function render(data){
  const bestLink=document.querySelector('.best-results-link');if(bestLink)bestLink.href=bestRace?`/races?race=${encodeURIComponent(bestRace.id)}`:'/races';
  const raceLink=document.querySelector('.race-details-link');if(raceLink)raceLink.href=displayRace?`/races?race=${encodeURIComponent(displayRace.id)}&view=details`:'/races';
  const raceCard=document.querySelector('.race-card');if(raceCard){const title=raceCard.querySelector('.big-title'),bg=raceCard.querySelector('.race-bg'),name=raceCard.querySelector('.race-name'),dateNode=raceCard.querySelector('.race-date div'),facts=raceCard.querySelector('.race-facts'),titleMap={next_race:'Nächstes Rennen',last_race:'Letztes Rennen',next_event:'Nächstes Event',last_event:'Letztes Event',current_event:'Aktuelles Event'};if(title)title.textContent=titleMap[mode]||'Nächstes Rennen';const isEventMode=['next_event','last_event','current_event'].includes(mode);const useEventNews=isEventMode&&eventSource==='news'&&eventNews;const useCustom=isEventMode&&eventSource==='custom';if(displayRace&&bg)bg.innerHTML=displayRace.image_url?`<img src="${escapeHtml(displayRace.image_url)}" alt="${escapeHtml(displayRace.name||'')}">`:'';if(name)name.textContent=useEventNews?(eventNews.title||'Event'):useCustom?(eventCustomTitle||'Event'):(displayRace?.name||'Rennen');if(dateNode)dateNode.innerHTML=displayRace?`${escapeHtml(formatDateShort(displayRace.date))}<small>${escapeHtml(displayRace.time||'—')} Uhr</small>`:'';if(facts){const arr=[];if(useEventNews){const teaser=newsTeaser(eventNews);if(teaser)arr.push(`<li><span>${escapeHtml(teaser.slice(0,260))}</span></li>`);}else if(useCustom){if(eventCustomText)arr.push(`<li><span>${escapeHtml(eventCustomText.slice(0,320))}</span></li>`);}else if(displayRace?.location){arr.push(`<li><span>${escapeHtml(displayRace.location)}</span></li>`);if(displayRace.description)arr.push(`<li><span>${escapeHtml(displayRace.description)}</span></li>`);}facts.innerHTML=arr.join('')||'<li><span>Weitere Veranstaltungsdaten folgen.</span></li>'; }wireImageSlots(raceCard);}
- const changes=document.querySelector('.changes-list');if(changes){const items=chooseNews(data);changes.innerHTML=items.length?items.slice(0,3).map(n=>{const cat=newsCategoryInfo(data,n.category),color=cat?.color||'#4D86FF',textColor=cat?.text_color||'#FFFFFF';return `<article class="change" style="--category-color:${escapeHtml(color)};--category-text:${escapeHtml(textColor)}"><div class="change-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><h3>${escapeHtml(n.title||'News')}</h3><time>${escapeHtml(formatDateShort(n.date||n.created_at))}</time></div><ul><li>${escapeHtml(newsTeaser(n).slice(0,220))}</li></ul><div class="change-category" style="color:${escapeHtml(textColor)};background:${escapeHtml(color)}">${escapeHtml(cat?.name||n.category||'ALLGEMEIN')}</div><a class="change-link news-read-link" href="/news" data-news-id="${escapeHtml(String(n.id||''))}">Mehr lesen <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></article>`;}).join(''):'<div class="empty">Noch keine News vorhanden.</div>';}
+ const changes=document.querySelector('.changes-list');if(changes){const items=chooseNews(data);changes.innerHTML=items.length?items.slice(0,3).map(n=>{const cat=newsCategoryInfo(data,n.category),color=cat?.color||'#4D86FF',textColor=cat?.text_color||'#FFFFFF';return `<article class="change" style="--category-color:${escapeHtml(color)};--category-text:${escapeHtml(textColor)}"><div class="change-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><h3>${escapeHtml(n.title||'News')}</h3><time>${escapeHtml(formatDateShort(n.date||n.created_at))}</time></div><ul><li><span class="news-teaser">${escapeHtml(newsTeaser(n).slice(0,220))}</span></li></ul><div class="change-category" style="color:${escapeHtml(textColor)};background:${escapeHtml(color)}">${escapeHtml(cat?.name||n.category||'ALLGEMEIN')}</div><a class="change-link news-read-link" href="/news" data-news-id="${escapeHtml(String(n.id||''))}">Mehr lesen <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></article>`;}).join(''):'<div class="empty">Noch keine News vorhanden.</div>';}
  const winnerId=String(dash.hearts_winner_driver_id||''),winner=winnerId?dmap.get(winnerId):null,heartWrap=document.querySelector('.hearts');if(heartWrap){const winnerName=heartWrap.querySelector('.winner-name'),winnerTeam=heartWrap.querySelector('.winner-team'),quote=heartWrap.querySelector('.winner-quote'),img=heartWrap.querySelector('.winner-img');if(winner){if(img){img.innerHTML=winner.image_url?`<img src="${escapeHtml(winner.image_url)}" alt="${escapeHtml(winner.nickname||'')}">`:'';}if(winnerName)winnerName.innerHTML=`<svg viewBox="0 0 24 24"><path d="m2 7 5 4 5-7 5 7 5-4-2 12H4L2 7Zm2 14h16v2H4v-2Z"/></svg>${escapeHtml(winner.nickname||'Unbekannt')}`;if(winnerTeam)winnerTeam.innerHTML=`${teamIcon(winner.team)}${escapeHtml(winner.team||'Kein Team')}`;}if(quote)quote.textContent=dash.hearts_quote?`„${dash.hearts_quote}“`:'';wireImageSlots(heartWrap);}
  const winnerLink=document.querySelector('.winner-driver-link');if(winnerLink)winnerLink.href=winner?`/drivers?driver=${encodeURIComponent(winner.id)}`:'/drivers';
  const poll=document.getElementById('poll'),opts=dashPoll(data);if(poll){const q=poll.querySelector('.poll-q'),list=poll.querySelector('.poll-list'),submit=poll.querySelector('.poll-foot .btn');if(q)q.textContent=opts.question;if(list)list.innerHTML=opts.options.length?opts.options.map((o,i)=>`<li><label class="poll-opt"><input type="radio" name="vote" value="${escapeHtml(o.driverId)}" ${i===0?'checked':''}><span class="bar" style="width:${Math.max(0,Math.min(100,o.percent))}%"></span><span class="radio"></span><span class="label">${escapeHtml(dmap.get(o.driverId)?.nickname||o.label||'Unbekannt')}</span><span class="pct">${Math.round(o.percent)}%</span></label></li>`).join(''):'<li class="empty">Aktuell ist keine Abstimmung eingerichtet.</li>';if(submit)submit.disabled=!opts.active||!opts.options.length;if(!opts.active)poll.classList.add('inactive');else poll.classList.remove('inactive');}

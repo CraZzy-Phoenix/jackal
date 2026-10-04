@@ -18,7 +18,7 @@
     .jackal-admin-inline.danger:hover{border-color:#ff5d7d;box-shadow:0 0 12px rgba(255,80,110,.20);color:#fff}
     .jackal-admin-row-actions .jackal-admin-inline{margin-left:0}
     .jackal-admin-home-modal{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,3,10,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-    .jackal-home-admin-window{width:min(1240px,90vw);max-height:min(860px,90vh);overflow:auto;border:1px solid rgba(178,102,255,.42);border-radius:10px;background:rgba(17,14,31,.96);box-shadow:0 30px 100px rgba(0,0,0,.45),0 0 38px rgba(168,85,255,.16)}
+    .jackal-home-admin-window{width:min(720px,94vw);max-height:min(760px,92vh);overflow:auto;border:1px solid rgba(178,102,255,.42);border-radius:10px;background:rgba(17,14,31,.96);box-shadow:0 30px 100px rgba(0,0,0,.45),0 0 38px rgba(168,85,255,.16)}
     .jackal-home-admin-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid rgba(42,35,66,.9)}
     .jackal-home-admin-kicker{font:800 11px 'Saira Condensed',sans-serif;letter-spacing:.16em;color:#b266ff;text-transform:uppercase}
     .jackal-home-admin-head h2{margin:3px 0 0;font:800 30px 'Saira Condensed',sans-serif;font-style:italic;text-transform:uppercase;color:#fff}
@@ -202,13 +202,11 @@
     s.textContent=`
       .jackal-admin-edit-overlay{position:fixed;inset:0;z-index:7000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(4,3,10,.10);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
       .jackal-admin-edit-overlay.open{display:flex}
-      .jackal-admin-edit-window{position:relative;width:min(1600px,92vw);height:min(900px,90vh);border:1px solid rgba(178,102,255,.42);border-radius:10px;overflow:hidden;background:rgba(13,10,22,.78);box-shadow:0 30px 100px rgba(0,0,0,.40),0 0 38px rgba(168,85,255,.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+      .jackal-admin-edit-window{position:relative;width:min(920px,96vw);height:min(760px,92vh);border:1px solid rgba(178,102,255,.42);border-radius:10px;overflow:hidden;background:rgba(13,10,22,.78);box-shadow:0 30px 100px rgba(0,0,0,.40),0 0 38px rgba(168,85,255,.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
       .jackal-admin-edit-overlay.management-mode{padding:0;align-items:stretch;justify-content:stretch;background:rgba(4,3,10,.16)}
       .jackal-admin-edit-overlay.management-mode .jackal-admin-edit-window{width:100vw;height:100vh;border:0;border-radius:0;background:rgba(13,10,22,.94);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
       .jackal-admin-edit-window iframe{width:100%;height:100%;display:block;border:0;background:transparent}
       .jackal-admin-edit-close{position:absolute;top:9px;right:9px;z-index:5;width:34px;height:34px;border:1px solid rgba(75,47,138,.7);border-radius:3px;color:#ddd5eb;background:rgba(15,12,24,.78);font:700 19px 'Saira Condensed',sans-serif;cursor:pointer}
-      @media(min-width:1800px){.jackal-admin-edit-window{width:min(1850px,90vw);height:min(980px,90vh)}.jackal-home-admin-window{width:min(1500px,90vw);}}
-      @media(min-width:2400px){.jackal-admin-edit-window{width:min(2000px,88vw)}.jackal-home-admin-window{width:min(1800px,88vw)}}
       .jackal-admin-edit-close:hover{color:#fff;border-color:#b266ff;box-shadow:0 0 12px rgba(168,85,255,.28)}
     `;
     document.head.appendChild(s);
@@ -329,6 +327,100 @@
     }
   }
 
+  function closeDirectNewsManager(){
+    document.querySelector('.jackal-direct-news-manager')?.remove();
+  }
+
+  async function openDirectNewsManager(mode='manage'){
+    const auth=currentAuth || await getAuth();
+    if(!auth){ setAuthUi(null); openLogin(); return; }
+    if(!can(auth,'news','view')) return;
+
+    let rows=[];
+    let categories=[];
+    try{
+      const [newsRes,catRes]=await Promise.all([
+        fetch('/api/admin/data/news',{credentials:'same-origin',cache:'no-store'}),
+        fetch('/api/admin/news/categories',{credentials:'same-origin',cache:'no-store'})
+      ]);
+      const [newsData,catData]=await Promise.all([
+        newsRes.json().catch(()=>({})),
+        catRes.json().catch(()=>({}))
+      ]);
+      if(!newsRes.ok || !newsData.ok) throw new Error(newsData.error||'News konnten nicht geladen werden.');
+      rows=Array.isArray(newsData.rows)?newsData.rows:[];
+      categories=Array.isArray(catData.categories)?catData.categories:[];
+    }catch(e){ window.alert(e.message||'News konnten nicht geladen werden.'); return; }
+
+    const old=document.querySelector('.jackal-direct-news-manager');
+    old?.remove();
+    const overlay=document.createElement('div');
+    overlay.className='jackal-direct-news-manager';
+    overlay.innerHTML=`<div class="jdnm-window" role="dialog" aria-modal="true" aria-label="News ${mode==='archive'?'Archiv':'Verwaltung'}">
+      <div class="jdnm-head"><div><div class="jdnm-kicker">JACKAL ADMIN</div><h2>${mode==='archive'?'NEWS ARCHIV':'NEWS VERWALTEN'}</h2><p>${mode==='archive'?'Archivierte und vergangene Meldungen verwalten.':'News einblenden, ausblenden, bearbeiten oder archivieren.'}</p></div><button type="button" class="jdnm-close">×</button></div>
+      <div class="jdnm-toolbar"><input type="search" class="jdnm-search" placeholder="News durchsuchen..."><div class="jdnm-count"></div></div>
+      <div class="jdnm-list"></div>
+      <div class="jdnm-foot"><button type="button" class="jdnm-secondary jdnm-close">Schließen</button>${mode==='manage'&&can(auth,'news','create')?'<button type="button" class="jdnm-primary" id="jdnm-new">+ Neue News</button>':''}</div>
+    </div>`;
+    document.body.appendChild(overlay);
+
+    const styleId='jackalDirectNewsStyle';
+    if(!document.getElementById(styleId)){
+      const st=document.createElement('style');st.id=styleId;st.textContent=`
+      .jackal-direct-news-manager{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(4,3,10,.18);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+      .jackal-direct-news-manager .jdnm-window{width:min(1180px,94vw);max-height:88vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#171329,#110e1f);border:1px solid #4b2f8a;border-radius:10px;box-shadow:0 30px 100px rgba(0,0,0,.45),0 0 35px rgba(168,85,255,.15);overflow:hidden}
+      .jdnm-head{display:flex;justify-content:space-between;gap:18px;padding:20px 22px;border-bottom:1px solid #2a2342}.jdnm-kicker{font:800 11px 'Rajdhani',sans-serif;color:#b266ff;letter-spacing:.14em;text-transform:uppercase}.jdnm-head h2{margin:2px 0 0;font:800 32px 'Saira Condensed',sans-serif;font-style:italic;color:#fff;text-transform:uppercase}.jdnm-head p{margin:3px 0 0;color:#a49cbc;font:600 12px 'Rajdhani',sans-serif}.jdnm-close{width:34px;height:34px;border:1px solid #2a2342;border-radius:3px;color:#ddd5eb;background:#0f0c18;font:700 18px 'Saira Condensed',sans-serif;cursor:pointer}.jdnm-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-bottom:1px solid #241d36}.jdnm-search{flex:1;max-width:520px;height:40px;padding:0 12px;border:1px solid #2a2342;border-radius:4px;background:#0e0b17;color:#fff;font:600 13px 'Rajdhani',sans-serif;outline:none}.jdnm-list{overflow:auto;padding:8px 22px 14px}.jdnm-row{display:grid;grid-template-columns:minmax(0,1.7fr) 150px 120px minmax(0,1.2fr);gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #2a2342}.jdnm-title{font:800 17px 'Saira Condensed',sans-serif;color:#fff;text-transform:uppercase}.jdnm-meta{margin-top:3px;font:600 10px 'Rajdhani',sans-serif;color:#756d80}.jdnm-cat{display:inline-flex;justify-self:start;padding:4px 7px;border-radius:4px;font:800 9px 'Rajdhani',sans-serif;text-transform:uppercase;letter-spacing:.07em}.jdnm-status{font:700 10px 'Rajdhani',sans-serif;color:#b266ff;text-transform:uppercase}.jdnm-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px}.jdnm-actions button{padding:7px 9px;border:1px solid #3a2c56;border-radius:3px;background:#0f0c18;color:#ddd5eb;font:800 11px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}.jdnm-actions button:hover{border-color:#b266ff;color:#fff}.jdnm-actions .danger{border-color:#6d2941;color:#ffb7c4}.jdnm-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 22px;border-top:1px solid #2a2342}.jdnm-primary,.jdnm-secondary{padding:10px 14px;border:1px solid #b266ff;border-radius:3px;color:#fff;background:#0f0c18;font:800 13px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}.jdnm-primary{background:linear-gradient(180deg,#5c22c4,#4e18ae 60%,#43149a);box-shadow:0 0 14px rgba(168,85,255,.22)}
+      @media(max-width:800px){.jdnm-row{grid-template-columns:1fr}.jdnm-actions{justify-content:flex-start}.jdnm-toolbar{align-items:stretch;flex-direction:column}.jdnm-search{max-width:none;width:100%}}
+      `;document.head.appendChild(st);
+    }
+    const list=overlay.querySelector('.jdnm-list'), count=overlay.querySelector('.jdnm-count'), search=overlay.querySelector('.jdnm-search');
+    const isArchived=r=>String(r.status||'').toLowerCase()==='archived';
+    const isActive=r=>r.active===undefined ? ['published','active','aktiv','1','true'].includes(String(r.status||'').toLowerCase()) : Number(r.active)===1;
+    const labelCat=r=>String(r.category||'ALLGEMEIN').toUpperCase();
+    const render=()=>{
+      const q=String(search?.value||'').trim().toLowerCase();
+      const filtered=rows.filter(r=>{
+        if(mode==='archive' && !isArchived(r)) return false;
+        if(mode==='manage' && isArchived(r)) return false;
+        return !q || [r.title,r.text,r.content,r.category].map(v=>String(v||'').toLowerCase()).join(' ').includes(q);
+      });
+      if(count) count.textContent=`${filtered.length} News`;
+      list.innerHTML=filtered.length?filtered.map(r=>{
+        const id=r.id??r._id??''; const archived=isArchived(r); const active=isActive(r); const c=categories.find(x=>String(x.name||'').toUpperCase()===labelCat(r)); const color=c?.color||'#9E91B8'; const tc=c?.text_color||'#FFFFFF';
+        const actions=[];
+        if(can(auth,'news','view')) actions.push(`<button type="button" data-act="long" data-id="${esc(id)}">Langtext</button>`);
+        if(can(auth,'news','edit')) actions.push(`<button type="button" data-act="edit" data-id="${esc(id)}">Bearbeiten</button>`);
+        if(!archived&&can(auth,'news','edit')) actions.push(`<button type="button" data-act="visible" data-id="${esc(id)}">${active?'Ausblenden':'Einblenden'}</button>`);
+        if(can(auth,'news','edit')) actions.push(`<button type="button" data-act="archive" data-id="${esc(id)}">${archived?'Wiederherstellen':'Archivieren'}</button>`);
+        if(can(auth,'news','delete')) actions.push(`<button type="button" class="danger" data-act="delete" data-id="${esc(id)}">Löschen</button>`);
+        return `<article class="jdnm-row"><div><div class="jdnm-title">${esc(r.title||'Unbenannte News')}</div><div class="jdnm-meta">${esc(String(r.date||r.created_at||'—'))}</div></div><span class="jdnm-cat" style="background:${esc(color)};color:${esc(tc)}">${esc(labelCat(r))}</span><span class="jdnm-status">${archived?'ARCHIV':active?'ÖFFENTLICH':'AUSGEBLENDET'}</span><div class="jdnm-actions">${actions.join('')}</div></article>`;
+      }).join(''):'<div class="empty">Keine News vorhanden.</div>';
+    };
+    const find=id=>rows.find(r=>String(r.id??r._id??'')===String(id));
+    const close=()=>overlay.remove();
+    overlay.querySelectorAll('.jdnm-close').forEach(b=>b.addEventListener('click',close));
+    search?.addEventListener('input',render);
+    overlay.querySelector('#jdnm-new')?.addEventListener('click',()=>{close();setTimeout(()=>openEditor('embed=crud&resource=news&action=new'),30);});
+    list.addEventListener('click',async e=>{
+      const b=e.target.closest('button[data-act]');if(!b)return; const id=b.dataset.id||'';const row=find(id);if(!row)return; const act=b.dataset.act;
+      if(act==='edit'){close();setTimeout(()=>openEditor(`embed=crud&resource=news&action=edit&id=${encodeURIComponent(id)}`),30);return;}
+      if(act==='long'){const text=String(row.content||row.long_text||row.body||row.text||'').trim()||'Kein Langtext vorhanden.';const o=document.createElement('div');o.className='jackal-direct-news-manager';o.innerHTML=`<div class="jdnm-window" style="max-width:900px"><div class="jdnm-head"><div><div class="jdnm-kicker">NEWS</div><h2>LANGTEXT</h2><p>${esc(row.title||'News')}</p></div><button type="button" class="jdnm-close">×</button></div><div style="padding:22px;overflow:auto;color:#ddd;white-space:pre-wrap;line-height:1.65;font:600 15px 'Rajdhani',sans-serif">${esc(text)}</div></div>`;document.body.appendChild(o);o.querySelector('.jdnm-close').addEventListener('click',()=>o.remove());return;}
+      if(act==='delete'){if(!confirm(`"${row.title||'News'}" wirklich löschen?`))return;await deleteResource('news',id,row.title||'News');close();return;}
+      if(act==='visible' || act==='archive'){
+        b.disabled=true;
+        const archived=isArchived(row);const nowActive=isActive(row);
+        let payload={};
+        if(act==='visible'){
+          const next=!nowActive;payload={active:next?1:0,status:next?'published':'inactive'};
+        }else{
+          const restore=archived;payload={status:restore?'published':'archived',active:restore?1:0};
+        }
+        try{const r=await fetch(`/api/admin/data/news/${encodeURIComponent(id)}`,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'News konnte nicht geändert werden.');const nr=await fetch('/api/admin/data/news',{credentials:'same-origin',cache:'no-store'});const nd=await nr.json().catch(()=>({}));rows=Array.isArray(nd.rows)?nd.rows:[];render();}catch(err){alert(err.message||'News konnte nicht geändert werden.');b.disabled=false;}
+      }
+    });
+    render();
+  }
+
   function setupNews(auth){
     if(!auth) return;
 
@@ -353,7 +445,7 @@
           const b=document.createElement('button');
           b.type='button'; b.className='jackal-admin-edit';
           b.dataset.actionKey='news-manage'; b.textContent='News verwalten';
-          b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor('embed=special&special=news-manage');});
+          b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openDirectNewsManager('manage');});
           group.appendChild(b);
         }
 
@@ -361,7 +453,7 @@
           const b=document.createElement('button');
           b.type='button'; b.className='jackal-admin-edit';
           b.dataset.actionKey='news-archive-manage'; b.textContent='News Archiv';
-          b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor('embed=special&special=news-archive');});
+          b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openDirectNewsManager('archive');});
           group.appendChild(b);
         }
 
