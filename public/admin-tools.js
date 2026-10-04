@@ -14,6 +14,8 @@
     .jackal-admin-row-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
     .jackal-admin-inline{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid rgba(178,102,255,.55);border-radius:3px;color:#fff;background:rgba(78,24,174,.72);font:800 12px 'Saira Condensed',sans-serif;text-transform:uppercase;cursor:pointer}
     .jackal-admin-row-actions .jackal-admin-inline{margin-left:0}
+    .jackal-admin-news-actions{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+    .jackal-admin-news-actions .jackal-admin-edit{margin-left:0;padding:6px 9px;font-size:11px}
     .jackal-login-overlay{background:rgba(4,3,10,.12)!important;backdrop-filter:blur(9px)!important;-webkit-backdrop-filter:blur(9px)!important}
     .jackal-login-modal{background:rgba(17,14,31,.92)!important;box-shadow:0 24px 90px rgba(0,0,0,.38),0 0 30px rgba(168,85,255,.16)!important}
     @media(max-width:960px){.jackal-admin-auth-actions{gap:5px}.jackal-admin-auth-btn{height:34px;padding:0 10px;font-size:12px}}
@@ -190,6 +192,33 @@
 
   function setupNews(auth){
     if(!auth) return;
+
+    // News card: separate actions for creating and archiving, while keeping
+    // the existing per-news edit button below each item.
+    const newsCard=document.querySelector('.changes');
+    if(newsCard){
+      const head=newsCard.querySelector('.big-head');
+      if(head && !head.querySelector('.jackal-admin-news-actions')){
+        const group=document.createElement('div');
+        group.className='jackal-admin-news-actions';
+
+        const make=(label,params,key)=>{
+          if(head.querySelector(`button[data-action-key="${CSS.escape(key)}"]`)) return;
+          const b=document.createElement('button');
+          b.type='button';
+          b.className='jackal-admin-edit';
+          b.dataset.actionKey=key;
+          b.textContent=label;
+          b.addEventListener('click',()=>openEditor(params));
+          group.appendChild(b);
+        };
+
+        if(can(auth,'news','create')) make('Neue News','embed=crud&resource=news&action=new','news-create');
+        if(can(auth,'news','edit')) make('News archivieren','embed=special&special=news-archive','news-archive');
+        if(group.children.length) head.appendChild(group);
+      }
+    }
+
     const best=document.querySelector('.bestlist');
     if(best && can(auth,'results','create')) addHeadButton(best,'Ergebnisse verwalten','embed=crud&resource=results&action=new','news-best');
     const race=document.querySelector('.race-card');
