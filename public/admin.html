@@ -1439,6 +1439,69 @@ body{
 .modal-backdrop{z-index:3000!important}
 .toast{z-index:3100!important}
 
+
+/* =========================================================
+   CENTRAL WEBSITE MANAGEMENT – STEP 3
+========================================================= */
+.site-settings-shell{display:grid;gap:14px}
+.site-settings-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:22px 24px}
+.site-settings-hero h2{margin:3px 0 4px;font:800 31px var(--f-head);font-style:italic;text-transform:uppercase}
+.site-settings-hero p{margin:0;color:var(--muted);font-size:13px}
+.site-settings-status{padding:7px 11px;border:1px solid rgba(95,220,140,.2);border-radius:999px;color:#75e29b;background:rgba(70,180,105,.08);font-size:10px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.site-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.site-settings-card{display:grid;grid-template-columns:46px 1fr auto;align-items:center;gap:14px;width:100%;padding:16px 18px;border:1px solid var(--line);border-radius:9px;background:linear-gradient(180deg,var(--card-2),var(--card));color:#fff;text-align:left;cursor:pointer;transition:.18s ease}
+.site-settings-card:hover{border-color:var(--purple-2);box-shadow:0 0 18px rgba(168,85,255,.15);transform:translateY(-1px)}
+.site-settings-icon{display:grid;place-items:center;width:42px;height:42px;border:1px solid rgba(168,85,255,.3);border-radius:8px;background:rgba(168,85,255,.08);color:var(--purple-2);font:800 20px var(--f-head)}
+.site-settings-card strong{display:block;font:800 22px var(--f-head);font-style:italic;text-transform:uppercase}
+.site-settings-card small{display:block;margin-top:3px;color:var(--muted);font-size:11px;line-height:1.35}
+.site-settings-card b{font-size:20px;color:var(--purple-2)}
+.site-settings-panel{padding:0 18px 18px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,var(--card-2),var(--card));box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.site-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:16px 0;border-bottom:1px solid var(--line);margin-bottom:16px}
+.site-panel-head h3{margin:0;font:800 28px var(--f-head);font-style:italic;text-transform:uppercase}
+.site-panel-head p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.site-panel-section{padding:14px 0;border-bottom:1px solid rgba(42,35,66,.7)}
+.site-panel-section:last-child{border-bottom:0}
+.site-panel-section h4{margin:0 0 12px;font:800 17px var(--f-head);font-style:italic;text-transform:uppercase;color:#fff}
+.site-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.site-form-grid .full{grid-column:1/-1}
+.site-field{display:grid;gap:6px}
+.site-field label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#81788f}
+.site-field input,.site-field select,.site-field textarea{width:100%;min-height:38px;padding:0 11px;background:#0d0b16;border:1px solid #2d2740;border-radius:6px;color:#f2eefc;font:600 13px var(--f-body);outline:none}
+.site-field textarea{padding:10px 11px;min-height:84px;resize:vertical}
+.site-field input[type=color]{padding:3px;height:38px;cursor:pointer}
+.site-field input:focus,.site-field select:focus,.site-field textarea:focus{border-color:var(--purple-2);box-shadow:0 0 0 2px rgba(168,85,255,.1)}
+.site-color-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.site-toggle{display:flex;align-items:center;gap:9px;min-height:38px;padding:0 11px;border:1px solid #2d2740;border-radius:6px;background:#0d0b16}
+.site-toggle input{width:16px;height:16px;accent-color:var(--purple-2)}
+.site-toggle span{font-size:11px;color:#ddd6e9}
+.site-panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:14px}
+.site-panel-message{margin-right:auto;min-height:18px;color:#75e29b;font-size:11px}
+.site-panel-message.error{color:#ff7777}
+.site-info-box{padding:11px 12px;border:1px dashed #3b3156;border-radius:6px;background:#0d0b16;color:var(--muted);font-size:11px;line-height:1.45}
+.site-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.site-media-card{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#0d0b16}
+.site-media-preview{position:relative;min-height:105px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#08060e}
+.site-media-preview img{width:100%;height:105px;object-fit:cover;display:block}
+.site-media-preview.empty::after{content:'KEIN BILD';position:absolute;inset:0;display:grid;place-items:center;color:#6f687d;font:800 11px var(--f-head);letter-spacing:.08em}
+.site-media-meta h4{margin:0;font:800 18px var(--f-head);font-style:italic;text-transform:uppercase}
+.site-media-meta p{margin:2px 0 8px;color:#746d7f;font-size:10px}
+.site-media-actions{display:flex;gap:7px;flex-wrap:wrap}
+.site-media-actions input[type=file]{max-width:100%;color:#aaa1b5;font-size:10px}
+.site-text-toolbar{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.site-text-toolbar select{min-height:38px;padding:0 10px;background:#0d0b16;border:1px solid #2d2740;border-radius:6px;color:#fff}
+.site-text-list{display:grid;gap:8px}
+.site-text-row{display:grid;grid-template-columns:110px 150px 170px 1fr auto;gap:8px;align-items:start;padding:10px;border:1px solid #29233a;border-radius:7px;background:#0d0b16}
+.site-text-row input,.site-text-row select,.site-text-row textarea{width:100%;padding:9px 10px;background:#0f0c18;border:1px solid #2d2740;border-radius:5px;color:#fff;font:600 11px var(--f-body)}
+.site-text-row textarea{min-height:42px;resize:vertical}
+.site-text-row .site-text-remove{align-self:stretch}
+.responsive-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.responsive-card{padding:12px;border:1px solid var(--line);border-radius:8px;background:#0d0b16}
+.responsive-card h4{margin:0;font:800 21px var(--f-head);font-style:italic;text-transform:uppercase}
+.responsive-card small{display:block;margin-top:2px;color:#70697b;font-size:9px}
+.responsive-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+@media(max-width:1050px){.site-settings-grid,.site-media-grid{grid-template-columns:1fr}.site-color-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.responsive-cards{grid-template-columns:1fr}.site-text-row{grid-template-columns:1fr 1fr}.site-text-row textarea{grid-column:1/-1}.site-text-row .site-text-remove{grid-column:2}}
+@media(max-width:700px){.site-settings-hero,.site-panel-head{align-items:flex-start;flex-direction:column}.site-form-grid{grid-template-columns:1fr}.site-form-grid .full{grid-column:auto}.site-color-grid{grid-template-columns:1fr}.site-media-card{grid-template-columns:1fr}.site-text-row{grid-template-columns:1fr}.site-text-row textarea,.site-text-row .site-text-remove{grid-column:auto}.site-text-toolbar{align-items:stretch;flex-direction:column}.site-panel-actions{align-items:stretch;flex-direction:column}.site-panel-actions .action-button{width:100%}.site-panel-actions .site-panel-message{margin:0}}
+
 /* =========================================================
    SIMPLIFIED ADMIN + COMPACT EMBED EDITOR
 ========================================================= */
@@ -1851,60 +1914,60 @@ html,body{overflow-x:hidden}
          EINSTELLUNGEN
     ====================================================== -->
 <section class="page" id="page-settings">
-<!-- WEBSITE SETTINGS -->
-<div class="card crud-page" data-resource="settings">
-<div class="card-header">
-<div>
-<h2>Website-Daten verwalten</h2>
-<span>Einstellungen direkt aus D1 verwalten</span>
-</div>
-<button class="action-button crud-create-button" data-resource="settings">+ Einstellung hinzufügen</button>
-</div>
-<div class="crud-toolbar">
-<div class="crud-info" id="crud-info-settings">Daten werden geladen...</div>
-<button class="user-button crud-refresh" data-resource="settings">↻ Aktualisieren</button>
-</div>
-<div id="crud-table-settings"></div>
-</div>
-<div class="card" id="staticWebsiteSettingsCard">
-<div class="card-header">
-<div>
-<h2>
-              Website-Einstellungen
-            </h2>
-<span>
-              Allgemeine Einstellungen der JACKAL Website
-            </span>
-</div>
-</div>
-<div class="form-grid">
-<div class="field">
-<label>Website Name</label>
-<input type="text" value="JACKAL RACING LEAGUE"/>
-</div>
-<div class="field">
-<label>Slogan</label>
-<input type="text" value="WE ARE JACKAL. WE ARE RACING."/>
-</div>
-<div class="field">
-<label>Banner URL</label>
-<input type="text" value="banner.png"/>
-</div>
-<div class="field">
-<label>Version</label>
-<input type="text" value="1.0"/>
-</div>
-</div>
-<div class="form-actions">
-<button class="primary-button small">
-            Einstellungen speichern
-          </button>
-</div>
-</div>
-<!-- ===================================================
-           BENUTZER & RECHTE
-      ==================================================== -->
-<div class="card">
+  <div class="site-settings-shell">
+    <div class="site-settings-hero card">
+      <div><div class="editor-eyebrow">JACKAL WEBSITE</div><h2>Website anpassen</h2><p>Bilder, Farben, Schriften, Effekte und Bildschirmgrößen zentral verwalten.</p></div>
+      <div class="site-settings-status" id="siteSettingsStatus">Bereit</div>
+    </div>
+    <div class="site-settings-grid">
+      <button class="site-settings-card" type="button" data-site-panel="design"><span class="site-settings-icon">◈</span><span><strong>Design</strong><small>Farben, Schriften, Glow, Schatten und Effekte</small></span><b>→</b></button>
+      <button class="site-settings-card" type="button" data-site-panel="media"><span class="site-settings-icon">▧</span><span><strong>Bilder &amp; Medien</strong><small>Banner, Champion, Fahrzeuge und feste Website-Bilder</small></span><b>→</b></button>
+      <button class="site-settings-card" type="button" data-site-panel="texts"><span class="site-settings-icon">T</span><span><strong>Texte</strong><small>Feste Überschriften, Slogans, Labels und Buttons</small></span><b>→</b></button>
+      <button class="site-settings-card" type="button" data-site-panel="responsive"><span class="site-settings-icon">▤</span><span><strong>Responsive</strong><small>FHD, QHD und UHD separat einstellen</small></span><b>→</b></button>
+      <button class="site-settings-card" type="button" data-site-panel="website"><span class="site-settings-icon">⚙</span><span><strong>Website-Einstellungen</strong><small>Globale Texte und zentrale Systemoptionen</small></span><b>→</b></button>
+    </div>
+
+    <div class="site-settings-panel hidden" id="sitePanelDesign">
+      <div class="site-panel-head"><div><h3>Design</h3><p>Zentrale Farben, Schriften, Größen und Effekte.</p></div><button class="user-button site-panel-close" type="button">Schließen</button></div>
+      <form id="siteDesignForm">
+        <div class="site-panel-section"><h4>Farben</h4><div class="site-form-grid site-color-grid" id="siteColorFields"></div></div>
+        <div class="site-panel-section"><h4>Schriften</h4><div class="site-form-grid" id="siteFontFields"></div></div>
+        <div class="site-panel-section"><h4>Layout &amp; Größen</h4><div class="site-form-grid" id="siteLayoutFields"></div></div>
+        <div class="site-panel-section"><h4>Effekte</h4><div class="site-form-grid" id="siteEffectFields"></div></div>
+        <div class="site-panel-actions"><span class="site-panel-message" id="siteDesignMessage"></span><button class="action-button" type="submit">Design speichern</button></div>
+      </form>
+    </div>
+
+    <div class="site-settings-panel hidden" id="sitePanelMedia">
+      <div class="site-panel-head"><div><h3>Bilder &amp; Medien</h3><p>Feste Website-Bilder ersetzen und direkt nach R2 hochladen.</p></div><button class="user-button site-panel-close" type="button">Schließen</button></div>
+      <div class="site-media-grid" id="siteMediaGrid"><div class="empty">Medien werden geladen...</div></div>
+    </div>
+
+    <div class="site-settings-panel hidden" id="sitePanelTexts">
+      <div class="site-panel-head"><div><h3>Texte</h3><p>Alle zentralen Textwerte werden hier gesammelt und gespeichert.</p></div><button class="user-button site-panel-close" type="button">Schließen</button></div>
+      <div class="site-text-toolbar"><select id="siteTextPageFilter"><option value="all">Alle Seiten</option><option value="home">Home</option><option value="news">News</option><option value="drivers">Drivers</option><option value="ranking">Rangliste</option><option value="races">Races</option><option value="blacklist">Blacklist</option><option value="gallery">Gallery</option><option value="global">Global</option></select><button class="user-button" id="siteTextsAdd" type="button">+ Text hinzufügen</button><button class="user-button" id="siteTextsRefresh" type="button">↻ Aktualisieren</button></div>
+      <div class="site-text-list" id="siteTextList"><div class="empty">Texte werden geladen...</div></div>
+      <div class="site-panel-actions"><span class="site-panel-message" id="siteTextsMessage"></span><button class="action-button" id="siteTextsSave" type="button">Texte speichern</button></div>
+    </div>
+
+    <div class="site-settings-panel hidden" id="sitePanelResponsive">
+      <div class="site-panel-head"><div><h3>Responsive</h3><p>FHD, QHD und UHD separat einstellen.</p></div><button class="user-button site-panel-close" type="button">Schließen</button></div>
+      <div class="responsive-cards" id="responsiveCards"><div class="empty">Responsive-Profile werden geladen...</div></div>
+      <div class="site-panel-actions"><span class="site-panel-message" id="siteResponsiveMessage"></span><button class="action-button" id="siteResponsiveSave" type="button">Responsive speichern</button></div>
+    </div>
+
+    <div class="site-settings-panel hidden" id="sitePanelWebsite">
+      <div class="site-panel-head"><div><h3>Website-Einstellungen</h3><p>Globale Bezeichnungen und Slogan zentral speichern.</p></div><button class="user-button site-panel-close" type="button">Schließen</button></div>
+      <div class="site-form-grid">
+        <div class="site-field"><label>Website Name</label><input id="websiteSettingName" value="JACKAL RACING LEAGUE" /></div>
+        <div class="site-field"><label>Slogan</label><input id="websiteSettingSlogan" value="WE ARE JACKAL. WE ARE RACING." /></div>
+        <div class="site-field full"><label>Status</label><div class="site-info-box">Diese globalen Werte werden als zentrale Textwerte gespeichert. In Schritt 4 verbinden wir sie mit der sichtbaren Website.</div></div>
+      </div>
+      <div class="site-panel-actions"><span class="site-panel-message" id="siteWebsiteMessage"></span><button class="action-button" id="siteWebsiteSave" type="button">Website-Einstellungen speichern</button></div>
+    </div>
+
+    <!-- BENUTZER & RECHTE -->
+    <div class="card">
 <div class="card-header">
 <div>
 <h2>
@@ -1974,6 +2037,9 @@ html,body{overflow-x:hidden}
           </div>
 </div>
 </div>
+
+
+  </div>
 </section>
 </div>
 </aside>
@@ -2296,10 +2362,8 @@ async function checkSession(){
   }
 
   try{
-    // Normal admin page = only settings and user management.
-    const settingsButton=document.querySelector('.menu button[data-page="settings"]');
-    settingsButton?.click();
-    await loadCrudResource("settings");
+    // Normal admin page = website management + user management.
+    await loadSiteManagement();
     await loadUsers();
   }catch(error){
     console.error("Admin data error:",error);
@@ -6577,6 +6641,118 @@ async function startEmbedEditor(){
   }
   throw new Error("Unbekannter Bearbeitungsbereich.");
 }
+
+
+/* =========================================================
+   CENTRAL WEBSITE MANAGEMENT – STEP 3
+========================================================= */
+const siteDesignColorDefs = [
+  ['bg_color','Hintergrund'],['bg2_color','Hintergrund 2'],['card_color','Karte'],['card2_color','Karte 2'],
+  ['line_color','Rahmen'],['line_glow_color','Rahmen Glow'],['purple_color','Haupt-Lila'],['purple2_color','Akzent-Lila'],
+  ['purple3_color','Hell-Lila'],['neon_color','Neon'],['text_color','Haupttext'],['muted_color','Gedämpfter Text'],
+  ['brush_font_color','Brush Schriftfarbe'],['head_font_color','Headline Schriftfarbe'],['body_font_color','Text Schriftfarbe'],['small_text_color','Kleiner Text']
+];
+const siteDesignFontDefs = [
+  ['brush_font_family','Brush Schriftart'],['brush_font_size','Brush Größe'],['brush_font_weight','Brush Gewicht'],['brush_font_style','Brush Stil'],
+  ['head_font_family','Headline Schriftart'],['head_font_size','Headline Größe'],['head_font_weight','Headline Gewicht'],['head_font_style','Headline Stil'],
+  ['body_font_family','Text Schriftart'],['body_font_size','Text Größe'],['body_font_weight','Text Gewicht'],['body_font_style','Text Stil']
+];
+const siteDesignLayoutDefs = [
+  ['radius_px','Kartenecken (px)'],['page_max_width','Max. Seitenbreite'],['page_gutter','Seitenrand'],['section_gap_px','Abstand Bereiche (px)'],['topbar_height_px','Header Höhe (px)'],['hero_height_px','Hero Höhe (px)'],['backdrop_blur_px','Modal Blur (px)']
+];
+const siteDesignEffectDefs = [
+  ['glow_strength','Glow Stärke'],['shadow_strength','Schatten Stärke'],['overlay_strength','Overlay Stärke'],['hover_effects','Hover-Effekte'],['animations_enabled','Animationen'],['background_gradient_enabled','Hintergrund-Gradient']
+];
+let siteDesignState=null, siteMediaState=[], siteTextsState=[], siteResponsiveState=[];
+
+function siteSetMessage(id,msg,error=false){const el=document.getElementById(id);if(!el)return;el.textContent=msg||'';el.classList.toggle('error',!!error);}
+function siteInput(id,label,value,type='text',extra=''){
+  const safe=String(value??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return `<div class="site-field"><label for="${id}">${label}</label><input id="${id}" data-site-field="${id.replace('siteField_','')}" type="${type}" value="${safe}" ${extra}></div>`;
+}
+function renderSiteDesign(d){
+  if(!d)return;
+  siteDesignState=d;
+  document.getElementById('siteColorFields').innerHTML=siteDesignColorDefs.map(([k,l])=>`<div class="site-field"><label for="sd_${k}">${l}</label><input id="sd_${k}" data-key="${k}" type="color" value="${String(d[k]||'#000000').toUpperCase()}"></div>`).join('');
+  document.getElementById('siteFontFields').innerHTML=siteDesignFontDefs.map(([k,l])=>siteInput(`sd_${k}`,l,d[k],['brush_font_weight','head_font_weight','body_font_weight'].includes(k)?'number':'text',['brush_font_weight','head_font_weight','body_font_weight'].includes(k)?'min="100" max="900" step="100"':'')).join('');
+  document.getElementById('siteLayoutFields').innerHTML=siteDesignLayoutDefs.map(([k,l])=>siteInput(`sd_${k}`,l,d[k],['radius_px','section_gap_px','topbar_height_px','hero_height_px','backdrop_blur_px'].includes(k)?'number':'text')).join('');
+  document.getElementById('siteEffectFields').innerHTML=siteDesignEffectDefs.map(([k,l])=>{
+    if(['hover_effects','animations_enabled','background_gradient_enabled'].includes(k)) return `<label class="site-toggle"><input id="sd_${k}" data-key="${k}" type="checkbox" ${Number(d[k])?'checked':''}><span>${l}</span></label>`;
+    return siteInput(`sd_${k}`,l,d[k],'number','min="0" max="200"');
+  }).join('');
+}
+function collectSiteDesign(){
+  const out={};
+  document.querySelectorAll('#siteDesignForm [data-key],#siteDesignForm input[id^="sd_"]').forEach(el=>{
+    const key=el.dataset.key||el.id.replace(/^sd_/,'');
+    if(!key)return;
+    out[key]=el.type==='checkbox' ? (el.checked?1:0) : el.value;
+  });
+  return out;
+}
+async function loadSiteDesign(){
+  const r=await fetch('/api/admin/site/design',{credentials:'same-origin',cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Design konnte nicht geladen werden.');renderSiteDesign(d.design);}
+async function saveSiteDesign(){
+  const r=await fetch('/api/admin/site/design',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({design:collectSiteDesign()})});
+  const d=await r.json().catch(()=>({})); if(!r.ok||!d.ok) throw new Error(d.error||'Design konnte nicht gespeichert werden.'); renderSiteDesign(d.design); siteSetMessage('siteDesignMessage','Design gespeichert.');
+}
+function renderSiteMedia(rows){
+  siteMediaState=Array.isArray(rows)?rows:[];
+  const grid=document.getElementById('siteMediaGrid');
+  if(!siteMediaState.length){grid.innerHTML='<div class="empty">Keine Medien vorhanden.</div>';return;}
+  grid.innerHTML=siteMediaState.map(m=>{
+    const url=String(m.image_url||''); const img=url?`<img src="${escapeHtml(url)}" alt="">`:'';
+    return `<article class="site-media-card" data-slot="${escapeHtml(m.slot)}"><div class="site-media-preview ${url?'':'empty'}">${img}</div><div class="site-media-meta"><h4>${escapeHtml(m.label||m.slot)}</h4><p>${escapeHtml(m.slot)} · ${escapeHtml(m.alt_text||'')}</p><div class="site-field"><label>Bild-URL</label><input class="site-media-url" type="text" value="${escapeHtml(url)}"></div><div class="site-media-actions"><input class="site-media-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="user-button site-media-save" type="button">Speichern</button><button class="user-button site-media-upload" type="button">Upload</button><button class="user-button danger site-media-delete" type="button">Bild entfernen</button></div></div></article>`;
+  }).join('');
+}
+async function loadSiteMedia(){const r=await fetch('/api/admin/site/media',{credentials:'same-origin',cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Medien konnten nicht geladen werden.');renderSiteMedia(d.media);}
+async function saveSiteMedia(slot,card){const body={image_url:card.querySelector('.site-media-url')?.value||''};const r=await fetch('/api/admin/site/media/'+encodeURIComponent(slot),{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Bilddaten konnten nicht gespeichert werden.');await loadSiteMedia();}
+async function uploadSiteMedia(slot,card){const file=card.querySelector('.site-media-file')?.files?.[0];if(!file)throw new Error('Bitte zuerst eine Bilddatei auswählen.');const fd=new FormData();fd.append('file',file);const r=await fetch('/api/admin/site/media/upload?slot='+encodeURIComponent(slot),{method:'POST',credentials:'same-origin',body:fd});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Upload fehlgeschlagen.');await loadSiteMedia();}
+async function deleteSiteMedia(slot){if(!confirm('Bild wirklich entfernen?'))return;const r=await fetch('/api/admin/site/media?slot='+encodeURIComponent(slot),{method:'DELETE',credentials:'same-origin'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Bild konnte nicht entfernt werden.');await loadSiteMedia();}
+function renderSiteTexts(){
+  const filter=document.getElementById('siteTextPageFilter')?.value||'all';
+  const rows=filter==='all'?siteTextsState:siteTextsState.filter(x=>String(x.page)===filter);
+  const list=document.getElementById('siteTextList');
+  if(!rows.length){list.innerHTML='<div class="empty">Noch keine zentralen Texte vorhanden. Klicke „+ Text hinzufügen“.</div>';return;}
+  list.innerHTML=rows.map((x,i)=>`<div class="site-text-row" data-text-id="${escapeHtml(x.id||'new-'+i)}"><input data-k="page" value="${escapeHtml(x.page||'global')}"><input data-k="text_key" value="${escapeHtml(x.text_key||'')}"><input data-k="label" value="${escapeHtml(x.label||'')}"><textarea data-k="value">${escapeHtml(x.value||'')}</textarea><button class="user-button site-text-remove" type="button">Entfernen</button></div>`).join('');
+}
+async function loadSiteTexts(){const r=await fetch('/api/admin/site/texts',{credentials:'same-origin',cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Texte konnten nicht geladen werden.');siteTextsState=Array.isArray(d.texts)?d.texts:[];renderSiteTexts();
+  const name=siteTextsState.find(x=>x.text_key==='global.website_name');const slogan=siteTextsState.find(x=>x.text_key==='global.website_slogan');if(name)document.getElementById('websiteSettingName').value=name.value||'';if(slogan)document.getElementById('websiteSettingSlogan').value=slogan.value||'';
+}
+function collectSiteTexts(){
+  return [...document.querySelectorAll('#siteTextList .site-text-row')].map(row=>{const item={id:row.dataset.textId};row.querySelectorAll('[data-k]').forEach(el=>item[el.dataset.k]=el.value);item.page=item.page||'global';item.text_key=item.text_key||`global.custom_${crypto.randomUUID().slice(0,8)}`;item.label=item.label||item.text_key;item.text_type='text';item.active=1;item.sort_order=0;return item;});
+}
+async function saveSiteTexts(items){const r=await fetch('/api/admin/site/texts',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:items})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Texte konnten nicht gespeichert werden.');siteTextsState=d.texts||[];renderSiteTexts();}
+async function saveWebsiteSettings(){
+  const items=[{text_key:'global.website_name',page:'global',label:'Website Name',value:document.getElementById('websiteSettingName').value,text_type:'text',active:1,sort_order:1},{text_key:'global.website_slogan',page:'global',label:'Slogan',value:document.getElementById('websiteSettingSlogan').value,text_type:'text',active:1,sort_order:2}];
+  await saveSiteTexts(items); siteSetMessage('siteWebsiteMessage','Website-Einstellungen gespeichert.');
+}
+function renderResponsive(rows){
+  siteResponsiveState=Array.isArray(rows)?rows:[];
+  const root=document.getElementById('responsiveCards'); if(!rows.length){root.innerHTML='<div class="empty">Keine Profile vorhanden.</div>';return;}
+  root.innerHTML=rows.map(p=>`<article class="responsive-card" data-profile="${escapeHtml(p.profile)}"><h4>${escapeHtml(p.profile.toUpperCase())}</h4><small>${escapeHtml(String(p.min_viewport_width))}–${p.max_viewport_width==null?'∞':escapeHtml(String(p.max_viewport_width))} px</small><div class="responsive-grid"><div class="site-field"><label>Content Width</label><input data-r="content_width" value="${escapeHtml(p.content_width||'')}"></div><div class="site-field"><label>Max. Width</label><input data-r="max_content_width" value="${escapeHtml(p.max_content_width||'')}"></div><div class="site-field"><label>Seitenrand</label><input data-r="page_gutter" value="${escapeHtml(p.page_gutter||'')}"></div><div class="site-field"><label>Scale</label><input data-r="scale" type="number" step="0.01" min="0.5" max="2" value="${escapeHtml(String(p.scale??1))}"></div><div class="site-field"><label>Hero Höhe</label><input data-r="hero_height_px" type="number" value="${escapeHtml(String(p.hero_height_px??0))}"></div><div class="site-field"><label>Header Höhe</label><input data-r="topbar_height_px" type="number" value="${escapeHtml(String(p.topbar_height_px??0))}"></div><div class="site-field"><label>Bereichsabstand</label><input data-r="section_gap_px" type="number" value="${escapeHtml(String(p.section_gap_px??0))}"></div></div></article>`).join('');
+}
+async function loadSiteResponsive(){const r=await fetch('/api/admin/site/responsive',{credentials:'same-origin',cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Responsive-Profile konnten nicht geladen werden.');renderResponsive(d.profiles);}
+async function saveSiteResponsive(){const profiles=[...document.querySelectorAll('.responsive-card')].map(card=>{const x={profile:card.dataset.profile};card.querySelectorAll('[data-r]').forEach(el=>x[el.dataset.r]=el.value);return x;});const r=await fetch('/api/admin/site/responsive',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({profiles})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Responsive-Profile konnten nicht gespeichert werden.');renderResponsive(d.profiles);siteSetMessage('siteResponsiveMessage','Responsive-Einstellungen gespeichert.');}
+async function loadSiteManagement(){
+  try{await Promise.all([loadSiteDesign(),loadSiteMedia(),loadSiteTexts(),loadSiteResponsive()]);document.getElementById('siteSettingsStatus').textContent='Synchronisiert';}
+  catch(error){console.error('Site management load error:',error);document.getElementById('siteSettingsStatus').textContent='Fehler';document.getElementById('siteSettingsStatus').style.color='#ff7777';}
+}
+
+// Open exactly one site management panel at a time.
+document.querySelectorAll('[data-site-panel]').forEach(btn=>btn.addEventListener('click',()=>{
+  const name=btn.dataset.sitePanel;document.querySelectorAll('.site-settings-panel').forEach(p=>p.classList.add('hidden'));document.getElementById('sitePanel'+name.charAt(0).toUpperCase()+name.slice(1))?.classList.remove('hidden');
+}));
+document.querySelectorAll('.site-panel-close').forEach(btn=>btn.addEventListener('click',()=>btn.closest('.site-settings-panel')?.classList.add('hidden')));
+document.getElementById('siteDesignForm')?.addEventListener('submit',async e=>{e.preventDefault();try{await saveSiteDesign();}catch(err){siteSetMessage('siteDesignMessage',err.message,true);}});
+document.getElementById('siteMediaGrid')?.addEventListener('click',async e=>{const btn=e.target.closest('button');if(!btn)return;const card=e.target.closest('.site-media-card');const slot=card?.dataset.slot;if(!card||!slot)return;try{if(btn.classList.contains('site-media-save'))await saveSiteMedia(slot,card);if(btn.classList.contains('site-media-upload'))await uploadSiteMedia(slot,card);if(btn.classList.contains('site-media-delete'))await deleteSiteMedia(slot);}catch(err){alert(err.message);}});
+document.getElementById('siteTextPageFilter')?.addEventListener('change',renderSiteTexts);
+document.getElementById('siteTextsRefresh')?.addEventListener('click',async()=>{try{await loadSiteTexts();}catch(err){siteSetMessage('siteTextsMessage',err.message,true);}});
+document.getElementById('siteTextsAdd')?.addEventListener('click',()=>{siteTextsState=[...siteTextsState,{id:'new-'+Date.now(),page:document.getElementById('siteTextPageFilter')?.value==='all'?'global':document.getElementById('siteTextPageFilter').value,text_key:'',label:'',value:''}];renderSiteTexts();});
+document.getElementById('siteTextList')?.addEventListener('click',e=>{const b=e.target.closest('.site-text-remove');if(!b)return;b.closest('.site-text-row')?.remove();});
+document.getElementById('siteTextsSave')?.addEventListener('click',async()=>{try{await saveSiteTexts(collectSiteTexts());siteSetMessage('siteTextsMessage','Texte gespeichert.');}catch(err){siteSetMessage('siteTextsMessage',err.message,true);}});
+document.getElementById('siteResponsiveSave')?.addEventListener('click',async()=>{try{await saveSiteResponsive();}catch(err){siteSetMessage('siteResponsiveMessage',err.message,true);}});
+document.getElementById('siteWebsiteSave')?.addEventListener('click',async()=>{try{await saveWebsiteSettings();}catch(err){siteSetMessage('siteWebsiteMessage',err.message,true);}});
 
 /* =========================================================
    INITIAL LOAD
