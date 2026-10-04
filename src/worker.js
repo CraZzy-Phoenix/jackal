@@ -1210,7 +1210,11 @@ async function ensureNewsDashboardColumns(env) {
     { name: "display_mode", type: "TEXT NOT NULL DEFAULT 'next_race'" },
     { name: "display_race_id", type: "TEXT NOT NULL DEFAULT ''" },
     { name: "bestlist_race_id", type: "TEXT NOT NULL DEFAULT ''" },
-    { name: "laps_race_id", type: "TEXT NOT NULL DEFAULT ''" }
+    { name: "laps_race_id", type: "TEXT NOT NULL DEFAULT ''" },
+    { name: "event_source", type: "TEXT NOT NULL DEFAULT 'race'" },
+    { name: "event_news_id", type: "TEXT NOT NULL DEFAULT ''" },
+    { name: "event_custom_title", type: "TEXT NOT NULL DEFAULT ''" },
+    { name: "event_custom_text", type: "TEXT NOT NULL DEFAULT ''" }
   ];
 
   const schema = await getTableSchema(env, "news_dashboard");
@@ -1273,6 +1277,10 @@ function normalizeNewsDashboardConfig(row) {
     display_race_id: String(row?.display_race_id ?? row?.next_race_id ?? ""),
     bestlist_race_id: String(row?.bestlist_race_id ?? ""),
     laps_race_id: String(row?.laps_race_id ?? ""),
+    event_source: String(row?.event_source || "race"),
+    event_news_id: String(row?.event_news_id ?? ""),
+    event_custom_title: String(row?.event_custom_title ?? ""),
+    event_custom_text: String(row?.event_custom_text ?? ""),
     latest_news_ids: parseJsonArray(row?.latest_news_ids)
       .map(String)
       .filter(Boolean)
@@ -1321,6 +1329,10 @@ async function handleAdminNewsDashboardGet(request, env) {
           display_race_id,
           bestlist_race_id,
           laps_race_id,
+          event_source,
+          event_news_id,
+          event_custom_title,
+          event_custom_text,
           latest_news_ids,
           featured_news_id,
           hearts_winner_driver_id,
@@ -1402,7 +1414,7 @@ async function handleAdminNewsDashboardSave(request, env) {
           )
         }))
         .filter(item => item.driver_id)
-        .slice(0, 5)
+        .slice(0, 20)
     : [];
 
   if (pollOptions.length) {
@@ -1455,12 +1467,19 @@ async function handleAdminNewsDashboardSave(request, env) {
     ? String(body.display_mode)
     : "next_race";
 
+  const allowedEventSources = new Set(["race", "news", "custom"]);
+  const eventSource = allowedEventSources.has(String(body?.event_source || "")) ? String(body.event_source) : "race";
+
   const config = {
     next_race_id: String(body?.next_race_id ?? ""),
     display_mode: displayMode,
     display_race_id: String(body?.display_race_id ?? body?.next_race_id ?? ""),
     bestlist_race_id: String(body?.bestlist_race_id ?? ""),
     laps_race_id: String(body?.laps_race_id ?? ""),
+    event_source: eventSource,
+    event_news_id: String(body?.event_news_id ?? ""),
+    event_custom_title: String(body?.event_custom_title ?? "").slice(0, 180),
+    event_custom_text: String(body?.event_custom_text ?? "").slice(0, 1000),
     latest_news_ids: latestNewsIds,
     featured_news_id: String(
       body?.featured_news_id ?? ""
@@ -1491,6 +1510,10 @@ async function handleAdminNewsDashboardSave(request, env) {
           display_race_id,
           bestlist_race_id,
           laps_race_id,
+          event_source,
+          event_news_id,
+          event_custom_title,
+          event_custom_text,
           latest_news_ids,
           featured_news_id,
           hearts_winner_driver_id,
@@ -1500,7 +1523,7 @@ async function handleAdminNewsDashboardSave(request, env) {
           poll_options,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id)
         DO UPDATE SET
           next_race_id = excluded.next_race_id,
@@ -1508,6 +1531,10 @@ async function handleAdminNewsDashboardSave(request, env) {
           display_race_id = excluded.display_race_id,
           bestlist_race_id = excluded.bestlist_race_id,
           laps_race_id = excluded.laps_race_id,
+          event_source = excluded.event_source,
+          event_news_id = excluded.event_news_id,
+          event_custom_title = excluded.event_custom_title,
+          event_custom_text = excluded.event_custom_text,
           latest_news_ids = excluded.latest_news_ids,
           featured_news_id = excluded.featured_news_id,
           hearts_winner_driver_id = excluded.hearts_winner_driver_id,
@@ -1524,6 +1551,10 @@ async function handleAdminNewsDashboardSave(request, env) {
         config.display_race_id,
         config.bestlist_race_id,
         config.laps_race_id,
+        config.event_source,
+        config.event_news_id,
+        config.event_custom_title,
+        config.event_custom_text,
         JSON.stringify(config.latest_news_ids),
         config.featured_news_id,
         config.hearts_winner_driver_id,
