@@ -2628,6 +2628,25 @@ async function ensureSiteConfigTables(env) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(...row, now, now).run();
   }
+
+  const textSeeds = [
+    ["text-global-name", "global", "global.website_name", "Website Name", "JACKAL RACING LEAGUE", 1],
+    ["text-global-slogan", "global", "global.website_slogan", "Slogan", "WE ARE JACKAL. WE ARE RACING.", 2],
+    ["text-global-footer-left", "global", "global.footer_left", "Footer links", "JACKAL RACING LEAGUE", 3],
+    ["text-global-footer-claim", "global", "global.footer_claim", "Footer Claim", "WE ARE JACKAL. WE ARE RACING.", 4],
+    ["text-global-footer-right", "global", "global.footer_right", "Footer rechts", "LOS SANTOS · EST. 2026", 5],
+    ["text-home-next-race", "home", "home.next_race_title", "Home Next Race", "NEXT RACE", 10],
+    ["text-home-latest-news", "home", "home.latest_news_title", "Home Latest News", "LATEST NEWS", 11],
+    ["text-home-champion", "home", "home.champion_title", "Home Champion", "CURRENT CHAMPION", 12],
+    ["text-news-title", "news", "news.page_title", "News Seitentitel", "NEWS", 10],
+    ["text-news-subtitle", "news", "news.page_subtitle", "News Untertitel", "AKTUELLE NEUIGKEITEN", 11]
+  ];
+  for (const [id,page,textKey,label,value,sortOrder] of textSeeds) {
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO site_texts (id,page,text_key,label,value,text_type,active,sort_order,created_at,updated_at)
+      VALUES (?, ?, ?, ?, ?, 'text', 1, ?, ?, ?)
+    `).bind(id,page,textKey,label,value,sortOrder,now,now).run();
+  }
 }
 
 async function handleAdminSiteDesignGet(request, env) {
