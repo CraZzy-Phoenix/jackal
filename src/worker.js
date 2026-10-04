@@ -2434,6 +2434,436 @@ async function handlePublicData(env) {
   );
 }
 
+
+/* =========================================================
+   WEBSITE DESIGN SYSTEM – ADMIN API
+   Schritt 2: zentrale Design-, Medien-, Text- und Responsive-
+   Einstellungen. Die öffentlichen Seiten werden in diesem
+   Schritt noch NICHT umgebaut; sie können die Konfiguration
+   später über /api/public/site-config laden.
+========================================================= */
+
+const SITE_DESIGN_COLUMNS = new Set([
+  "bg_color", "bg2_color", "card_color", "card2_color",
+  "line_color", "line_glow_color", "purple_color", "purple2_color",
+  "purple3_color", "neon_color", "text_color", "muted_color",
+  "brush_font_family", "head_font_family", "body_font_family",
+  "brush_font_size", "head_font_size", "body_font_size",
+  "brush_font_weight", "head_font_weight", "body_font_weight",
+  "brush_font_style", "head_font_style", "body_font_style",
+  "brush_font_color", "head_font_color", "body_font_color",
+  "small_text_color", "radius_px", "page_max_width", "page_gutter",
+  "section_gap_px", "topbar_height_px", "hero_height_px", "glow_strength",
+  "shadow_strength", "overlay_strength", "backdrop_blur_px", "hover_effects",
+  "animations_enabled", "background_gradient_enabled"
+]);
+
+const SITE_RESPONSIVE_FIELDS = new Set([
+  "content_width", "max_content_width", "page_gutter", "scale",
+  "hero_height_px", "topbar_height_px", "section_gap_px"
+]);
+
+const SITE_MEDIA_UPDATE_FIELDS = new Set([
+  "label", "image_url", "r2_key", "alt_text", "active", "sort_order"
+]);
+
+function siteClampInt(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+function siteColor(value, fallback = "#000000") {
+  const v = String(value ?? "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : fallback;
+}
+
+function siteSafeProfile(profile) {
+  const p = String(profile || "").trim().toLowerCase();
+  return ["fhd", "qhd", "uhd"].includes(p) ? p : null;
+}
+
+async function ensureSiteDesignRow(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS site_design (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      bg_color TEXT NOT NULL DEFAULT '#07060D',
+      bg2_color TEXT NOT NULL DEFAULT '#0D0B18',
+      card_color TEXT NOT NULL DEFAULT '#110E1F',
+      card2_color TEXT NOT NULL DEFAULT '#171329',
+      line_color TEXT NOT NULL DEFAULT '#2A2342',
+      line_glow_color TEXT NOT NULL DEFAULT '#4B2F8A',
+      purple_color TEXT NOT NULL DEFAULT '#4E18AE',
+      purple2_color TEXT NOT NULL DEFAULT '#B266FF',
+      purple3_color TEXT NOT NULL DEFAULT '#DCBCFF',
+      neon_color TEXT NOT NULL DEFAULT '#A855FF',
+      text_color TEXT NOT NULL DEFAULT '#F2EEFC',
+      muted_color TEXT NOT NULL DEFAULT '#A49CBC',
+      brush_font_family TEXT NOT NULL DEFAULT '''Permanent Marker'', cursive',
+      head_font_family TEXT NOT NULL DEFAULT '''Saira Condensed'', ''Arial Narrow'', sans-serif',
+      body_font_family TEXT NOT NULL DEFAULT '''Rajdhani'', ''Segoe UI'', sans-serif',
+      brush_font_size TEXT NOT NULL DEFAULT '30px',
+      head_font_size TEXT NOT NULL DEFAULT '23px',
+      body_font_size TEXT NOT NULL DEFAULT '16px',
+      brush_font_weight INTEGER NOT NULL DEFAULT 400,
+      head_font_weight INTEGER NOT NULL DEFAULT 800,
+      body_font_weight INTEGER NOT NULL DEFAULT 600,
+      brush_font_style TEXT NOT NULL DEFAULT 'normal',
+      head_font_style TEXT NOT NULL DEFAULT 'italic',
+      body_font_style TEXT NOT NULL DEFAULT 'normal',
+      brush_font_color TEXT NOT NULL DEFAULT '#F2EEFC',
+      head_font_color TEXT NOT NULL DEFAULT '#FFFFFF',
+      body_font_color TEXT NOT NULL DEFAULT '#F2EEFC',
+      small_text_color TEXT NOT NULL DEFAULT '#A49CBC',
+      radius_px INTEGER NOT NULL DEFAULT 10,
+      page_max_width TEXT NOT NULL DEFAULT '1500px',
+      page_gutter TEXT NOT NULL DEFAULT '18px',
+      section_gap_px INTEGER NOT NULL DEFAULT 14,
+      topbar_height_px INTEGER NOT NULL DEFAULT 58,
+      hero_height_px INTEGER NOT NULL DEFAULT 320,
+      glow_strength INTEGER NOT NULL DEFAULT 100,
+      shadow_strength INTEGER NOT NULL DEFAULT 100,
+      overlay_strength INTEGER NOT NULL DEFAULT 100,
+      backdrop_blur_px INTEGER NOT NULL DEFAULT 5,
+      hover_effects INTEGER NOT NULL DEFAULT 1,
+      animations_enabled INTEGER NOT NULL DEFAULT 1,
+      background_gradient_enabled INTEGER NOT NULL DEFAULT 1,
+      updated_at INTEGER
+    )
+  `).run();
+
+  await env.DB.prepare(`INSERT OR IGNORE INTO site_design (id, updated_at) VALUES (1, ?)`)
+    .bind(Math.floor(Date.now() / 1000)).run();
+}
+
+async function ensureSiteConfigTables(env) {
+  await ensureSiteDesignRow(env);
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS site_media (
+      id TEXT PRIMARY KEY,
+      slot TEXT NOT NULL UNIQUE,
+      label TEXT NOT NULL,
+      image_url TEXT NOT NULL DEFAULT '',
+      r2_key TEXT NOT NULL DEFAULT '',
+      alt_text TEXT NOT NULL DEFAULT '',
+      active INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER,
+      updated_at INTEGER
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS site_texts (
+      id TEXT PRIMARY KEY,
+      page TEXT NOT NULL,
+      text_key TEXT NOT NULL UNIQUE,
+      label TEXT NOT NULL,
+      value TEXT NOT NULL DEFAULT '',
+      text_type TEXT NOT NULL DEFAULT 'text',
+      active INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER,
+      updated_at INTEGER
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS site_responsive (
+      id TEXT PRIMARY KEY,
+      profile TEXT NOT NULL UNIQUE,
+      min_viewport_width INTEGER NOT NULL DEFAULT 0,
+      max_viewport_width INTEGER,
+      content_width TEXT NOT NULL DEFAULT '92vw',
+      max_content_width TEXT NOT NULL DEFAULT '1500px',
+      page_gutter TEXT NOT NULL DEFAULT '18px',
+      scale REAL NOT NULL DEFAULT 1,
+      hero_height_px INTEGER NOT NULL DEFAULT 320,
+      topbar_height_px INTEGER NOT NULL DEFAULT 58,
+      section_gap_px INTEGER NOT NULL DEFAULT 14,
+      created_at INTEGER,
+      updated_at INTEGER
+    )
+  `).run();
+
+  const now = Math.floor(Date.now() / 1000);
+  const mediaSeeds = [
+    ["media-logo-small", "logo_small", "Logo klein", "images/logo-small.png", "", "JACKAL Logo", 10],
+    ["media-logo", "logo", "Logo groß", "images/logo.png", "", "JACKAL Racing League", 20],
+    ["media-main-banner", "main_banner", "Hauptbanner", "jackal-banner.png", "", "JACKAL Racing League", 30],
+    ["media-next-race", "home_next_race", "Home – Next Race", "images/next-race.jpg", "", "Next Race", 40],
+    ["media-champion-bg", "home_champion_bg", "Home – Champion Hintergrund", "images/champion-bg.jpg", "", "Champion Hintergrund", 50],
+    ["media-champion", "home_champion_driver", "Home – Champion Bild", "images/champion.png", "", "Current Champion", 60],
+    ["media-champion-car", "home_champion_car", "Home – Champion Fahrzeug", "images/car.png", "", "Champion Fahrzeug", 70],
+    ["media-news-race-bg", "news_race_background", "News – Rennbereich Hintergrund", "images/race-bg.jpg", "", "Rennbereich", 80],
+    ["media-hearts", "news_hearts", "News – Sieger der Herzen", "images/sieger-herzen.jpg", "", "Sieger der Herzen", 90],
+    ["media-team-jackal", "team_jackal", "Team JACKAL", "images/team-jackal.png", "", "Team JACKAL", 100],
+    ["media-team-nightshift", "team_nightshift", "Team Nightshift", "images/team-nightshift.png", "", "Team Nightshift", 110],
+    ["media-team-phantom", "team_phantom", "Team Phantom", "images/team-phantom.png", "", "Team Phantom", 120],
+    ["media-team-velocity", "team_velocity", "Team Velocity", "images/team-velocity.png", "", "Team Velocity", 130]
+  ];
+
+  for (const [id, slot, label, imageUrl, r2Key, altText, sortOrder] of mediaSeeds) {
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO site_media (
+        id, slot, label, image_url, r2_key, alt_text, active, sort_order, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+    `).bind(id, slot, label, imageUrl, r2Key, altText, sortOrder, now, now).run();
+  }
+
+  const responsiveSeeds = [
+    ["responsive-fhd", "fhd", 0, 2199, "92vw", "1500px", "18px", 1.00, 300, 58, 14],
+    ["responsive-qhd", "qhd", 2200, 3199, "88vw", "1850px", "24px", 1.06, 320, 60, 16],
+    ["responsive-uhd", "uhd", 3200, null, "84vw", "2500px", "30px", 1.12, 350, 62, 18]
+  ];
+
+  for (const row of responsiveSeeds) {
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO site_responsive (
+        id, profile, min_viewport_width, max_viewport_width,
+        content_width, max_content_width, page_gutter, scale,
+        hero_height_px, topbar_height_px, section_gap_px,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(...row, now, now).run();
+  }
+}
+
+async function handleAdminSiteDesignGet(request, env) {
+  const auth = await requirePermission(request, env, "settings", "view");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+  const row = await env.DB.prepare(`SELECT * FROM site_design WHERE id = 1 LIMIT 1`).first();
+  return json({ ok: true, design: row || null });
+}
+
+async function handleAdminSiteDesignSave(request, env) {
+  const auth = await requirePermission(request, env, "settings", "edit");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ ok: false, error: "Ungültige Anfrage." }, 400); }
+
+  const input = body?.design && typeof body.design === "object" ? body.design : body;
+  const current = await env.DB.prepare(`SELECT * FROM site_design WHERE id = 1 LIMIT 1`).first();
+  const next = {};
+
+  for (const key of SITE_DESIGN_COLUMNS) {
+    if (!(key in input)) continue;
+    let value = input[key];
+    if (key.endsWith("_color")) value = siteColor(value, String(current?.[key] || "#000000"));
+    else if (["radius_px", "section_gap_px", "topbar_height_px", "hero_height_px", "backdrop_blur_px"].includes(key)) value = siteClampInt(value, 0, 1000, Number(current?.[key] || 0));
+    else if (["glow_strength", "shadow_strength", "overlay_strength"].includes(key)) value = siteClampInt(value, 0, 200, Number(current?.[key] || 0));
+    else if (["hover_effects", "animations_enabled", "background_gradient_enabled"].includes(key)) value = Number(value) ? 1 : 0;
+    else if (["brush_font_weight", "head_font_weight", "body_font_weight"].includes(key)) value = siteClampInt(value, 100, 900, Number(current?.[key] || 400));
+    else value = String(value ?? "").trim();
+    next[key] = value;
+  }
+
+  const keys = Object.keys(next);
+  if (!keys.length) return json({ ok: false, error: "Keine Änderungen übergeben." }, 400);
+  const setSql = keys.map(key => `${quoteIdentifier(key)} = ?`).join(", ");
+  const values = keys.map(key => next[key]);
+  await env.DB.prepare(`UPDATE site_design SET ${setSql}, updated_at = ? WHERE id = 1`).bind(...values, Math.floor(Date.now() / 1000)).run();
+  const saved = await env.DB.prepare(`SELECT * FROM site_design WHERE id = 1 LIMIT 1`).first();
+  return json({ ok: true, design: saved });
+}
+
+async function handleAdminSiteMediaGet(request, env) {
+  const auth = await requirePermission(request, env, "settings", "view");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+  const result = await env.DB.prepare(`SELECT * FROM site_media ORDER BY sort_order ASC, label COLLATE NOCASE ASC`).all();
+  return json({ ok: true, media: result.results || [] });
+}
+
+async function handleAdminSiteMediaSave(request, env, slot) {
+  const auth = await requirePermission(request, env, "settings", "edit");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+
+  const normalizedSlot = String(slot || "").trim();
+  if (!normalizedSlot) return json({ ok: false, error: "Ungültiger Medien-Slot." }, 400);
+
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ ok: false, error: "Ungültige Anfrage." }, 400); }
+
+  const current = await env.DB.prepare(`SELECT * FROM site_media WHERE slot = ? LIMIT 1`).bind(normalizedSlot).first();
+  if (!current) return json({ ok: false, error: "Medien-Slot wurde nicht gefunden." }, 404);
+
+  const updates = [];
+  const values = [];
+  for (const key of SITE_MEDIA_UPDATE_FIELDS) {
+    if (!(key in body)) continue;
+    let value = body[key];
+    if (key === "active") value = Number(value) ? 1 : 0;
+    if (key === "sort_order") value = siteClampInt(value, 0, 100000, Number(current.sort_order || 0));
+    else value = String(value ?? "");
+    updates.push(`${quoteIdentifier(key)} = ?`);
+    values.push(value);
+  }
+  if (!updates.length) return json({ ok: false, error: "Keine Änderungen übergeben." }, 400);
+  await env.DB.prepare(`UPDATE site_media SET ${updates.join(", ")}, updated_at = ? WHERE slot = ?`).bind(...values, Math.floor(Date.now() / 1000), normalizedSlot).run();
+  const saved = await env.DB.prepare(`SELECT * FROM site_media WHERE slot = ? LIMIT 1`).bind(normalizedSlot).first();
+  return json({ ok: true, media: saved });
+}
+
+async function handleAdminSiteMediaUpload(request, env) {
+  const auth = await requirePermission(request, env, "settings", "edit");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+
+  const url = new URL(request.url);
+  const slot = String(url.searchParams.get("slot") || "").trim();
+  if (!slot) return json({ ok: false, error: "Kein Medien-Slot angegeben." }, 400);
+  if (!env.IMAGES) return json({ ok: false, error: "R2 ist im Worker nicht verbunden." }, 500);
+
+  const contentType = String(request.headers.get("Content-Type") || "").toLowerCase();
+  if (!contentType.startsWith("multipart/form-data")) return json({ ok: false, error: "Upload muss als multipart/form-data erfolgen." }, 400);
+
+  const existing = await env.DB.prepare(`SELECT * FROM site_media WHERE slot = ? LIMIT 1`).bind(slot).first();
+  if (!existing) return json({ ok: false, error: "Medien-Slot wurde nicht gefunden." }, 404);
+
+  let formData;
+  try { formData = await request.formData(); }
+  catch { return json({ ok: false, error: "Upload-Daten konnten nicht gelesen werden." }, 400); }
+  const file = formData.get("file");
+  if (!(file instanceof File) || !file.size) return json({ ok: false, error: "Keine gültige Bilddatei übergeben." }, 400);
+  if (file.size > MAX_IMAGE_SIZE) return json({ ok: false, error: "Das Bild darf maximal 10 MB groß sein." }, 413);
+
+  const mimeType = String(file.type || "").toLowerCase();
+  const extension = imageExtensionFromType(mimeType);
+  if (!extension) return json({ ok: false, error: "Nicht unterstütztes Bildformat. Erlaubt sind JPG, PNG, WEBP und GIF." }, 415);
+
+  const now = new Date();
+  const year = String(now.getUTCFullYear());
+  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const key = `site_media/${slot}/${year}/${month}/${crypto.randomUUID()}.${extension}`;
+  await env.IMAGES.put(key, file.stream(), {
+    httpMetadata: { contentType: mimeType, cacheControl: "public, max-age=31536000, immutable" },
+    customMetadata: { resource: "site_media", slot, originalName: file.name || "image" }
+  });
+
+  const imageUrl = publicImageUrl(request, key);
+  await env.DB.prepare(`UPDATE site_media SET image_url = ?, r2_key = ?, updated_at = ? WHERE slot = ?`).bind(imageUrl, key, Math.floor(Date.now() / 1000), slot).run();
+  return json({ ok: true, slot, key, url: imageUrl, mime_type: mimeType, size: file.size });
+}
+
+async function handleAdminSiteMediaDelete(request, env, slot) {
+  const auth = await requirePermission(request, env, "settings", "edit");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+
+  const normalizedSlot = String(slot || "").trim();
+  const current = await env.DB.prepare(`SELECT * FROM site_media WHERE slot = ? LIMIT 1`).bind(normalizedSlot).first();
+  if (!current) return json({ ok: false, error: "Medien-Slot wurde nicht gefunden." }, 404);
+  if (current.r2_key && env.IMAGES) {
+    try { await env.IMAGES.delete(current.r2_key); } catch (error) { console.error("Site media R2 delete failed:", error); }
+  }
+  await env.DB.prepare(`UPDATE site_media SET image_url = '', r2_key = '', updated_at = ? WHERE slot = ?`).bind(Math.floor(Date.now() / 1000), normalizedSlot).run();
+  return json({ ok: true });
+}
+
+async function handleAdminSiteTextsGet(request, env) {
+  const auth = await requirePermission(request, env, "settings", "view");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+  const result = await env.DB.prepare(`SELECT * FROM site_texts ORDER BY page ASC, sort_order ASC, label COLLATE NOCASE ASC`).all();
+  return json({ ok: true, texts: result.results || [] });
+}
+
+async function handleAdminSiteTextsSave(request, env) {
+  const auth = await requirePermission(request, env, "settings", "edit");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ ok: false, error: "Ungültige Anfrage." }, 400); }
+  const texts = Array.isArray(body?.texts) ? body.texts : [];
+  if (!texts.length) return json({ ok: false, error: "Keine Texte übergeben." }, 400);
+  const now = Math.floor(Date.now() / 1000);
+  for (const item of texts) {
+    const textKey = String(item?.text_key || "").trim();
+    const page = String(item?.page || "").trim();
+    const label = String(item?.label || textKey).trim();
+    if (!textKey || !page) continue;
+    await env.DB.prepare(`
+      INSERT INTO site_texts (id, page, text_key, label, value, text_type, active, sort_order, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(text_key) DO UPDATE SET
+        page = excluded.page,
+        label = excluded.label,
+        value = excluded.value,
+        text_type = excluded.text_type,
+        active = excluded.active,
+        sort_order = excluded.sort_order,
+        updated_at = excluded.updated_at
+    `).bind(
+      String(item?.id || crypto.randomUUID()), page, textKey, label,
+      String(item?.value ?? ""), String(item?.text_type || "text"),
+      Number(item?.active) ? 1 : 0, siteClampInt(item?.sort_order, 0, 100000, 0), now, now
+    ).run();
+  }
+  const result = await env.DB.prepare(`SELECT * FROM site_texts ORDER BY page ASC, sort_order ASC, label COLLATE NOCASE ASC`).all();
+  return json({ ok: true, texts: result.results || [] });
+}
+
+async function handleAdminSiteResponsiveGet(request, env) {
+  const auth = await requirePermission(request, env, "settings", "view");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+  const result = await env.DB.prepare(`SELECT * FROM site_responsive ORDER BY min_viewport_width ASC`).all();
+  return json({ ok: true, profiles: result.results || [] });
+}
+
+async function handleAdminSiteResponsiveSave(request, env) {
+  const auth = await requirePermission(request, env, "settings", "edit");
+  if (auth instanceof Response) return auth;
+  await ensureSiteConfigTables(env);
+  let body;
+  try { body = await request.json(); }
+  catch { return json({ ok: false, error: "Ungültige Anfrage." }, 400); }
+  const profiles = Array.isArray(body?.profiles) ? body.profiles : [];
+  if (!profiles.length) return json({ ok: false, error: "Keine Responsive-Profile übergeben." }, 400);
+  const now = Math.floor(Date.now() / 1000);
+  for (const item of profiles) {
+    const profile = siteSafeProfile(item?.profile);
+    if (!profile) continue;
+    const current = await env.DB.prepare(`SELECT * FROM site_responsive WHERE profile = ? LIMIT 1`).bind(profile).first();
+    if (!current) continue;
+    const next = {};
+    for (const key of SITE_RESPONSIVE_FIELDS) {
+      if (!(key in item)) continue;
+      let value = item[key];
+      if (["hero_height_px", "topbar_height_px", "section_gap_px"].includes(key)) value = siteClampInt(value, 0, 1000, Number(current[key] || 0));
+      else if (key === "scale") { const n = Number(value); value = Number.isFinite(n) ? Math.max(0.5, Math.min(2, n)) : Number(current.scale || 1); }
+      else value = String(value ?? "").trim();
+      next[key] = value;
+    }
+    const keys = Object.keys(next);
+    if (!keys.length) continue;
+    const setSql = keys.map(key => `${quoteIdentifier(key)} = ?`).join(", ");
+    await env.DB.prepare(`UPDATE site_responsive SET ${setSql}, updated_at = ? WHERE profile = ?`).bind(...keys.map(key => next[key]), now, profile).run();
+  }
+  const result = await env.DB.prepare(`SELECT * FROM site_responsive ORDER BY min_viewport_width ASC`).all();
+  return json({ ok: true, profiles: result.results || [] });
+}
+
+async function handlePublicSiteConfig(env) {
+  await ensureSiteConfigTables(env);
+  const [design, media, texts, responsive] = await Promise.all([
+    env.DB.prepare(`SELECT * FROM site_design WHERE id = 1 LIMIT 1`).first(),
+    env.DB.prepare(`SELECT slot, label, image_url, alt_text, active, sort_order FROM site_media WHERE active = 1 ORDER BY sort_order ASC`).all(),
+    env.DB.prepare(`SELECT page, text_key, label, value, text_type, active, sort_order FROM site_texts WHERE active = 1 ORDER BY page ASC, sort_order ASC`).all(),
+    env.DB.prepare(`SELECT profile, min_viewport_width, max_viewport_width, content_width, max_content_width, page_gutter, scale, hero_height_px, topbar_height_px, section_gap_px FROM site_responsive ORDER BY min_viewport_width ASC`).all()
+  ]);
+  return json({ ok: true, generated_at: new Date().toISOString(), design: design || null, media: media.results || [], texts: texts.results || [], responsive: responsive.results || [] }, 200, { "Cache-Control": "no-store" });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -2530,6 +2960,47 @@ export default {
         return await handlePublicImage(request, env);
       }
 
+
+      if (url.pathname === "/api/public/site-config" && request.method === "GET") {
+        return await handlePublicSiteConfig(env);
+      }
+
+      if (url.pathname === "/api/admin/site/design" && request.method === "GET") {
+        return await handleAdminSiteDesignGet(request, env);
+      }
+      if (url.pathname === "/api/admin/site/design" && request.method === "PUT") {
+        return await handleAdminSiteDesignSave(request, env);
+      }
+
+      if (url.pathname === "/api/admin/site/media" && request.method === "GET") {
+        return await handleAdminSiteMediaGet(request, env);
+      }
+      if (url.pathname === "/api/admin/site/media/upload" && request.method === "POST") {
+        return await handleAdminSiteMediaUpload(request, env);
+      }
+      if (url.pathname === "/api/admin/site/media" && request.method === "DELETE") {
+        const slot = String(url.searchParams.get("slot") || "").trim();
+        return await handleAdminSiteMediaDelete(request, env, slot);
+      }
+
+      const siteMediaMatch = url.pathname.match(/^\/api\/admin\/site\/media\/([^/]+)$/);
+      if (siteMediaMatch && request.method === "PUT") {
+        return await handleAdminSiteMediaSave(request, env, decodeURIComponent(siteMediaMatch[1]));
+      }
+
+      if (url.pathname === "/api/admin/site/texts" && request.method === "GET") {
+        return await handleAdminSiteTextsGet(request, env);
+      }
+      if (url.pathname === "/api/admin/site/texts" && request.method === "PUT") {
+        return await handleAdminSiteTextsSave(request, env);
+      }
+
+      if (url.pathname === "/api/admin/site/responsive" && request.method === "GET") {
+        return await handleAdminSiteResponsiveGet(request, env);
+      }
+      if (url.pathname === "/api/admin/site/responsive" && request.method === "PUT") {
+        return await handleAdminSiteResponsiveSave(request, env);
+      }
 
       if (url.pathname === "/api/public/race-details" && request.method === "POST") {
         return await handlePublicRaceDetails(request, env);
