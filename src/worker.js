@@ -747,13 +747,71 @@ async function handleAdminDataDelete(request, env, resource, value) {
     }
   }
 
-  const result = await env.DB.prepare(`
-    DELETE FROM ${quoteIdentifier(table)}
-    WHERE ${quoteIdentifier(identity.name)} = ?
-  `).bind(identityValue).run();
+  /*
+   * Fahrer und Rennen können in race_results verwendet werden.
+   * D1 kann das Löschen sonst wegen einer FK-Beziehung ablehnen.
+   * Wir entfernen deshalb zuerst die zugehörigen Ergebniszeilen.
+   */
+  let deletedResultRows = 0;
 
-  if (!result.success || Number(result.meta?.changes || 0) === 0) {
-    return json({ ok: false, error: "Datensatz wurde nicht gefunden." }, 404);
+  try {
+    if (resource === "drivers") {
+      const r = await env.DB.prepare(`
+        DELETE FROM race_results
+        WHERE driver_id = ?
+      `).bind(identityValue).run();
+      deletedResultRows += Number(r.meta?.changes || 0);
+
+      // Sieger-der-Herzen-Verknüpfung auflösen, falls vorhanden.
+      try {
+        await env.DB.prepare(`
+          UPDATE news_dashboard
+          SET hearts_winner_driver_id = NULL,
+              updated_at = ?
+          WHERE hearts_winner_driver_id = ?
+        `).bind(Math.floor(Date.now() / 1000), String(identityValue)).run();
+      } catch (error) {
+        console.error("News dashboard cleanup after driver delete failed:", error);
+      }
+    }
+
+    if (resource === "races") {
+      const r = await env.DB.prepare(`
+        DELETE FROM race_results
+        WHERE race_id = ?
+      `).bind(identityValue).run();
+      deletedResultRows += Number(r.meta?.changes || 0);
+
+      // Next-Race-Verknüpfung auflösen, falls das gelöschte Rennen dort gesetzt ist.
+      try {
+        await env.DB.prepare(`
+          UPDATE news_dashboard
+          SET next_race_id = NULL,
+              updated_at = ?
+          WHERE next_race_id = ?
+        `).bind(Math.floor(Date.now() / 1000), String(identityValue)).run();
+      } catch (error) {
+        console.error("News dashboard cleanup after race delete failed:", error);
+      }
+    }
+
+    const result = await env.DB.prepare(`
+      DELETE FROM ${quoteIdentifier(table)}
+      WHERE ${quoteIdentifier(identity.name)} = ?
+    `).bind(identityValue).run();
+
+    if (!result.success || Number(result.meta?.changes || 0) === 0) {
+      return json({ ok: false, error: "Datensatz wurde nicht gefunden." }, 404);
+    }
+  } catch (error) {
+    console.error("Admin delete DB error:", error);
+    const message = String(error?.message || error || "Löschen fehlgeschlagen.");
+    return json({
+      ok: false,
+      error: message.startsWith("D1_ERROR")
+        ? message
+        : `Löschen fehlgeschlagen: ${message}`
+    }, 400);
   }
 
   if (oldImageUrl) {
@@ -764,7 +822,10 @@ async function handleAdminDataDelete(request, env, resource, value) {
     }
   }
 
-  return json({ ok: true });
+  return json({
+    ok: true,
+    deleted_result_rows: deletedResultRows
+  });
 }
 
 
