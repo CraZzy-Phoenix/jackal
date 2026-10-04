@@ -2040,7 +2040,6 @@ async function handlePublicData(env) {
 
       publicRows(env, 'drivers', [
         'id',
-        'name',
         'nickname',
         'number',
         'team',
@@ -2179,8 +2178,8 @@ async function handlePublicData(env) {
 
       if (wins !== 0) return wins;
 
-      return String(a.name || '').localeCompare(
-        String(b.name || ''),
+      return String(a.nickname || '').localeCompare(
+        String(b.nickname || ''),
         'de-DE'
       );
     })
@@ -2219,7 +2218,7 @@ async function handlePublicData(env) {
     },
     200,
     {
-      'Cache-Control': 'public, max-age=60'
+      'Cache-Control': 'no-store, max-age=0, must-revalidate'
     }
   );
 }
