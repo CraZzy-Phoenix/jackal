@@ -552,6 +552,22 @@ async function ensureNewsContentColumns(env) {
   }
 }
 
+/* Rennen ausblenden: Spalte is_hidden (0 = sichtbar, 1 = ausgeblendet).
+   Wird bei Bedarf automatisch angelegt; bestehende Rennen bleiben sichtbar. */
+let raceVisibilityColumnReady = false;
+
+async function ensureRaceVisibilityColumn(env) {
+  if (raceVisibilityColumnReady) return;
+  const schema = await getTableSchema(env, "races");
+  const existing = new Set((schema.results || []).map(col => col.name));
+  if (existing.size && !existing.has("is_hidden")) {
+    await env.DB.prepare(
+      `ALTER TABLE races ADD COLUMN is_hidden INTEGER NOT NULL DEFAULT 0`
+    ).run();
+  }
+  raceVisibilityColumnReady = existing.size > 0;
+}
+
 async function handleAdminSchema(request, env, resource) {
   const auth = await requirePermission(request, env, resource, "view");
   if (auth instanceof Response) return auth;
@@ -2198,6 +2214,7 @@ function isPublicActive(value) {
 }
 
 async function handlePublicData(env) {
+  await ensureRaceVisibilityColumn(env);
   const [
     races,
     drivers,
@@ -2218,6 +2235,7 @@ async function handlePublicData(env) {
         'status',
         'image_url',
         'is_next',
+        'is_hidden',
         'created_at'
       ]),
 
@@ -2258,7 +2276,6 @@ async function handlePublicData(env) {
         'vehicle_name',
         'reason',
         'image_url',
-        'status',
         'created_at'
       ]),
 
@@ -2344,13 +2361,16 @@ async function handlePublicData(env) {
     return archivedByStatus || archivedByActiveFlag;
   });
 
-  const publicBlacklist = blacklist.filter(item =>
-    isPublicActive(item.status)
+  /* Ausgeblendete Rennen samt ihren Ergebnissen nicht öffentlich ausliefern. */
+  const hiddenRaceIds = new Set(
+    races.filter(race => Number(race.is_hidden) === 1).map(race => String(race.id))
   );
+  const publicRaces = races.filter(race => !hiddenRaceIds.has(String(race.id)));
+  const publicResults = results.filter(result => !hiddenRaceIds.has(String(result.race_id)));
 
   const raceCounts = new Map();
 
-  results.forEach(result => {
+  publicResults.forEach(result => {
     if (result.driver_id !== null && result.driver_id !== undefined && result.driver_id !== "") {
       const key = String(result.driver_id);
       raceCounts.set(key, (raceCounts.get(key) || 0) + 1);
@@ -2371,7 +2391,7 @@ async function handlePublicData(env) {
     created_at: driver.created_at
   }));
 
-  const nextRace = races.find(race => Number(race.is_next) === 1) || null;
+  const nextRace = publicRaces.find(race => Number(race.is_next) === 1) || null;
 
   const ranking = publicDrivers
     .slice()
@@ -2415,16 +2435,16 @@ async function handlePublicData(env) {
     {
       ok: true,
       generated_at: new Date().toISOString(),
-      races,
+      races: publicRaces,
       drivers: publicDrivers,
       ranking,
       news: publicNews,
       newsArchive: publicNewsArchive,
       newsCategories: publicNewsCategories,
       newsDashboard,
-      blacklist: publicBlacklist,
+      blacklist,
       gallery,
-      results,
+      results: publicResults,
       nextRace
     },
     200,
@@ -3078,6 +3098,9 @@ export default {
       }
 
       const schemaMatch = url.pathname.match(/^\/api\/admin\/schema\/([^/]+)$/);
+      if (/^\/api\/admin\/(schema|data)\/races(\/|$)/.test(url.pathname)) {
+        await ensureRaceVisibilityColumn(env);
+      }
       if (schemaMatch && request.method === "GET") {
         return await handleAdminSchema(request, env, schemaMatch[1]);
       }
