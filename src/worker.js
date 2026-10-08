@@ -2378,13 +2378,19 @@ async function handlePublicData(env) {
   const publicRaces = races.filter(race => !hiddenRaceIds.has(String(race.id)));
   const publicResults = results.filter(result => !hiddenRaceIds.has(String(result.race_id)));
 
-  const raceCounts = new Map();
+  /* Eine Quelle für alle Punkte: Gesamtpunkte, Siege und Rennen werden
+     aus den (sichtbaren) Rennergebnissen berechnet. Rangliste, Fahrerseite,
+     Champion und Bestenliste zeigen dadurch immer dieselben Zahlen. */
+  const driverStats = new Map();
 
   publicResults.forEach(result => {
-    if (result.driver_id !== null && result.driver_id !== undefined && result.driver_id !== "") {
-      const key = String(result.driver_id);
-      raceCounts.set(key, (raceCounts.get(key) || 0) + 1);
-    }
+    if (result.driver_id === null || result.driver_id === undefined || result.driver_id === "") return;
+    const key = String(result.driver_id);
+    const stats = driverStats.get(key) || { points: 0, wins: 0, races: new Set() };
+    stats.points += Number(result.points) || 0;
+    if (Number(result.position) === 1 && !Number(result.dnf)) stats.wins += 1;
+    stats.races.add(String(result.race_id));
+    driverStats.set(key, stats);
   });
 
   const publicDrivers = drivers.map(driver => ({
@@ -2395,9 +2401,9 @@ async function handlePublicData(env) {
     car: driver.car,
     image_url: driver.image_url,
     status: driver.status,
-    points: driver.points,
-    wins: driver.wins,
-    races: raceCounts.get(String(driver.id)) || 0,
+    points: driverStats.get(String(driver.id))?.points || 0,
+    wins: driverStats.get(String(driver.id))?.wins || 0,
+    races: driverStats.get(String(driver.id))?.races.size || 0,
     created_at: driver.created_at
   }));
 
