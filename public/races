@@ -261,10 +261,15 @@ html,body{overflow-x:hidden}
       body[data-site-scaling="1"]{zoom:var(--site-scale,1)}
       .topbar{height:var(--site-responsive-topbar)!important;backdrop-filter:blur(var(--site-blur,8px))}
       .hero{height:var(--site-responsive-hero)!important}
-      .page,.grid,.grid-news{width:var(--site-content-width)!important;max-width:var(--site-responsive-max)!important;margin-left:auto!important;margin-right:auto!important}
+      /* Volle Breite: Seitenrand 4 % der Fensterbreite (min. 16px, max. 240px) */
+      main.page,main.grid,main.grid-news{width:auto!important;max-width:none!important;margin-left:0!important;margin-right:0!important;padding-left:clamp(16px,4%,240px)!important;padding-right:clamp(16px,4%,240px)!important}
+      .topbar,.footer{padding-left:clamp(16px,4%,240px)!important;padding-right:clamp(16px,4%,240px)!important}
+      main.page .grid{width:auto!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
+      main.page .grid{padding-left:0!important;padding-right:0!important}
+      main.page .card>.grid{padding-left:20px!important;padding-right:20px!important}
+      @media(min-width:961px){main.page .grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))!important}}
       .grid,.grid-news{gap:var(--site-responsive-gap)!important}
-      .page,.grid,.grid-news{padding-left:var(--site-responsive-gutter)!important;padding-right:var(--site-responsive-gutter)!important}
-      .card,.race,.item,.tile{border-radius:var(--site-radius,var(--radius,10px))!important}
+            .card,.race,.item,.tile{border-radius:var(--site-radius,var(--radius,10px))!important}
       .brand,.brand-text,.brush,.footer-claim{font-family:var(--f-brush)!important;font-weight:var(--site-brush-weight,400)!important;font-style:var(--site-brush-style,normal)!important;color:var(--site-brush-color,var(--text))!important}
       .brand{font-size:var(--site-brush-size,30px)!important}
       .brush,.footer-claim{font-size:var(--site-brush-size,30px)!important}
@@ -286,7 +291,7 @@ html,body{overflow-x:hidden}
       .brand.site-brand-logo-active{display:flex;align-items:center;justify-content:center}
       .brand.site-brand-logo-active>.site-brand-img{display:block}
       .brand.site-brand-logo-active{font-size:0!important}
-      @media(max-width:960px){.topbar{height:var(--site-responsive-topbar)!important}.hero{height:var(--site-responsive-hero)!important}.page,.grid,.grid-news{width:calc(100% - 2 * var(--site-responsive-gutter))!important;max-width:none!important}}
+      @media(max-width:960px){.topbar{height:var(--site-responsive-topbar)!important}.hero{height:var(--site-responsive-hero)!important}}
     `;
     document.head.appendChild(s);
   }
@@ -314,20 +319,24 @@ html,body{overflow-x:hidden}
 <body>
 <header class="topbar"><a href="/" class="brand">Jackal</a><button class="nav-toggle"><span></span><span></span><span></span></button><nav class="nav"><a href="/">Home</a><a href="/news">News</a><a href="/drivers">Drivers</a><a href="/rangliste">Rangliste</a><a href="/races" class="active">Races</a><a href="/blacklist">Blacklist</a><a href="/gallery">Gallery</a></nav><a class="login-link" href="/admin" aria-label="Zum Admin-Login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V8a5 5 0 0 1 10 0v3"></path></svg><span>Login</span></a></header>
 
-<section class="hero"><img src="jackal-banner.png" alt=""><div class="hero-content"><h1 class="hero-title">Races</h1><p class="hero-sub">Vergangene Rennen</p><p class="hero-claim">We are Jackal. We are racing.</p></div></section>
+<section class="hero"><img src="jackal-banner.png" alt=""><div class="hero-content"><h1 class="hero-title">Races</h1><p class="hero-sub">Kommende &amp; vergangene Rennen</p><p class="hero-claim">We are Jackal. We are racing.</p></div></section>
 
 <main class="page">
 <div class="toolbar"><input id="search" class="search" placeholder="Rennen durchsuchen..."><select id="location" class="select"><option value="">Alle Strecken</option></select></div>
-<section id="grid" class="grid"></section>
+<section id="upcomingWrap" class="race-section" hidden><h2 class="race-section-title">Kommende Rennen</h2><div id="upcomingGrid" class="grid"></div></section>
+<section class="race-section"><h2 class="race-section-title" id="pastTitle" hidden>Vergangene Rennen</h2><section id="grid" class="grid"></section></section>
 </main>
 
 <footer class="footer"><span>Jackal Racing League</span><span class="footer-center">We are Jackal. We are racing.</span><span class="footer-right">Los Santos · Est. 2026</span></footer>
 
-<style>.race.is-selected{border-color:#b266ff!important;box-shadow:0 0 28px rgba(168,85,255,.34)}.results-row small{display:block;grid-column:2/-1;font-size:11px;color:#b9a9d4;margin-top:2px}</style>
+<style>.race-section{margin-bottom:22px}.race-section-title{font:700 26px var(--head);text-transform:uppercase;margin:4px 0 12px}.race-badge{display:inline-block;margin-bottom:6px;padding:2px 8px;border:1px solid #b266ff;border-radius:4px;color:#b266ff;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}.race.is-upcoming .race-img{height:150px}.race.is-selected{border-color:#b266ff!important;box-shadow:0 0 28px rgba(168,85,255,.34)}.results-row small{display:block;grid-column:2/-1;font-size:11px;color:#b9a9d4;margin-top:2px}</style>
 <script>
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const media=v=>{if(!v)return'';v=String(v);if(v.startsWith('/media/'))return v;if(v.startsWith('media/'))return'/'+v;if(/^https?:/i.test(v))return v;return'/media/'+v.split('/').map(encodeURIComponent).join('/')};
 const date=v=>{if(!v)return'—';let d=new Date(v);return isNaN(d)?String(v):new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'short',year:'numeric'}).format(d)};
+const raceStamp=x=>{const raw=String(x.date||'');return new Date(raw+(x.time?'T'+String(x.time).slice(0,5):'T23:59:59')).getTime()};
+const DONE_STATUS=['completed','finished','past','abgeschlossen','beendet'],HIDDEN_STATUS=['draft','entwurf','hidden','versteckt','inactive','inaktiv'];
+const upcomingWrap=document.getElementById('upcomingWrap'),upcomingGrid=document.getElementById('upcomingGrid'),pastTitle=document.getElementById('pastTitle');
 const gridEl=document.getElementById('grid'),searchEl=document.getElementById('search'),locationEl=document.getElementById('location');
 (async()=>{
 try{
@@ -335,12 +344,17 @@ try{
  const now=Date.now(),drivers=d.drivers||[],results=d.results||[];
  const selectedRaceParam=new URLSearchParams(location.search).get('race');
  const races=(d.races||[]).filter(x=>{const keepSelected=selectedRaceParam&&String(x.id)===String(selectedRaceParam);if(Number(x.is_next)===1&&!keepSelected)return false;const raw=String(x.date||'');const ts=new Date(raw+(x.time?'T'+String(x.time).slice(0,5):'T23:59:59')).getTime();const st=String(x.status||'').toLowerCase();return keepSelected||['completed','finished','past','abgeschlossen','beendet'].includes(st)||(!Number.isNaN(ts)&&ts<now)}).sort((a,b)=>new Date(String(b.date||'1970-01-01'))-new Date(String(a.date||'1970-01-01')));
- const locs=[...new Set(races.map(x=>x.location).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE'));locs.forEach(x=>locationEl.add(new Option(x,x)));
+ const pastIds=new Set(races.map(x=>String(x.id)));
+ const upcoming=(d.races||[]).filter(x=>{if(pastIds.has(String(x.id)))return false;const st=String(x.status||'').toLowerCase();if(DONE_STATUS.includes(st)||HIDDEN_STATUS.includes(st))return false;const ts=raceStamp(x);return Number.isNaN(ts)||ts>=now}).sort((a,b)=>{const ta=raceStamp(a),tb=raceStamp(b);return (Number.isNaN(ta)?Infinity:ta)-(Number.isNaN(tb)?Infinity:tb)});
+ const locs=[...new Set(races.concat(upcoming).map(x=>x.location).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'de-DE'));locs.forEach(x=>locationEl.add(new Option(x,x)));
  const map={};drivers.forEach(x=>map[String(x.id)]=x);
  function render(){
    const q=searchEl.value.toLowerCase().trim(),l=locationEl.value;
    const selectedRace=selectedRaceParam;
-   const list=races.filter(x=>(!q||[x.name,x.location,x.description].join(' ').toLowerCase().includes(q))&&(!l||x.location===l));
+   const match=x=>(!q||[x.name,x.location,x.description].join(' ').toLowerCase().includes(q))&&(!l||x.location===l);
+   const list=races.filter(match),upList=upcoming.filter(match);
+   upcomingWrap.hidden=!upList.length;pastTitle.hidden=!upList.length;
+   upcomingGrid.innerHTML=upList.map(x=>`<article class="race is-upcoming" data-race-id="${esc(String(x.id||''))}" id="race-${esc(String(x.id||''))}"><div class="race-img">${x.image_url?`<img src="${esc(media(x.image_url))}" alt="">`:''}</div><div class="race-body">${Number(x.is_next)===1?'<span class="race-badge">Nächstes Rennen</span>':''}<h2 class="race-title">${esc(x.name||'Rennen')}</h2><div class="date">${x.date?esc(date(x.date)):'Datum folgt'}${x.time?' · '+esc(x.time)+' Uhr':''}</div><div class="loc">${esc(x.location||'—')}</div>${x.description?`<p class="desc">${esc(x.description)}</p>`:''}</div></article>`).join('');
    gridEl.innerHTML=list.length?list.map(x=>{
       const rr=results.filter(y=>String(y.race_id)===String(x.id)).sort((a,b)=>(Number(a.position)||999)-(Number(b.position)||999));
       const shownResults=selectedRace&&String(selectedRace)===String(x.id)?rr:rr.slice(0,5);
