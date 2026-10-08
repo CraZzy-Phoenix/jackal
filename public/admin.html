@@ -5444,7 +5444,12 @@ function crudFormColumns(resource, schema){
   return visibleColumns(schema).filter(col => !hidden.includes(col.name));
 }
 
+const CRUD_FIELD_LABELS = {
+  is_hidden: "Auf der Website ausblenden"
+};
+
 function prettyColumn(name){
+  if(CRUD_FIELD_LABELS[name]) return CRUD_FIELD_LABELS[name];
   return name.replaceAll("_"," ").replace(/\b\w/g,m => m.toUpperCase());
 }
 

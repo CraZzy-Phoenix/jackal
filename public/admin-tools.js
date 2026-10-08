@@ -631,9 +631,14 @@
     document.querySelectorAll('.race[data-race-id]').forEach(el=>{
       const id=el.dataset.raceId;if(!id) return;
       const body=el.querySelector('.race-body')||el;
-      const row=body.querySelector('.jackal-admin-row-actions')||document.createElement('div');row.className='jackal-admin-row-actions';
+      // Nur den direkten Button-Bereich des Rennens nehmen, nicht den einer Ergebniszeile.
+      const row=body.querySelector(':scope > .jackal-admin-row-actions')||document.createElement('div');row.className='jackal-admin-row-actions';
       if(can(auth,'races','edit') && !row.querySelector(`[data-action-key="race-edit-${CSS.escape(String(id))}"]`)){
         const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`race-edit-${id}`;b.textContent='Rennen bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=races&action=edit&id=${encodeURIComponent(id)}`)});row.appendChild(b);
+      }
+      // Rennen auf der Website ausblenden (lässt sich unten wieder einblenden)
+      if(can(auth,'races','edit') && !row.querySelector(`[data-action-key="race-hide-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`race-hide-${id}`;b.textContent='Ausblenden';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setRaceHidden(id,true,el.querySelector('.race-title')?.textContent?.trim()||'Rennen')});row.appendChild(b);
       }
       if(can(auth,'races','delete') && !row.querySelector(`[data-action-key="race-delete-${CSS.escape(String(id))}"]`)){
         const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.dataset.actionKey=`race-delete-${id}`;b.textContent='Löschen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('races',id,el.querySelector('.race-title,.race-name,h2')?.textContent?.trim()||'Rennen')});row.appendChild(b);
@@ -661,6 +666,48 @@
         if(acts.children.length) rr.appendChild(acts);
       });
     });
+  }
+
+  async function setRaceHidden(id,hidden,label){
+    if(hidden && !window.confirm(`"${label}" auf der Website ausblenden?\nDu kannst das Rennen unten unter „Ausgeblendete Rennen“ wieder einblenden.`)) return;
+    try{
+      const r=await fetch(`/api/admin/data/races/${encodeURIComponent(String(id))}`,{method:'PUT',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({is_hidden:hidden?1:0})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok) throw new Error(d.error||'Speichern fehlgeschlagen.');
+      location.reload();
+    }catch(e){ window.alert(e.message||'Speichern fehlgeschlagen.'); }
+  }
+
+  // Ausgeblendete Rennen nur für Admins unten auf /races anzeigen, mit „Einblenden“.
+  let hiddenRacesLoaded=false;
+  async function setupHiddenRaces(auth){
+    if(hiddenRacesLoaded || !can(auth,'races','edit')) return;
+    hiddenRacesLoaded=true;
+    const main=document.querySelector('main.page');
+    if(!main) return;
+    let rows=[];
+    try{
+      const r=await fetch('/api/admin/data/races',{credentials:'same-origin',cache:'no-store'});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok) return;
+      rows=(d.rows||[]).filter(x=>Number(x.is_hidden)===1);
+    }catch(_){ return; }
+    if(!rows.length) return;
+    const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const section=document.createElement('section');
+    section.className='race-section jackal-hidden-races';
+    section.innerHTML=`<h2 class="race-section-title">Ausgeblendete Rennen <small style="font-size:14px;color:#a49cbc;text-transform:none">· nur für Admins sichtbar</small></h2><div class="jackal-hidden-race-list" style="display:grid;gap:10px"></div>`;
+    const list=section.querySelector('.jackal-hidden-race-list');
+    rows.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).forEach(x=>{
+      const item=document.createElement('div');
+      item.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 14px;border:1px dashed #4b2f8a;border-radius:8px;background:rgba(17,14,31,.7);opacity:.85';
+      item.innerHTML=`<strong style="font-size:18px;text-transform:uppercase">${esc(x.name||'Rennen')}</strong><span style="color:#a49cbc">${esc(x.date||'ohne Datum')}${x.location?' · '+esc(x.location):''}</span>`;
+      const acts=document.createElement('div');acts.className='jackal-admin-row-actions';acts.style.margin='0 0 0 auto';
+      const show=document.createElement('button');show.type='button';show.className='jackal-admin-inline';show.textContent='Einblenden';show.addEventListener('click',e=>{e.preventDefault();setRaceHidden(x.id,false,x.name||'Rennen')});acts.appendChild(show);
+      const ed=document.createElement('button');ed.type='button';ed.className='jackal-admin-inline';ed.textContent='Bearbeiten';ed.addEventListener('click',e=>{e.preventDefault();openEditor(`embed=crud&resource=races&action=edit&id=${encodeURIComponent(x.id)}`)});acts.appendChild(ed);
+      item.appendChild(acts);list.appendChild(item);
+    });
+    main.appendChild(section);
   }
 
   function setupBlacklist(auth){
@@ -714,7 +761,7 @@
     else if(path==='/news')setupNews(auth);
     else if(path==='/drivers')setupDrivers(auth);
     else if(path==='/rangliste')setupRanking(auth);
-    else if(path==='/races')setupRaces(auth);
+    else if(path==='/races'){setupRaces(auth);setupHiddenRaces(auth);}
     else if(path==='/blacklist')setupBlacklist(auth);
     else if(path==='/gallery')setupGallery(auth);
   }

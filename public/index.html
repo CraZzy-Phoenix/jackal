@@ -2856,6 +2856,24 @@ html,body{overflow-x:hidden}
         margin-top:15px
       }
 
+      /* Streckenbild: Der Bild-Rahmen braucht eine eigene Höhe, weil das
+         Bild darin absolut positioniert ist (sonst ist es 0px hoch). */
+      .race-unlocked .img-slot{
+        height:clamp(220px,32vw,430px);
+        margin-top:15px;
+        border-radius:10px;
+        border:1px solid #302443;
+        background:#0c0a16
+      }
+
+      .race-unlocked .img-slot img{
+        margin-top:0;
+        border:0;
+        border-radius:0;
+        max-height:none;
+        object-fit:contain
+      }
+
       .race-unlocked-meta{
         display:grid;
         grid-template-columns:
