@@ -859,7 +859,7 @@ function imageExtensionFromType(type) {
   return IMAGE_TYPES[String(type || "").toLowerCase()] || null;
 }
 
-function imageKeyFromUrl(value) {
+function imageKeyFromUrl(value, { allowSiteMedia = false } = {}) {
   const raw = String(value || "").trim();
   if (!raw) return null;
 
@@ -876,7 +876,10 @@ function imageKeyFromUrl(value) {
     }
 
     const firstPart = key.split("/")[0];
-    if (!imageResourceAllowed(firstPart)) return null;
+    /* Seiten-Medien (Logo, Banner, Teams …) liegen unter site_media/ und
+       dürfen ausgeliefert, aber nicht über die allgemeine Bild-API gelöscht werden. */
+    const siteMedia = allowSiteMedia && firstPart === "site_media";
+    if (!siteMedia && !imageResourceAllowed(firstPart)) return null;
 
     return key;
   } catch {
@@ -1035,7 +1038,7 @@ async function handlePublicImage(request, env) {
     });
   }
 
-  const key = imageKeyFromUrl(url.origin + url.pathname);
+  const key = imageKeyFromUrl(url.origin + url.pathname, { allowSiteMedia: true });
   if (!key) {
     return new Response("Nicht gefunden.", { status: 404 });
   }
