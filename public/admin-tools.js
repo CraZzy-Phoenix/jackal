@@ -638,7 +638,28 @@
       if(can(auth,'races','delete') && !row.querySelector(`[data-action-key="race-delete-${CSS.escape(String(id))}"]`)){
         const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.dataset.actionKey=`race-delete-${id}`;b.textContent='Löschen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('races',id,el.querySelector('.race-title,.race-name,h2')?.textContent?.trim()||'Rennen')});row.appendChild(b);
       }
+      // Fahrer / Ergebnis zu diesem Rennen eintragen (auch für vergangene Rennen)
+      if(can(auth,'results','create') && !row.querySelector(`[data-action-key="race-result-new-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`race-result-new-${id}`;b.textContent='+ Fahrer eintragen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=results&action=new&race_id=${encodeURIComponent(id)}`)});row.appendChild(b);
+      }
+      // Gekürzte Ergebnisliste: alle Ergebnisse dieses Rennens anzeigen
+      const params=new URLSearchParams(location.search);
+      if(can(auth,'results','edit') && params.get('race')!==String(id) && el.querySelector('.results-row[data-result-id]') && !row.querySelector(`[data-action-key="race-results-all-${CSS.escape(String(id))}"]`)){
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`race-results-all-${id}`;b.textContent='Alle Ergebnisse bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();location.href=`/races?race=${encodeURIComponent(id)}`});row.appendChild(b);
+      }
       if(row.children.length && !body.contains(row)) body.appendChild(row);
+      // Einzelne Ergebnisse (Platz, Punkte, Fahrzeug, Zeiten) bearbeiten oder löschen
+      el.querySelectorAll('.results-row[data-result-id]').forEach(rr=>{
+        const rid=rr.dataset.resultId;if(!rid||rr.querySelector('.jackal-admin-row-actions')) return;
+        const acts=document.createElement('div');acts.className='jackal-admin-row-actions';
+        if(can(auth,'results','edit')){
+          const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.textContent='Bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=results&action=edit&id=${encodeURIComponent(rid)}`)});acts.appendChild(b);
+        }
+        if(can(auth,'results','delete')){
+          const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline danger';b.textContent='Entfernen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();deleteResource('results',rid,rr.querySelector('span')?.textContent?.trim()||'Ergebnis')});acts.appendChild(b);
+        }
+        if(acts.children.length) rr.appendChild(acts);
+      });
     });
   }
 

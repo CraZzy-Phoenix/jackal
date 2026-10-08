@@ -2108,13 +2108,6 @@ html,body{overflow-x:hidden}
 <label>Grund</label>
 <textarea id="blacklistReason" name="reason" placeholder="Warum steht dieses Fahrzeug auf der Blacklist?" rows="5"></textarea>
 </div>
-<div class="ranking-field">
-<label>Status</label>
-<select id="blacklistStatus" name="status">
-<option value="active">Aktiv</option>
-<option value="inactive">Inaktiv</option>
-</select>
-</div>
 </div>
 <div class="user-message" id="blacklistFormMessage"></div>
 <div class="modal-actions">
@@ -3534,16 +3527,6 @@ const blacklistForm =
 const blacklistFormMessage =
   document.getElementById("blacklistFormMessage");
 
-function blacklistIsActive(status){
-  const value = String(status ?? "").trim().toLowerCase();
-  return value === "active" ||
-         value === "aktiv" ||
-         value === "aktive" ||
-         value === "1" ||
-         value === "true" ||
-         value === "ja";
-}
-
 function blacklistDate(value){
   if(!value){
     return "—";
@@ -3644,7 +3627,6 @@ function renderBlacklist(){
     data
       .map(row => {
         const id = row.id;
-        const active = blacklistIsActive(row.status);
 
         const edit =
           hasPermission("blacklist","edit")
@@ -3673,12 +3655,6 @@ function renderBlacklist(){
             </td>
 
             <td>
-              <span class="ranking-status ${active ? "active" : "inactive"}">
-                ${active ? "Aktiv" : "Inaktiv"}
-              </span>
-            </td>
-
-            <td>
               ${escapeHtml(blacklistDate(row.created_at))}
             </td>
 
@@ -3701,7 +3677,6 @@ function renderBlacklist(){
             <th>Fahrzeug</th>
             <th>Bild</th>
             <th>Grund</th>
-            <th>Status</th>
             <th>Eingetragen</th>
             <th>Aktionen</th>
           </tr>
@@ -3750,7 +3725,6 @@ function openBlacklistModal(row=null){
     const blacklistPreview = document.getElementById("blacklistImagePreview");
     if(blacklistPreview){ blacklistPreview.removeAttribute("src"); blacklistPreview.style.display = "none"; }
     setBlacklistField("blacklistReason","");
-    setBlacklistField("blacklistStatus","active");
 
   }else{
     if(!hasPermission("blacklist","edit")){
@@ -3793,12 +3767,6 @@ function openBlacklistModal(row=null){
       row.reason || ""
     );
 
-    setBlacklistField(
-      "blacklistStatus",
-      blacklistIsActive(row.status)
-        ? "active"
-        : "inactive"
-    );
   }
 
   blacklistFormMessage.textContent = "";
@@ -3839,11 +3807,6 @@ async function saveBlacklist(event){
       .value
       .trim();
 
-  const status =
-    document
-      .getElementById("blacklistStatus")
-      .value;
-
   if(!vehicleName){
     blacklistFormMessage.textContent =
       "Bitte ein Fahrzeug eingeben.";
@@ -3880,8 +3843,7 @@ async function saveBlacklist(event){
     const payload = {
       vehicle_name: vehicleName,
       image_url: uploadedImage?.url || imageUrl,
-      reason,
-      status
+      reason
     };
 
     let url =
@@ -5472,6 +5434,16 @@ function visibleColumns(schema){
   );
 }
 
+/* Felder, die im Bearbeiten-Dialog nicht angezeigt werden sollen. */
+const CRUD_HIDDEN_FORM_FIELDS = {
+  blacklist: ["status"]
+};
+
+function crudFormColumns(resource, schema){
+  const hidden = CRUD_HIDDEN_FORM_FIELDS[resource] || [];
+  return visibleColumns(schema).filter(col => !hidden.includes(col.name));
+}
+
 function prettyColumn(name){
   return name.replaceAll("_"," ").replace(/\b\w/g,m => m.toUpperCase());
 }
@@ -6075,6 +6047,8 @@ async function openCrudModal(resource,row=null,schemaRetry=false){
     const races = crudRows.races || [];
     const drivers = crudRows.drivers || [];
     const vehicle = row?.vehicle || row?.car || resultVehicleValue(findDriverById(row?.driver_id));
+    /* Neues Ergebnis von der Rennseite aus: Rennen ist schon vorausgewählt. */
+    const presetRaceId = row ? String(row.race_id ?? "") : String(embedParams.get("race_id") || "");
 
     body.innerHTML = `
       <div class="crud-field full">
@@ -6083,7 +6057,7 @@ async function openCrudModal(resource,row=null,schemaRetry=false){
           <option value="">Bitte Rennen auswählen</option>
           ${races.map(r=>{
             const id=crudSchemas.races?.identity ? r[crudSchemas.races.identity] : "";
-            return `<option value="${escapeHtml(String(id))}" ${String(row?.race_id ?? "")===String(id)?"selected":""}>${escapeHtml(resultRaceLabel(r))}</option>`;
+            return `<option value="${escapeHtml(String(id))}" ${presetRaceId===String(id)?"selected":""}>${escapeHtml(resultRaceLabel(r))}</option>`;
           }).join("")}
         </select>
       </div>
@@ -6140,7 +6114,7 @@ async function openCrudModal(resource,row=null,schemaRetry=false){
     return;
   }
 
-  body.innerHTML=visibleColumns(schema).map(col=>{
+  body.innerHTML=crudFormColumns(resource,schema).map(col=>{
     const value=row?.[col.name]??"";
     const label=prettyColumn(col.name);
     const isOptionalImageField = col.name === "image_url" || col.name === "image" || col.name === "track_image_url";
@@ -6283,7 +6257,7 @@ async function saveCrudForm(event){
       data.car=form.elements.namedItem("vehicle")?.value || "";
     }
   } else {
-    visibleColumns(schema).forEach(col=>{
+    crudFormColumns(resource,schema).forEach(col=>{
       const el=form.elements.namedItem(col.name);
       if(!el)return;
       data[col.name]=el.type==="checkbox"?(el.checked?1:0):el.value;
