@@ -5477,7 +5477,9 @@ function visibleColumns(schema){
 
 /* Felder, die im Bearbeiten-Dialog nicht angezeigt werden sollen. */
 const CRUD_HIDDEN_FORM_FIELDS = {
-  blacklist: ["status"]
+  blacklist: ["status"],
+  /* Punkte und Siege werden aus den Rennergebnissen berechnet. */
+  drivers: ["points", "wins"]
 };
 
 function crudFormColumns(resource, schema){
