@@ -2360,6 +2360,7 @@ async function checkSession(){
       await startEmbedEditor();
     }catch(error){
       console.error("Embed editor error:",error);
+      if(typeof showToast==="function") showToast(error?.message||"Der Verwaltungsbereich konnte nicht geladen werden.",true);
       const message=document.getElementById("crudFormMessage");
       if(message){
         message.textContent=error?.message||"Der Verwaltungsbereich konnte nicht geladen werden.";
@@ -5493,9 +5494,13 @@ async function loadCrudResource(resource){
   if(!hasPermission(resource,"view")) return;
   const info = document.getElementById(`crud-info-${resource}`);
   const container = document.getElementById(`crud-table-${resource}`);
-  if(!info || !container) return;
-  info.textContent = "Daten werden geladen...";
-  container.innerHTML = `<div class="empty">Daten werden geladen...</div>`;
+  /* Bereiche ohne eigene Tabelle (z. B. Blacklist, Rundenzeiten) laden
+     Schema und Daten trotzdem, damit der Editor-Dialog funktioniert. */
+  const hasTable = !!(info && container);
+  if(hasTable){
+    info.textContent = "Daten werden geladen...";
+    container.innerHTML = `<div class="empty">Daten werden geladen...</div>`;
+  }
 
   try{
     if(!crudSchemas[resource]){
@@ -5509,9 +5514,11 @@ async function loadCrudResource(resource){
     if(!r.ok || !d.ok) throw new Error(d.error || "Daten konnten nicht geladen werden.");
     crudRows[resource]=Array.isArray(d.rows)?d.rows:[];
     if(resource === "results") await ensureResultLookups();
+    if(!hasTable) return;
     renderCrudTable(resource);
     if(resource === "races") await loadNextRaceAdmin();
   }catch(error){
+    if(!hasTable) throw error;
     info.textContent="Fehler";
     container.innerHTML=`<div class="empty">${escapeHtml(error.message || "Fehler beim Laden.")}</div>`;
   }
@@ -5973,7 +5980,7 @@ function renderCrudTable(resource){
   }).join("");
   container.innerHTML=`<div class="crud-table-wrap"><table class="crud-table"><thead><tr>${head}<th>Aktionen</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
-async function openCrudModal(resource,row=null){
+async function openCrudModal(resource,row=null,schemaRetry=false){
   if(row===null&&!hasPermission(resource,"create")){
     showToast("Keine Berechtigung zum Erstellen.",true);
     return;
@@ -5987,8 +5994,11 @@ async function openCrudModal(resource,row=null){
   const schema=crudSchemas[resource];
 
   if(!schema){
+    if(schemaRetry){
+      throw new Error("Der Bereich konnte nicht geladen werden. Bitte Berechtigung prüfen oder die Seite neu laden.");
+    }
     await loadCrudResource(resource);
-    return openCrudModal(resource,row);
+    return openCrudModal(resource,row,true);
   }
 
   crudEditing={resource,row};

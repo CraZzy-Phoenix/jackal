@@ -605,9 +605,20 @@
   }
 
   function setupRanking(auth){
-    if(!auth || !can(auth,'drivers','edit')) return;
+    if(!auth) return;
     const card=document.querySelector('main .card');
-    if(card) addHeadButton(card,'Punkte & Fahrer bearbeiten','embed=crud&resource=drivers&action=new','ranking-edit');
+    if(card && can(auth,'drivers','create')) addHeadButton(card,'+ Fahrer','embed=crud&resource=drivers&action=new','ranking-new');
+    if(!can(auth,'drivers','edit')) return;
+    // Pro Zeile: bestehenden Fahrer (Punkte, Siege, Team …) bearbeiten.
+    document.querySelectorAll('tr[data-driver-id]').forEach(tr=>{
+      const id=tr.dataset.driverId;
+      if(!id) return;
+      const cell=tr.children[1]||tr.lastElementChild;
+      if(!cell || cell.querySelector(`[data-action-key="ranking-edit-${CSS.escape(String(id))}"]`)) return;
+      const actions=document.createElement('div');actions.className='jackal-admin-row-actions';
+      const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`ranking-edit-${id}`;b.textContent='Bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=drivers&action=edit&id=${encodeURIComponent(id)}`)});actions.appendChild(b);
+      cell.appendChild(actions);
+    });
   }
 
   function setupRaces(auth){
