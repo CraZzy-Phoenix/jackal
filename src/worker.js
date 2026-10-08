@@ -105,6 +105,22 @@ async function requireSession(request, env) {
   return { session, user };
 }
 
+/* Rechte eines Benutzers für einen Bereich. Ergebnisse (Rennergebnisse /
+   Ranglisten der Rennen) erben die Rechte von „Rennen“, solange für
+   „Ergebnisse“ nichts eigenes eingetragen ist. */
+async function getPermissionRow(env, userId, resource) {
+  const load = res => env.DB.prepare(`
+    SELECT can_view, can_create, can_edit, can_delete
+    FROM admin_permissions
+    WHERE user_id = ? AND resource = ?
+    LIMIT 1
+  `).bind(userId, res).first();
+
+  const row = await load(resource);
+  if (!row && resource === "results") return await load("races");
+  return row;
+}
+
 async function requirePermission(request, env, resource, action) {
   const auth = await requireSession(request, env);
   if (auth instanceof Response) return auth;
@@ -113,12 +129,7 @@ async function requirePermission(request, env, resource, action) {
 
   if (resource === "dashboard" && action === "view") return auth;
 
-  const permission = await env.DB.prepare(`
-    SELECT can_view, can_create, can_edit, can_delete
-    FROM admin_permissions
-    WHERE user_id = ? AND resource = ?
-    LIMIT 1
-  `).bind(auth.user.id, resource).first();
+  const permission = await getPermissionRow(env, auth.user.id, resource);
 
   const allowed = Boolean(permission && Number(permission[`can_${action}`]) === 1);
 
@@ -316,12 +327,7 @@ async function handleMe(request, env) {
       continue;
     }
 
-    const row = await env.DB.prepare(`
-      SELECT can_view, can_create, can_edit, can_delete
-      FROM admin_permissions
-      WHERE user_id = ? AND resource = ?
-      LIMIT 1
-    `).bind(auth.user.id, resource).first();
+    const row = await getPermissionRow(env, auth.user.id, resource);
 
     permissions[resource] = auth.user.is_superadmin
       ? { can_view: 1, can_create: 1, can_edit: 1, can_delete: 1 }
@@ -2234,6 +2240,7 @@ async function handlePublicData(env) {
         'description',
         'status',
         'image_url',
+        'track_image_url',
         'is_next',
         'is_hidden',
         'created_at'
