@@ -2,6 +2,47 @@
 
 <html lang="de">
 <head>
+<script id="jackalBusyGuard">
+/* Doppelklick-Schutz: Solange eine Speichern-/Anlegen-/Löschen-Anfrage läuft
+   (inkl. Bild-Upload), sind Aktions-Buttons gesperrt und Formulare werden
+   nicht erneut abgeschickt. Abbrechen/Schließen bleibt bedienbar. */
+(function(){
+  if(window.__jackalBusyGuard) return;
+  window.__jackalBusyGuard = true;
+  const root = document.documentElement;
+  const EXEMPT = '.secondary-button,[class*="close"],[data-busy-exempt],.menu button,.nav-toggle';
+  let pending = 0, releaseTimer = null;
+  const setBusy = on => root.classList.toggle('jackal-busy', on);
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+    if(method === 'GET' || method === 'HEAD') return nativeFetch(input, init);
+    pending++; clearTimeout(releaseTimer); setBusy(true);
+    const done = () => {
+      pending = Math.max(0, pending - 1);
+      if(!pending){
+        clearTimeout(releaseTimer);
+        // kurze Nachlaufzeit: zwischen Bild-Upload und Speichern nicht freigeben
+        releaseTimer = setTimeout(() => { if(!pending) setBusy(false); }, 500);
+      }
+    };
+    return nativeFetch(input, init).then(r => { done(); return r; }, e => { done(); throw e; });
+  };
+  const isBusy = () => root.classList.contains('jackal-busy');
+  document.addEventListener('click', e => {
+    const b = e.target && e.target.closest && e.target.closest('button,input[type="submit"]');
+    if(b && isBusy() && !b.closest(EXEMPT)){ e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  document.addEventListener('submit', e => {
+    if(isBusy()){ e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  const css = document.createElement('style');
+  css.textContent = 'html.jackal-busy{cursor:progress}' +
+    'html.jackal-busy button:not(.secondary-button):not([class*="close"]):not([data-busy-exempt]):not(.nav-toggle),' +
+    'html.jackal-busy input[type="submit"]{opacity:.55!important;cursor:progress!important}';
+  (document.head || root).appendChild(css);
+})();
+</script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>JACKAL ADMIN – Racing League</title>

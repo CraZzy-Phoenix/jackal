@@ -949,6 +949,9 @@ a { color: inherit; text-decoration: none; }
   border-radius: 4px;
   cursor: pointer;
 }
+.bestlist-picker { padding: 0 18px 10px; }
+.bestlist-picker .select-wrap { margin-left: 0; width: 100%; }
+.bestlist-picker select { width: 100%; text-transform: none; }
 .select-wrap svg { position: absolute; right: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--purple-2); pointer-events: none; }
 
 .btn, .change-head h3, .big-title, .race-name { white-space: nowrap; }
@@ -1371,6 +1374,15 @@ a { color: inherit; text-decoration: none; }
         </div>
       </div>
 
+      <div class="bestlist-picker">
+        <div class="select-wrap">
+          <select id="bestlistRace" aria-label="Rennen für die Bestenliste auswählen">
+            <option value="">Rennen werden geladen…</option>
+          </select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+      </div>
+
       <div class="table-wrap">
         <table class="tbl">
           <thead>
@@ -1613,11 +1625,16 @@ function render(data){
  const bestRaceId=String(dash.bestlist_race_id||''),bestRace=bestRaceId?(races.find(r=>String(r.id)===bestRaceId)||null):(past[0]||null);
  const lapsRaceId=String(dash.laps_race_id||''),lapsRace=lapsRaceId?(races.find(r=>String(r.id)===lapsRaceId)||null):(bestRace||past[0]||null);
  const resultsFor=r=>r?(data.results||[]).filter(x=>String(x.race_id)===String(r.id)).sort((a,b)=>(Number(a.position)||999)-(Number(b.position)||999)):[];
- const bestResults=resultsFor(bestRace),lapResults=resultsFor(lapsRace);
+ const lapResults=resultsFor(lapsRace);
+ const renderBestlist=bestRace=>{const bestResults=resultsFor(bestRace);
  const bestBody=document.querySelector('.bestlist tbody');
  if(bestBody){bestBody.innerHTML=bestResults.length?bestResults.slice(0,8).map((r,i)=>{const d=dmap.get(String(r.driver_id))||{};return `<tr><td><span class="pos ${i<3?'pos-'+(i+1):''}">${escapeHtml(String(r.position??i+1))}</span></td><td class="driver"><span>${teamIcon(d.team)}${escapeHtml(d.nickname||'Unbekannter Fahrer')}</span></td><td class="team"><span>${teamIcon(d.team)}${escapeHtml(d.team||'—')}</span></td><td>${escapeHtml(r.vehicle||r.car||d.car||'—')}</td><td class="time">${escapeHtml(r.time||r.best_lap||r.bestlap||'—')}</td><td class="pts">${escapeHtml(String(r.points??'—'))}</td></tr>`;}).join(''):'<tr><td colspan="6">Noch keine Ergebnisse für dieses Rennen.</td></tr>';wireImageSlots(bestBody);}
  const bestHead=document.querySelector('.bestlist .big-head');if(bestHead){const sub=bestHead.querySelector('.big-sub'),meta=bestHead.querySelector('.head-meta');if(sub)sub.textContent=bestRace?`Vom ${bestRace.name||'letzten Rennen'}`:'Vom letzten Rennen';if(meta)meta.innerHTML=bestRace?`${escapeHtml(formatDateShort(bestRace.date))}<small><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.3 7 13 7 13s7-7.7 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0-5Z"/></svg>${escapeHtml(bestRace.location||'—')}</small>`:'Kein Rennen ausgewählt';}
  const bestLink=document.querySelector('.best-results-link');if(bestLink)bestLink.href=bestRace?`/races?race=${encodeURIComponent(bestRace.id)}`:'/races';
+ };
+ renderBestlist(bestRace);
+ /* Besucher können ein vergangenes Rennen auswählen; Standard ist das im Dashboard gewählte bzw. letzte Rennen. */
+ const bestSel=document.getElementById('bestlistRace');if(bestSel){const opts=past.slice();if(bestRace&&!opts.some(r=>String(r.id)===String(bestRace.id)))opts.unshift(bestRace);bestSel.innerHTML=opts.length?opts.map(r=>{const n=resultsFor(r).length;return `<option value="${escapeHtml(String(r.id))}">${escapeHtml(r.name||'Rennen')} – ${escapeHtml(formatDateShort(r.date))}${n?'':' (noch keine Ergebnisse)'}</option>`;}).join(''):'<option value="">Noch keine vergangenen Rennen</option>';bestSel.disabled=!opts.length;if(bestRace)bestSel.value=String(bestRace.id);bestSel.onchange=()=>{renderBestlist(races.find(r=>String(r.id)===bestSel.value)||null);};}
  const raceLink=document.querySelector('.race-details-link');if(raceLink)raceLink.href=displayRace?`/races?race=${encodeURIComponent(displayRace.id)}&view=details`:'/races';
  const raceCard=document.querySelector('.race-card');if(raceCard){const title=raceCard.querySelector('.big-title'),bg=raceCard.querySelector('.race-bg'),name=raceCard.querySelector('.race-name'),dateNode=raceCard.querySelector('.race-date div'),facts=raceCard.querySelector('.race-facts'),titleMap={next_race:'Nächstes Rennen',last_race:'Letztes Rennen',next_event:'Nächstes Event',last_event:'Letztes Event',current_event:'Aktuelles Event'};if(title)title.textContent=titleMap[mode]||'Nächstes Rennen';const isEventMode=['next_event','last_event','current_event'].includes(mode);const useEventNews=isEventMode&&eventSource==='news'&&eventNews;const useCustom=isEventMode&&eventSource==='custom';if(displayRace&&bg)bg.innerHTML=displayRace.image_url?`<img src="${escapeHtml(displayRace.image_url)}" alt="${escapeHtml(displayRace.name||'')}">`:'';const track=raceCard.querySelector('.race-track');if(track){const svg=track.querySelector('.track-svg');let ti=track.querySelector('.track-img');const turl=displayRace?.track_image_url?String(displayRace.track_image_url):'';if(turl){if(!ti){ti=document.createElement('img');ti.className='track-img';ti.alt='Streckenbild';track.insertBefore(ti,track.firstChild);}if(ti.getAttribute('src')!==turl)ti.src=turl;if(svg)svg.style.display='none';}else{if(ti)ti.remove();if(svg)svg.style.display='';}}if(name)name.textContent=useEventNews?(eventNews.title||'Event'):useCustom?(eventCustomTitle||'Event'):(displayRace?.name||'Rennen');if(dateNode)dateNode.innerHTML=displayRace?`${escapeHtml(formatDateShort(displayRace.date))}<small>${escapeHtml(displayRace.time||'—')} Uhr</small>`:'';if(facts){const arr=[];if(useEventNews){const teaser=newsTeaser(eventNews);if(teaser)arr.push(`<li><span>${escapeHtml(teaser.slice(0,260))}</span></li>`);}else if(useCustom){if(eventCustomText)arr.push(`<li><span>${escapeHtml(eventCustomText.slice(0,320))}</span></li>`);}else if(displayRace?.location){arr.push(`<li><span>${escapeHtml(displayRace.location)}</span></li>`);if(displayRace.description)arr.push(`<li><span>${escapeHtml(displayRace.description)}</span></li>`);}facts.innerHTML=arr.join('')||'<li><span>Weitere Veranstaltungsdaten folgen.</span></li>'; }wireImageSlots(raceCard);}
  const changes=document.querySelector('.changes-list');if(changes){const items=chooseNews(data);changes.innerHTML=items.length?items.slice(0,3).map(n=>{const cat=newsCategoryInfo(data,n.category),color=cat?.color||'#4D86FF',textColor=cat?.text_color||'#FFFFFF';return `<article class="change" style="--category-color:${escapeHtml(color)};--category-text:${escapeHtml(textColor)}"><div class="change-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><h3>${escapeHtml(n.title||'News')}</h3><time>${escapeHtml(formatDateShort(n.date||n.created_at))}</time></div><ul><li><span class="news-teaser">${escapeHtml(newsTeaser(n).slice(0,220))}</span></li></ul><div class="change-category" style="color:${escapeHtml(textColor)};background:${escapeHtml(color)}">${escapeHtml(cat?.name||n.category||'ALLGEMEIN')}</div><a class="change-link news-read-link" href="/news" data-news-id="${escapeHtml(String(n.id||''))}">Mehr lesen <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a></article>`;}).join(''):'<div class="empty">Noch keine News vorhanden.</div>';}
