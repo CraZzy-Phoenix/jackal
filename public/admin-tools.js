@@ -303,10 +303,9 @@
     const selected=String(dash.config?.next_race_id||'');
     const current=String(selected || data.nextRace?.id || races.find(r=>Number(r.is_next)===1)?.id || '');
     const opts=races.map(r=>`<option value="${esc(String(r.id))}" ${String(r.id)===current?'selected':''}>${esc(r.name||'Rennen')} · ${esc(String(r.date||''))}${r.time?` · ${esc(String(r.time).slice(0,5))}`:''}</option>`).join('');
-    const html=`<div class="jackal-home-admin-grid"><div class="jackal-home-admin-field full"><label>Rennen für Home</label><select id="homeNextRaceSelect"><option value="">Kein Rennen ausgewählt</option>${opts}</select></div><div class="jackal-home-admin-field"><label>Anzeigemodus</label><select id="homeNextRaceMode"><option value="next_race" ${String(dash.config?.display_mode||'next_race')==='next_race'?'selected':''}>Next Race</option><option value="next_event" ${String(dash.config?.display_mode||'next_race')==='next_event'?'selected':''}>Next Event</option><option value="last_race" ${String(dash.config?.display_mode||'next_race')==='last_race'?'selected':''}>Letztes Rennen</option></select></div><div class="jackal-home-admin-field"><label>Zugangscode</label><div class="jackal-home-admin-inline"><input id="homeNextRaceCode" maxlength="32" placeholder="Neuen Code eingeben..."><button type="button" id="homeNextRaceGenerate">Generieren</button></div></div></div><div class="jackal-home-admin-help">Das hier festgelegte Rennen wird auf der Home-Seite angezeigt. Mit „Generieren“ kannst du direkt einen neuen Zugangscode setzen.</div><div class="jackal-home-admin-message"></div>`;
+    const html=`<div class="jackal-home-admin-grid"><div class="jackal-home-admin-field full"><label>Rennen für Home</label><select id="homeNextRaceSelect"><option value="">Kein Rennen ausgewählt</option>${opts}</select></div><div class="jackal-home-admin-field"><label>Zugangscode</label><div class="jackal-home-admin-inline"><input id="homeNextRaceCode" maxlength="32" placeholder="Neuen Code eingeben..."><button type="button" id="homeNextRaceGenerate">Generieren</button></div></div></div><div class="jackal-home-admin-help">Das hier festgelegte Rennen wird auf der Home-Seite angezeigt. Mit „Generieren“ kannst du direkt einen neuen Zugangscode setzen.</div><div class="jackal-home-admin-message"></div>`;
     const overlay=createHomeModal('Next Race verwalten','Home · Event-Bereich',html,async ov=>{
       const raceId=ov.querySelector('#homeNextRaceSelect')?.value||'';
-      const mode=ov.querySelector('#homeNextRaceMode')?.value||'next_race';
       const code=ov.querySelector('#homeNextRaceCode')?.value.trim()||randomAccessCode();
       if(raceId){
         const nextRes=await fetch('/api/admin/races/next',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({race_id:raceId,access_code:code})});
@@ -315,7 +314,9 @@
       }else{
         await fetch('/api/admin/races/next',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({race_id:'',access_code:''})}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Next Race konnte nicht entfernt werden.');});
       }
-      const payload={display_mode:mode,next_race_id:raceId,latest_news_ids:dash.config?.latest_news_ids||[],featured_news_id:dash.config?.featured_news_id||'',hearts_winner_driver_id:dash.config?.hearts_winner_driver_id||'',hearts_quote:dash.config?.hearts_quote||'',poll_active:Number(dash.config?.poll_active)===1,poll_question:dash.config?.poll_question||'Wer war dein Sieger der Herzen?',poll_options:dash.config?.poll_options||[]};
+      // Nur das Home-Rennen ändern; alle News-Einstellungen (Anzeigemodus, Rennen, Bestenliste, Events …) bleiben erhalten.
+      const cfg=dash.config||{};
+      const payload={...cfg,next_race_id:raceId,display_race_id:String(cfg.display_race_id??''),poll_active:Number(cfg.poll_active)===1};
       const cfgRes=await fetch('/api/admin/news/dashboard',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const cfgData=await cfgRes.json().catch(()=>({}));
       if(!cfgRes.ok||!cfgData.ok) throw new Error(cfgData.error||'Home-Konfiguration konnte nicht gespeichert werden.');
