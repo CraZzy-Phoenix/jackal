@@ -1612,7 +1612,7 @@ function render(data){
  const dmap=driverMap(data),races=Array.isArray(data.races)?data.races:[],dash=data.newsDashboard||{};
  const future=races.filter(r=>{const dt=raceDateTime(r);return dt&&dt.getTime()>=Date.now();}).sort((a,b)=>(raceDateTime(a)?.getTime()||0)-(raceDateTime(b)?.getTime()||0));
  const past=races.filter(r=>{const dt=raceDateTime(r);return dt&&dt.getTime()<Date.now();}).sort((a,b)=>(raceDateTime(b)?.getTime()||0)-(raceDateTime(a)?.getTime()||0));
- const selectedDisplayId=String(dash.display_race_id||dash.next_race_id||'');
+ const selectedDisplayId=String(dash.display_race_id||'');
  const selectedDisplay=races.find(r=>String(r.id)===selectedDisplayId)||null;
  const currentEvent=races.find(r=>['active','aktiv','current','laufend'].includes(String(r.status||'').toLowerCase()))||null;
  const mode=String(dash.display_mode||'next_race');

@@ -4152,23 +4152,31 @@ html,body{overflow-x:hidden}
       .then(
         function(data){
 
+          /* Home zeigt immer das NÄCHSTE Rennen – unabhängig davon, was im
+             News-Bereich (Letztes Rennen, Event …) eingestellt ist. */
           var dashboard = data.newsDashboard || {};
-          var displayMode = String(dashboard.display_mode || 'next_race');
           var allRaces = data.races || [];
+          var raceStamp = function(race){
+            var raw = String(race && race.date || '');
+            return new Date(raw + (race && race.time ? 'T' + String(race.time).slice(0,5) : 'T23:59:59')).getTime();
+          };
+          var isUpcoming = function(race){
+            var stamp = raceStamp(race);
+            return !Number.isFinite(stamp) || stamp >= Date.now();
+          };
           var configuredRace = dashboard.next_race_id
             ? allRaces.find(function(race){ return String(race.id) === String(dashboard.next_race_id); })
             : null;
-          var pastRaces = allRaces.filter(function(race){
-            var raw = String(race.date || '');
-            var stamp = new Date(raw + (race.time ? 'T' + String(race.time).slice(0,5) : 'T23:59:59')).getTime();
-            return Number.isFinite(stamp) && stamp < Date.now();
-          }).sort(function(a,b){
-            return new Date(String(b.date || '1970-01-01')).getTime() - new Date(String(a.date || '1970-01-01')).getTime();
-          });
-          var homeRace = displayMode === 'last_race'
-            ? (pastRaces[0] || configuredRace || data.nextRace || null)
-            : (configuredRace || data.nextRace || allRaces.find(function(race){ return Number(race.is_next) === 1; }) || null);
-          renderNextRace(homeRace, displayMode);
+          var markedRace = data.nextRace || allRaces.find(function(race){ return Number(race.is_next) === 1; }) || null;
+          var upcomingRaces = allRaces.filter(function(race){
+            return Number.isFinite(raceStamp(race)) && raceStamp(race) >= Date.now();
+          }).sort(function(a,b){ return raceStamp(a) - raceStamp(b); });
+          /* Bevorzugt das festgelegte Next Race – aber nur, solange es noch nicht vorbei ist.
+             Sonst automatisch das nächste kommende Rennen. */
+          var homeRace = [configuredRace, markedRace].find(function(race){ return race && isUpcoming(race); })
+            || upcomingRaces[0]
+            || null;
+          renderNextRace(homeRace, 'next_race');
 
 
           renderHomeNews(
