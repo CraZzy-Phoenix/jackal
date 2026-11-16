@@ -677,6 +677,11 @@
       if(can(auth,'races','edit') && !row.querySelector(`[data-action-key="race-edit-${CSS.escape(String(id))}"]`)){
         const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`race-edit-${id}`;b.textContent='Rennen bearbeiten';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openEditor(`embed=crud&resource=races&action=edit&id=${encodeURIComponent(id)}`)});row.appendChild(b);
       }
+      // Streckenbild geheim halten / zeigen – das Rennen selbst bleibt sichtbar
+      if(can(auth,'races','edit') && !row.querySelector(`[data-action-key="race-track-${CSS.escape(String(id))}"]`)){
+        const secret=el.dataset.trackHidden==='1';
+        const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`race-track-${id}`;b.textContent=secret?'Strecke zeigen':'Strecke geheim halten';b.title=secret?'Streckenbild öffentlich anzeigen':'Streckenbild erst nach Zugangscode zeigen';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setRaceTrackHidden(id,!secret)});row.appendChild(b);
+      }
       // Rennen auf der Website ausblenden (lässt sich unten wieder einblenden)
       if(can(auth,'races','edit') && !row.querySelector(`[data-action-key="race-hide-${CSS.escape(String(id))}"]`)){
         const b=document.createElement('button');b.type='button';b.className='jackal-admin-inline';b.dataset.actionKey=`race-hide-${id}`;b.textContent='Ausblenden';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setRaceHidden(id,true,el.querySelector('.race-title')?.textContent?.trim()||'Rennen')});row.appendChild(b);
@@ -707,6 +712,15 @@
         if(acts.children.length) rr.appendChild(acts);
       });
     });
+  }
+
+  async function setRaceTrackHidden(id,hidden){
+    try{
+      const r=await fetch(`/api/admin/data/races/${encodeURIComponent(String(id))}`,{method:'PUT',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({is_track_hidden:hidden?1:0})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok) throw new Error(d.error||'Speichern fehlgeschlagen.');
+      location.reload();
+    }catch(e){ window.alert(e.message||'Speichern fehlgeschlagen.'); }
   }
 
   async function setRaceHidden(id,hidden,label){
