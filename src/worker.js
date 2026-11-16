@@ -2417,7 +2417,15 @@ async function handlePublicData(env) {
     created_at: driver.created_at
   }));
 
-  const nextRace = publicRaces.find(race => Number(race.is_next) === 1) || null;
+  /* Das als nächstes Rennen festgelegte Rennen wird für Home/News auch dann
+     geliefert, wenn es ausgeblendet ist (z. B. damit die Strecke geheim bleibt).
+     In der Rennliste bleibt es versteckt, sein Streckenbild ebenfalls. */
+  const nextRaceRow = races.find(race => Number(race.is_next) === 1) || null;
+  const nextRace = !nextRaceRow
+    ? null
+    : hiddenRaceIds.has(String(nextRaceRow.id))
+      ? { ...nextRaceRow, track_image_url: "" }
+      : (publicRaces.find(race => String(race.id) === String(nextRaceRow.id)) || null);
 
   const ranking = publicDrivers
     .slice()
