@@ -571,6 +571,13 @@ async function ensureRaceVisibilityColumn(env) {
       `ALTER TABLE races ADD COLUMN is_hidden INTEGER NOT NULL DEFAULT 0`
     ).run();
   }
+  /* Streckenbild geheim halten: Rennen bleibt sichtbar, das Streckenbild
+     gibt es öffentlich erst nach dem Zugangscode (Race Details). */
+  if (existing.size && !existing.has("is_track_hidden")) {
+    await env.DB.prepare(
+      `ALTER TABLE races ADD COLUMN is_track_hidden INTEGER NOT NULL DEFAULT 0`
+    ).run();
+  }
   raceVisibilityColumnReady = existing.size > 0;
 }
 
@@ -2246,6 +2253,7 @@ async function handlePublicData(env) {
         'track_image_url',
         'is_next',
         'is_hidden',
+        'is_track_hidden',
         'created_at'
       ]),
 
@@ -2375,7 +2383,9 @@ async function handlePublicData(env) {
   const hiddenRaceIds = new Set(
     races.filter(race => Number(race.is_hidden) === 1).map(race => String(race.id))
   );
-  const publicRaces = races.filter(race => !hiddenRaceIds.has(String(race.id)));
+  const publicRaces = races
+    .filter(race => !hiddenRaceIds.has(String(race.id)))
+    .map(race => Number(race.is_track_hidden) === 1 ? { ...race, track_image_url: "" } : race);
   const publicResults = results.filter(result => !hiddenRaceIds.has(String(result.race_id)));
 
   /* Eine Quelle für alle Punkte: Gesamtpunkte, Siege und Rennen werden
