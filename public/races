@@ -338,7 +338,7 @@ const raceStamp=x=>{const raw=String(x.date||'');return new Date(raw+(x.time?'T'
 const DONE_STATUS=['completed','finished','past','abgeschlossen','beendet'],HIDDEN_STATUS=['draft','entwurf','hidden','versteckt','inactive','inaktiv'];
 /* Läuft gerade: Status „laufend/aktiv“ o. ä. oder das als nächstes markierte Rennen hat schon begonnen und ist nicht beendet. */
 const RUNNING_STATUS=['active','aktiv','current','laufend','live','läuft'];
-const isRunning=x=>{const st=String(x.status||'').toLowerCase();if(DONE_STATUS.includes(st))return false;if(RUNNING_STATUS.includes(st))return true;const ts=raceStamp(x);return Number(x.is_next)===1&&!Number.isNaN(ts)&&ts<Date.now();};
+const isRunning=x=>{const st=String(x.status||'').toLowerCase();if(DONE_STATUS.includes(st))return false;if(RUNNING_STATUS.includes(st))return true;const ts=raceStamp(x);const since=Date.now()-ts;return Number(x.is_next)===1&&!Number.isNaN(ts)&&since>=0&&since<24*60*60*1000;};
 const upcomingWrap=document.getElementById('upcomingWrap'),upcomingGrid=document.getElementById('upcomingGrid'),pastTitle=document.getElementById('pastTitle');
 const trackUrl=v=>{v=String(v||'');return v.startsWith('/')||/^https?:/i.test(v)?v:media(v)};
 const trackHtml=x=>x.track_image_url?`<a class="race-track-img" href="${esc(trackUrl(x.track_image_url))}" target="_blank" rel="noopener" title="Streckenbild öffnen"><span>Strecke</span><img src="${esc(trackUrl(x.track_image_url))}" alt="Streckenbild" loading="lazy"></a>`:'';

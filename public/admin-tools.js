@@ -299,10 +299,12 @@
   async function openHomeNextRaceManager(){
     const data=await fetch('/api/public/data',{cache:'no-store'}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Website-Daten konnten nicht geladen werden.');return d;});
     const dash=await fetch('/api/admin/news/dashboard',{credentials:'same-origin',cache:'no-store'}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Home-Konfiguration konnte nicht geladen werden.');return d;});
-    const races=Array.isArray(data.races)?data.races.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))):[];
+    // Als Admin alle Rennen anbieten – auch ausgeblendete (die öffentlichen Daten enthalten sie nicht)
+    const adminRaces=await fetch('/api/admin/data/races',{credentials:'same-origin',cache:'no-store'}).then(r=>r.json()).then(d=>d&&d.ok&&Array.isArray(d.rows)?d.rows:null).catch(()=>null);
+    const races=(adminRaces||(Array.isArray(data.races)?data.races:[])).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
     const selected=String(dash.config?.next_race_id||'');
     const current=String(selected || data.nextRace?.id || races.find(r=>Number(r.is_next)===1)?.id || '');
-    const opts=races.map(r=>`<option value="${esc(String(r.id))}" ${String(r.id)===current?'selected':''}>${esc(r.name||'Rennen')} · ${esc(String(r.date||''))}${r.time?` · ${esc(String(r.time).slice(0,5))}`:''}</option>`).join('');
+    const opts=races.map(r=>`<option value="${esc(String(r.id))}" ${String(r.id)===current?'selected':''}>${esc(r.name||'Rennen')} · ${esc(String(r.date||''))}${r.time?` · ${esc(String(r.time).slice(0,5))}`:''}${Number(r.is_hidden)===1?' · (ausgeblendet)':''}</option>`).join('');
     const html=`<div class="jackal-home-admin-grid"><div class="jackal-home-admin-field full"><label>Rennen für Home</label><select id="homeNextRaceSelect"><option value="">Kein Rennen ausgewählt</option>${opts}</select></div><div class="jackal-home-admin-field"><label>Zugangscode</label><div class="jackal-home-admin-inline"><input id="homeNextRaceCode" maxlength="32" placeholder="Neuen Code eingeben..."><button type="button" id="homeNextRaceGenerate">Generieren</button></div></div></div><div class="jackal-home-admin-help">Das hier festgelegte Rennen wird auf der Home-Seite angezeigt. Mit „Generieren“ kannst du direkt einen neuen Zugangscode setzen.</div><div class="jackal-home-admin-message"></div>`;
     const overlay=createHomeModal('Next Race verwalten','Home · Event-Bereich',html,async ov=>{
       const raceId=ov.querySelector('#homeNextRaceSelect')?.value||'';
